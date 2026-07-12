@@ -17,6 +17,21 @@ Built in Rust on [**Bevy 0.18**](https://bevyengine.org).
 <img width="1897" height="1094" alt="Screenshot 2026-07-06 110013" src="https://github.com/user-attachments/assets/f122afa8-60e8-46bb-bc37-9c3fbb7a693e" />
 </div>
 
+## Switch development
+
+The Switch build uses the sibling `bevy-deko3d-019` and `wgpu-deko3d-29`
+checkouts. Bootstrap the devkitPro toolchain with the Switch harness, then build
+and send the NRO:
+
+```sh
+../switch/experiments/switch1-deko3d-wgpu/tools/bootstrap-devkitpro-switch.sh
+tools/build-switch-nro.sh
+tools/run-switch-nro.sh <switch-ip>
+```
+
+The build packages `assets/` at `romfs:/assets`, disables desktop audio and
+windowing, and uses the Horizon runner and Deko3D surface path.
+
 ## Play
 
 - **Windows:** download [**`Warbell-Setup.msi`**](https://github.com/miskibin/warbell/releases/latest/download/Warbell-Setup.msi) and run it. The installer is self-signed, so Windows SmartScreen shows "Unknown Publisher" — click **More info → Run anyway**.

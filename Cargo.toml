@@ -10,12 +10,46 @@ version = "0.20.0"
 edition = "2024"
 
 [dependencies]
-# `wav` enables rodio's WAV decoder for the procedurally-baked SFX stings (`audio/synth.rs`);
-# without it the in-memory WAV `AudioSource`s panic on play with `UnrecognizedFormat`.
-# `bevy_ui_widgets` (new in 0.19) brings the headless core widgets — Slider / Checkbox /
-# RadioButton — used by the graphics Settings page (`ui/graphics_menu.rs`).
-bevy = { version = "0.19", features = ["wav", "bevy_ui_widgets"] }
-bevy_egui = "0.41" # live debug-tuning panel (egui), targets bevy 0.19
+# The shared renderer/UI/asset surface deliberately omits Bevy's `default_platform` bundle.
+# Desktop opt-ins live under the crate's `desktop` feature; `switch` uses this common core alone.
+bevy = { version = "0.19", path = "../bevy-deko3d-019", default-features = false, features = [
+    "async_executor",
+    "bevy_animation",
+    "bevy_anti_alias",
+    "bevy_asset",
+    "bevy_camera",
+    "bevy_color",
+    "bevy_core_pipeline",
+    "bevy_gizmos",
+    "bevy_gizmos_render",
+    "gamepad",
+    "bevy_gltf",
+    "bevy_image",
+    "bevy_light",
+    "bevy_log",
+    "bevy_material",
+    "bevy_mesh",
+    "bevy_mikktspace",
+    "bevy_pbr",
+    "bevy_post_process",
+    "bevy_render",
+    "bevy_scene",
+    "bevy_shader",
+    "bevy_state",
+    "bevy_window",
+    "bevy_world_serialization",
+    "gltf_animation",
+    "hdr",
+    "ktx2",
+    "morph",
+    "morph_animation",
+    "png",
+    "reflect_auto_register",
+    "smaa_luts",
+    "tonemapping_luts",
+    "zstd_rust",
+] }
+bevy_egui = { version = "0.41", optional = true }
 # Pure, deterministic game logic vendored from the ditched port (zero deps, edition 2024).
 # Source of the parity-tested stores: pathfinding, waves, upgrades, inventory, animals, etc.
 # `serde` feature on so the save system can persist Player/Bag/Town/ResourceState (savegame.rs).
@@ -30,17 +64,104 @@ wgpu = { version = "29", default-features = false }
 # Runtime window icon (taskbar / title-bar / Alt-Tab): winit's window class ships hIcon=0, so it
 # does NOT adopt the exe's embedded icon for the live window — we set it ourselves in
 # `src/window_icon.rs`. `winit` (pinned to bevy_winit's 0.30 so the WinitWindow types unify) gives
-# the `Icon` type; `image` decodes the branding PNG (png-only to keep it lean — already in the tree
-# transitively via bevy, so cargo unifies it at no extra compile cost).
-winit = "0.30"
-image = { version = "0.25", default-features = false, features = ["png"] }
+# the `Icon` type; `image` decodes the branding PNG.
+winit = { version = "0.30", optional = true }
+image = { version = "0.25", default-features = false, features = ["png"], optional = true }
+
+[target.'cfg(target_os = "horizon")'.dependencies]
+# This is the same libnx/deko3d binding selected by the local wgpu backend. Keeping
+# the platform loop on the exact crate lets Cargo unify its native link directives.
+deko3d-sys = { path = "../wgpu-deko3d-29/wgpu-hal/deko3d-sys", features = ["release-deko3d"] }
+getrandom = "0.3"
 
 # Profiling build: turns on Bevy's per-system tracing spans, written to a chrome-trace JSON on exit
 # (`trace-<ts>.json`). `cargo run --features profiling` then `tools/trace_summary.py <file>` gives an
 # EXACT CPU-time-per-system breakdown (pairs with the GPU per-pass timings the F2/PERF logs already
 # show). Off in normal builds — the tracing has real overhead.
 [features]
+default = ["desktop"]
+# Keep the former Bevy default platform surface explicit: native windowing/input, gamepad support,
+# desktop audio (rodio with Vorbis + WAV decoders), the runtime icon, and the egui debug panels.
+desktop = [
+    "bevy/async_executor",
+    "bevy/bevy_audio",
+    "bevy/bevy_clipboard",
+    "bevy/bevy_gilrs",
+    "bevy/bevy_winit",
+    "bevy/custom_cursor",
+    "bevy/default_font",
+    "bevy/sysinfo_plugin",
+    "bevy/vorbis",
+    "bevy/wav",
+    "bevy/webgl2",
+    "bevy/multi_threaded",
+    "bevy/ui",
+    "bevy/wayland",
+    "bevy/x11",
+    "dep:bevy_egui",
+    "dep:image",
+    "dep:winit",
+]
 profiling = ["bevy/trace_chrome"]
+# Switch builds opt into the local wgpu fork's Deko3D backend. Desktop-oriented
+# window icon, audio, and post-processing gates can be added under this feature
+# without changing the default desktop build.
+switch = ["bevy/horizon", "wgpu/deko3d"]
+
+[patch.crates-io]
+# Keep Bevy 0.19 and the direct adapter query on one local wgpu 29 graph. Patching
+# the complete public family prevents registry/local type splits through wgpu-core,
+# wgpu-hal, wgpu-types, or naga.
+naga = { path = "../wgpu-deko3d-29/naga" }
+wgpu = { path = "../wgpu-deko3d-29/wgpu" }
+wgpu-core = { path = "../wgpu-deko3d-29/wgpu-core" }
+wgpu-hal = { path = "../wgpu-deko3d-29/wgpu-hal" }
+wgpu-naga-bridge = { path = "../wgpu-deko3d-29/wgpu-naga-bridge" }
+wgpu-types = { path = "../wgpu-deko3d-29/wgpu-types" }
+bevy_a11y = { path = "../bevy-deko3d-019/crates/bevy_a11y" }
+bevy_android = { path = "../bevy-deko3d-019/crates/bevy_android" }
+bevy_app = { path = "../bevy-deko3d-019/crates/bevy_app" }
+bevy_asset = { path = "../bevy-deko3d-019/crates/bevy_asset" }
+bevy_asset_macros = { path = "../bevy-deko3d-019/crates/bevy_asset/macros" }
+bevy_camera = { path = "../bevy-deko3d-019/crates/bevy_camera" }
+bevy_clipboard = { path = "../bevy-deko3d-019/crates/bevy_clipboard" }
+bevy_color = { path = "../bevy-deko3d-019/crates/bevy_color" }
+bevy_core_pipeline = { path = "../bevy-deko3d-019/crates/bevy_core_pipeline" }
+bevy_derive = { path = "../bevy-deko3d-019/crates/bevy_derive" }
+bevy_diagnostic = { path = "../bevy-deko3d-019/crates/bevy_diagnostic" }
+bevy_ecs = { path = "../bevy-deko3d-019/crates/bevy_ecs" }
+bevy_ecs_macro_logic = { path = "../bevy-deko3d-019/crates/bevy_ecs/macro_logic" }
+bevy_ecs_macros = { path = "../bevy-deko3d-019/crates/bevy_ecs/macros" }
+bevy_encase_derive = { path = "../bevy-deko3d-019/crates/bevy_encase_derive" }
+bevy_image = { path = "../bevy-deko3d-019/crates/bevy_image" }
+bevy_input = { path = "../bevy-deko3d-019/crates/bevy_input" }
+bevy_input_focus = { path = "../bevy-deko3d-019/crates/bevy_input_focus" }
+bevy_light = { path = "../bevy-deko3d-019/crates/bevy_light" }
+bevy_log = { path = "../bevy-deko3d-019/crates/bevy_log" }
+bevy_macro_utils = { path = "../bevy-deko3d-019/crates/bevy_macro_utils" }
+bevy_material = { path = "../bevy-deko3d-019/crates/bevy_material" }
+bevy_material_macros = { path = "../bevy-deko3d-019/crates/bevy_material/macros" }
+bevy_math = { path = "../bevy-deko3d-019/crates/bevy_math" }
+bevy_mesh = { path = "../bevy-deko3d-019/crates/bevy_mesh" }
+bevy_picking = { path = "../bevy-deko3d-019/crates/bevy_picking" }
+bevy_platform = { path = "../bevy-deko3d-019/crates/bevy_platform" }
+bevy_ptr = { path = "../bevy-deko3d-019/crates/bevy_ptr" }
+bevy_reflect = { path = "../bevy-deko3d-019/crates/bevy_reflect" }
+bevy_reflect_derive = { path = "../bevy-deko3d-019/crates/bevy_reflect/derive" }
+bevy_render = { path = "../bevy-deko3d-019/crates/bevy_render" }
+bevy_render_macros = { path = "../bevy-deko3d-019/crates/bevy_render/macros" }
+bevy_shader = { path = "../bevy-deko3d-019/crates/bevy_shader" }
+bevy_sprite = { path = "../bevy-deko3d-019/crates/bevy_sprite" }
+bevy_sprite_render = { path = "../bevy-deko3d-019/crates/bevy_sprite_render" }
+bevy_tasks = { path = "../bevy-deko3d-019/crates/bevy_tasks" }
+bevy_text = { path = "../bevy-deko3d-019/crates/bevy_text" }
+bevy_time = { path = "../bevy-deko3d-019/crates/bevy_time" }
+bevy_transform = { path = "../bevy-deko3d-019/crates/bevy_transform" }
+bevy_ui = { path = "../bevy-deko3d-019/crates/bevy_ui" }
+bevy_ui_render = { path = "../bevy-deko3d-019/crates/bevy_ui_render" }
+bevy_utils = { path = "../bevy-deko3d-019/crates/bevy_utils" }
+bevy_window = { path = "../bevy-deko3d-019/crates/bevy_window" }
+bevy_winit = { path = "../bevy-deko3d-019/crates/bevy_winit" }
 
 # Windows-only: embed the app icon + version metadata (ProductName/Company/version) into the
 # .exe resource section via build.rs. This brands the .exe FILE icon (Explorer / installer /
@@ -62,3 +183,11 @@ opt-level = 1
 # debug session, temporarily set CARGO_PROFILE_DEV_DEBUG=1 and accept the (currently failing) link,
 # or split the binary. `split-debuginfo` doesn't help on windows-msvc (still one combined PDB).
 debug = 0
+
+[profile.switch]
+inherits = "dev"
+
+[package.metadata.nx.nro.nacp]
+name = "Warbell"
+author = "miskibin"
+version = "0.20.0"

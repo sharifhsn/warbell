@@ -14,125 +14,145 @@
 //! gated behind the freeze-gate state machine in `game_state` — see `CLAUDE.md` for the
 //! conventions and `docs/superpowers/specs/` for the parity roadmap.
 
-mod aftermath;
-mod ambient_life;
-mod atmospherics;
-mod meadow;
-mod melee_ring;
-mod meshkit; // shared low-poly mesh helpers (tinted/merged/flat_shaded) — see the module doc
-mod audio;
-mod banner;
-mod biped;
-mod biome;
-mod bridges;
-mod biome_desert;
-mod biome_forest;
-mod biome_rocky;
-mod biome_snow;
-mod biome_swamp;
-mod blockers;
-mod boats;
-mod boss;
-mod build_fx;
-mod camps;
-mod capture;
-mod cinematic;
-mod castle;
-mod castle_decor;
-mod chest;
-mod combat_fx;
-mod compass;
-mod controls;
-mod creature;
-mod creature_anim;
-mod critters;
-mod debug_panel;
-mod debug_stats;
-mod decor;
-mod demo;
-mod defenses;
-mod distant_isles;
-mod dof;
-mod dying;
-mod economy;
-mod tree_ui;
-mod firelight;
-mod fish;
-mod footstep_fx;
-mod game_state;
-mod godrays;
-mod grade;
-mod groundcover;
-mod groundtest; // FOREST_GROUNDTEST=1: floating flat grass plane to isolate the terrain shader
-mod hints;
-mod hud;
-mod interaction;
-mod inventory;
-mod landmark_models;
-mod landmarks;
-mod loading;
-mod lumberjack;
-mod mainmenu;
-mod miner;
-mod navgrid;
-mod nightsky;
-mod orbs;
-mod ork_fortress;
-mod orks;
-mod outline;
-mod palette;
-mod particles;
-mod perftest;
-mod previs_knight;
-mod peasant_model;
-mod player;
-mod postfx;
-mod projectile;
-mod props;
-mod quadruped;
-mod quality;
-mod quest;
-mod roads;
-mod rival;
-mod ruins;
-mod savegame;
-mod scenes;
-mod scene;
-mod separation;
-mod shutters;
-mod siege;
-mod snowman;
-mod steer;
-mod subtitles;
-mod succession;
-mod succession_alert;
-mod succession_fx;
-mod terrain;
-mod town;
-mod town_meshes;
-mod training_dummies;
-mod trees;
-mod tutorial;
-mod ui;
-mod verbs;
-mod vignettes;
-mod bog;
-mod poi;
-mod villagers;
-mod vista;
-mod visual;
-mod viewer;
-mod warlord;
-mod water;
-mod wayside;
-mod wildlife;
-mod wind;
-mod window_icon;
-mod worldmap;
+#[cfg(all(feature = "desktop", feature = "switch"))]
+compile_error!("`desktop` and `switch` are mutually exclusive build targets");
 
+macro_rules! desktop_modules {
+    ($($module:ident;)*) => {
+        $(
+            #[cfg(feature = "desktop")]
+            mod $module;
+        )*
+    };
+}
+
+desktop_modules! {
+    aftermath;
+    ambient_life;
+    atmospherics;
+    meadow;
+    melee_ring;
+    meshkit;
+    audio;
+    banner;
+    biped;
+    biome;
+    bridges;
+    biome_desert;
+    biome_forest;
+    biome_rocky;
+    biome_snow;
+    biome_swamp;
+    blockers;
+    boats;
+    boss;
+    build_fx;
+    camps;
+    capture;
+    cinematic;
+    castle;
+    castle_decor;
+    chest;
+    combat_fx;
+    compass;
+    controls;
+    creature;
+    creature_anim;
+    critters;
+    debug_panel;
+    debug_stats;
+    decor;
+    demo;
+    defenses;
+    distant_isles;
+    dof;
+    dying;
+    economy;
+    tree_ui;
+    firelight;
+    fish;
+    footstep_fx;
+    game_state;
+    godrays;
+    grade;
+    groundcover;
+    groundtest;
+    hints;
+    hud;
+    interaction;
+    inventory;
+    landmark_models;
+    landmarks;
+    loading;
+    lumberjack;
+    mainmenu;
+    miner;
+    navgrid;
+    nightsky;
+    orbs;
+    ork_fortress;
+    orks;
+    outline;
+    palette;
+    particles;
+    perftest;
+    previs_knight;
+    peasant_model;
+    player;
+    postfx;
+    projectile;
+    props;
+    quadruped;
+    quality;
+    quest;
+    roads;
+    rival;
+    ruins;
+    savegame;
+    scenes;
+    scene;
+    separation;
+    shutters;
+    siege;
+    snowman;
+    steer;
+    subtitles;
+    succession;
+    succession_alert;
+    succession_fx;
+    terrain;
+    town;
+    town_meshes;
+    training_dummies;
+    trees;
+    tutorial;
+    ui;
+    verbs;
+    vignettes;
+    bog;
+    poi;
+    villagers;
+    vista;
+    visual;
+    viewer;
+    warlord;
+    water;
+    wayside;
+    wildlife;
+    wind;
+    window_icon;
+    worldmap;
+}
+
+#[cfg(feature = "switch")]
+mod switch;
+
+#[cfg(feature = "desktop")]
 use bevy::audio::{AudioPlugin, SpatialScale};
+#[cfg(feature = "desktop")]
 use bevy::prelude::*;
 
+#[cfg(feature = "desktop")]
 fn main() {
     // `FOREST_VIEW=<model>` boots the standalone model viewer (a minimal app — clean stage, no
     // world/gameplay/HUD) instead of the full game, for fast visual inspection of one model.
@@ -144,7 +164,10 @@ fn main() {
     // Screenshot harness window: render at a fixed high resolution + scale-factor 1.0 so the
     // captured PNG is crisp. (A small/low-res capture minifies the ground detail texture to a
     // washed-out pale mean — the real game at native res looks lush.)
-    let mut window = Window { title: "Warbell".into(), ..default() };
+    let mut window = Window {
+        title: "Warbell".into(),
+        ..default()
+    };
     if std::env::var("FOREST_SHOT").is_ok() {
         window.resolution =
             bevy::window::WindowResolution::new(1920, 1080).with_scale_factor_override(1.0);
@@ -179,7 +202,10 @@ fn main() {
                 // Shrink the world→audio distance scale so spatial falloff is gentle enough
                 // that animals within `audio::AUDIBLE_RANGE` are actually audible (at scale
                 // 1.0 a 30-unit distance is near-silent). Tune alongside per-species volume.
-                .set(AudioPlugin { default_spatial_scale: SpatialScale::new(0.15), ..default() }),
+                .set(AudioPlugin {
+                    default_spatial_scale: SpatialScale::new(0.15),
+                    ..default()
+                }),
         )
         // Split across two calls: a single tuple of all of these exceeds the arity the
         // `Plugins` trait is implemented for (≤15).
@@ -189,9 +215,9 @@ fn main() {
             tree_ui::TreeUiPlugin,       // the War Table upgrade-tree graph panel (U / keep E)
             inventory::InventoryPlugin,  // bag + buffs + pickup toasts (quick-bar Q/Z/X/C)
             verbs::VerbsPlugin,          // biome verbs: ore mining (HeroSwing) → stone
-            defenses::DefensePlugin,     // towers/archers/ballista/shrine + war bell (upgrade-gated)
+            defenses::DefensePlugin, // towers/archers/ballista/shrine + war bell (upgrade-gated)
             succession::SuccessionPlugin, // bloodline heir pool: fall → next heir; empty → Defeat
-            orbs::OrbsPlugin,            // reward orbs (gold/xp motes) from kills
+            orbs::OrbsPlugin,        // reward orbs (gold/xp motes) from kills
             scene::ScenePlugin,
             terrain::TerrainPlugin, // registers the terrain material
             water::WaterPlugin,     // registers the water material
@@ -207,12 +233,12 @@ fn main() {
         .add_plugins(fish::FishPlugin) // fish that glide under water near the hero + occasionally leap
         .add_plugins((
             wind::WindPlugin,
-            wildlife::WildlifePlugin,   // ambient animals: wander/graze/startle + limb anim
-            audio::GameAudioPlugin,     // event-driven SFX/voice/music/ambience (wav feature on)
-            castle::CastlePlugin,       // central castle (built in worldmap) + chimney smoke
-            orks::OrksPlugin,           // camp warbands: idle/patrol AI + biped limb anim
+            wildlife::WildlifePlugin, // ambient animals: wander/graze/startle + limb anim
+            audio::GameAudioPlugin,   // event-driven SFX/voice/music/ambience (wav feature on)
+            castle::CastlePlugin,     // central castle (built in worldmap) + chimney smoke
+            orks::OrksPlugin,         // camp warbands: idle/patrol AI + biped limb anim
             projectile::ProjectilePlugin, // shaman homing bolts (drains BoltSpawns)
-            camps::CampsPlugin,         // ork camps (built in worldmap): campfire flicker + smoke
+            camps::CampsPlugin,       // ork camps (built in worldmap): campfire flicker + smoke
             villagers::VillagersPlugin, // castle townsfolk: idle/stroll AI + biped limb anim
             debug_panel::DebugPanelPlugin, // live egui tuning panel (toggle: F1)
             controls::ControlsPlugin,
@@ -220,7 +246,7 @@ fn main() {
             player::PlayerPlugin, // playable knight: locomotion + follow-cam (` toggles free-roam)
             hud::HudPlugin,       // minimal HP + block-stamina bars
             combat_fx::CombatFxPlugin, // floating numbers, ork HP bars/hurt-flash, hero hit feedback
-            siege::SiegePlugin,   // night-wave assault: phases, spawn ring, invader AI, keep HP
+            siege::SiegePlugin, // night-wave assault: phases, spawn ring, invader AI, keep HP
         ))
         .add_plugins((
             boats::BoatsPlugin, // background sailboats drifting on the ocean
@@ -234,18 +260,18 @@ fn main() {
             landmarks::LandmarksPlugin, // landmark POIs: discovery caches + shrine buffs + beacons
             footstep_fx::FootstepFxPlugin, // dust puffs / water ripples under the hero's feet
             interaction::InteractionPlugin, // contextual E (keep→upgrades, merchant→shop, bell→night)
-            debug_stats::DebugStatsPlugin, // read-only perf/state telemetry overlay (toggle: F2)
-            quality::QualityPlugin, // explicit Low/High graphics presets (set in Settings)
-            subtitles::SubtitlePlugin, // bottom-centre captions for spoken villager lines
-            tutorial::TutorialPlugin, // tabbed "How to Play" help panel (toggle: H)
+            debug_stats::DebugStatsPlugin,  // read-only perf/state telemetry overlay (toggle: F2)
+            quality::QualityPlugin,         // explicit Low/High graphics presets (set in Settings)
+            subtitles::SubtitlePlugin,      // bottom-centre captions for spoken villager lines
+            tutorial::TutorialPlugin,       // tabbed "How to Play" help panel (toggle: H)
         ))
         .add_plugins((
-            nightsky::NightSkyPlugin, // stars + moon dome that fade in after dark
+            nightsky::NightSkyPlugin,        // stars + moon dome that fade in after dark
             firelight::FireLightPlugin, // flickering point-lights on campfires + torches (night)
-            shutters::ShutterPlugin, // house window shutters swing shut at dusk (curfew read)
-            banner::BannerPlugin, // fluttering cloth flags (keep spire, towers, ork camps)
+            shutters::ShutterPlugin,    // house window shutters swing shut at dusk (curfew read)
+            banner::BannerPlugin,       // fluttering cloth flags (keep spire, towers, ork camps)
             aftermath::AftermathPlugin, // persistent battle traces (stains, gear, scorches)
-            town::TownPlugin, // city-building: plots, build menu, economy, burn/repair
+            town::TownPlugin,           // city-building: plots, build menu, economy, burn/repair
             lumberjack::LumberjackPlugin, // woodcutters fell real trees (safe zone + threat sense)
             miner::MinerPlugin, // stone miners work real boulders + cart the stone home (ranges far)
             savegame::SaveGamePlugin, // dawn autosave + Continue/New Game (one slot)
@@ -254,7 +280,7 @@ fn main() {
             castle_decor::CastleDecorPlugin, // courtyard dressing + upgrade-bought set pieces
             ork_fortress::OrkFortressPlugin, // Gnashfang Hold + the Blight: fortress, patrols, hero-firing towers
             cinematic::CinematicPlugin, // keyframed camera paths for trailer shots (FOREST_SHOT_ID)
-            build_fx::BuildFxPlugin, // construction pop-in + dust when structures raise
+            build_fx::BuildFxPlugin,    // construction pop-in + dust when structures raise
         ))
         .add_plugins((
             scenes::ScenesPlugin, // hand-staged looped trailer tableaus (F1 Director → Scenes)
@@ -265,7 +291,7 @@ fn main() {
             boss::BossPlugin, // Biome Wardens: per-biome world bosses + boon rewards + reward dialog
             warlord::WarlordPlugin, // the Warlord of Gnashfang Hold: the final boss + win condition
             mainmenu::MainMenuPlugin, // title-screen ambiance: orbit cam + dusk + embers/fireflies + credits
-            loading::LoadingPlugin, // branded boot veil over the first ~1s blank frame
+            loading::LoadingPlugin,   // branded boot veil over the first ~1s blank frame
             trees::TreeDebugPlugin, // FOREST_TREELINE="x,z" parks one of each tree kind for model shots
             hints::HintsPlugin, // bottom-right affordance toasts: spend/equip nudges (Prep-only)
             quest::QuestPlugin, // tutorial quest chain: right-center tracker + J explainer card
@@ -302,4 +328,14 @@ fn main() {
         // it. Standalone — the tuples above are at the `Plugins` arity-15 cap.
         .add_plugins(snowman::SnowmanPlugin)
         .run();
+}
+
+#[cfg(all(feature = "switch", not(feature = "desktop")))]
+fn main() {
+    switch::run();
+}
+
+#[cfg(not(any(feature = "desktop", feature = "switch")))]
+fn main() {
+    eprintln!("enable either the `desktop` or `switch` feature");
 }
