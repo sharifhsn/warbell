@@ -1,0 +1,5 @@
+{
+  "canonical_wgsl_sha256": "53f1119475cf01ec2e8c0ce32ed9550d8d128c5a9df9522a084ae5d391214605",
+  "vertex": { "entry_point": "vs_main", "sha256": "6c545e703d8e5e39515349ace0ca522167b1ce68c0731abb2b4b699d54438a57" },
+  "fragment": { "entry_point": "fs_main", "sha256": "6a7ca2024b5d00955321a4e09b9f972b202fca956de6b32eee6b79aa595cbddb" }
+}

@@ -111,6 +111,7 @@ desktop_modules! {
     savegame;
     scenes;
     scene;
+    shader_proof;
     separation;
     shutters;
     siege;
@@ -145,6 +146,8 @@ desktop_modules! {
 }
 
 #[cfg(feature = "switch")]
+mod deko_provider;
+#[cfg(feature = "switch")]
 mod switch;
 
 #[cfg(feature = "desktop")]
@@ -154,6 +157,11 @@ use bevy::prelude::*;
 
 #[cfg(feature = "desktop")]
 fn main() {
+    if cfg!(feature = "shader-proof-capture") {
+        shader_proof::run_capture();
+        return;
+    }
+
     // `FOREST_VIEW=<model>` boots the standalone model viewer (a minimal app — clean stage, no
     // world/gameplay/HUD) instead of the full game, for fast visual inspection of one model.
     if std::env::var("FOREST_VIEW").is_ok() {

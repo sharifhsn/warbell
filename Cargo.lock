@@ -5833,6 +5833,7 @@ dependencies = [
  "portable-atomic",
  "profiling",
  "raw-window-handle",
+ "sha2",
  "smallvec",
  "static_assertions",
  "wasm-bindgen",

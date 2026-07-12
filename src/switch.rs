@@ -14,6 +14,8 @@ use bevy::{
     tasks::tick_global_task_pools_on_main_thread,
     window::{PrimaryWindow, Window, WindowPlugin, WindowResolution},
 };
+#[cfg(target_os = "horizon")]
+use std::sync::Arc;
 // ABI verified against libnx's `switch/runtime/pad.h` and `switch.h` from the
 // devkitPro distribution used by the NRO build script.
 mod nx {
@@ -189,6 +191,7 @@ pub fn run() {
     app.insert_resource(SwitchGraphicsConfig::default())
         .add_plugins(
             DefaultPlugins
+                .set(render_plugin())
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         resolution: WindowResolution::new(1280, 720),
@@ -212,6 +215,23 @@ pub fn run() {
     if exit.is_error() {
         eprintln!("Warbell exited with {exit:?}");
     }
+}
+
+#[cfg(target_os = "horizon")]
+fn render_plugin() -> bevy::render::RenderPlugin {
+    bevy::render::RenderPlugin {
+        render_creation: bevy::render::settings::WgpuSettings {
+            deko3d_wgsl_artifact_provider: Some(Arc::new(crate::deko_provider::WarbellProofProvider)),
+            ..default()
+        }
+        .into(),
+        ..default()
+    }
+}
+
+#[cfg(not(target_os = "horizon"))]
+fn render_plugin() -> bevy::render::RenderPlugin {
+    default()
 }
 
 fn horizon_runner(mut app: App) -> AppExit {
