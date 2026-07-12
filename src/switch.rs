@@ -208,6 +208,7 @@ pub fn run() {
                     ..default()
                 }),
         )
+        .add_plugins(crate::shader_proof::ShaderProofPlugin)
         .init_resource::<PreviousPad>()
         .set_runner(horizon_runner);
     println!("[warbell-switch] phase=app_run");
