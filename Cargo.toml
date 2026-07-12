@@ -103,6 +103,8 @@ desktop = [
     "dep:winit",
 ]
 profiling = ["bevy/trace_chrome"]
+# Captures final composed WGSL to `BEVY_SHADER_CAPTURE_DIR` (or `shader-captures`).
+shader-capture = ["desktop", "bevy/shader_capture"]
 # Switch builds opt into the local wgpu fork's Deko3D backend. Desktop-oriented
 # window icon, audio, and post-processing gates can be added under this feature
 # without changing the default desktop build.
