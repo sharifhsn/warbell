@@ -178,11 +178,14 @@ impl Default for SwitchGraphicsConfig {
 }
 
 pub fn run() {
+    println!("[warbell-switch] phase=romfs_mount_begin");
     let mount_result = unsafe { nx::romfs_init() };
     if mount_result != 0 {
         eprintln!("failed to mount RomFS: {mount_result:#010x}");
         return;
     }
+    println!("[warbell-switch] phase=romfs_mount_ok");
+    probe_romfs();
 
     // FileAssetReader appends AssetPlugin::file_path to this base while the
     // plugin is constructed. The NRO stages the tree at romfs:/assets/.
@@ -207,10 +210,13 @@ pub fn run() {
         )
         .init_resource::<PreviousPad>()
         .set_runner(horizon_runner);
+    println!("[warbell-switch] phase=app_run");
     let exit = app.run();
     let unmount_result = unsafe { nx::romfs_exit() };
     if unmount_result != 0 {
         eprintln!("failed to unmount RomFS: {unmount_result:#010x}");
+    } else {
+        println!("[warbell-switch] phase=romfs_unmount_ok");
     }
     if exit.is_error() {
         eprintln!("Warbell exited with {exit:?}");
@@ -221,7 +227,9 @@ pub fn run() {
 fn render_plugin() -> bevy::render::RenderPlugin {
     bevy::render::RenderPlugin {
         render_creation: bevy::render::settings::WgpuSettings {
-            deko3d_wgsl_artifact_provider: Some(Arc::new(crate::deko_provider::WarbellProofProvider)),
+            deko3d_wgsl_artifact_provider: Some(Arc::new(
+                crate::deko_provider::WarbellProofProvider,
+            )),
             ..default()
         }
         .into(),
@@ -240,6 +248,7 @@ fn horizon_runner(mut app: App) -> AppExit {
     unsafe { nx::pad_initialize_default(&mut pad) };
 
     prepare_app(&mut app);
+    println!("[warbell-switch] phase=plugins_ready");
 
     // WindowPlugin creates the primary window during plugin setup. It must be
     // available before the first applet grant, but the first app.update must
@@ -257,19 +266,30 @@ fn horizon_runner(mut app: App) -> AppExit {
         .expect("primary window missing");
     assert_eq!(window_component.resolution.physical_width(), 1280);
     assert_eq!(window_component.resolution.physical_height(), 720);
+    println!("[warbell-switch] phase=window_ready width=1280 height=720");
     let mut gamepad = None;
+    let mut frame = 0_u64;
     let exit = loop {
         if !unsafe { nx::appletMainLoop() } {
             break AppExit::Success;
         }
-        gamepad.get_or_insert_with(|| connect_gamepad(&mut app));
+        gamepad.get_or_insert_with(|| {
+            let gamepad = connect_gamepad(&mut app);
+            println!("[warbell-switch] phase=gamepad_connected entity={gamepad:?}");
+            gamepad
+        });
         unsafe { nx::padUpdate(&mut pad) };
         inject_input(&mut app, window, &pad);
         app.update();
+        frame += 1;
+        if matches!(frame, 1 | 60 | 300) {
+            println!("[warbell-switch] phase=frame frame={frame}");
+        }
         if let Some(exit) = app.should_exit() {
             break exit;
         }
     };
+    println!("[warbell-switch] phase=runner_exit frame={frame} exit={exit:?}");
 
     if let Some(gamepad) = gamepad {
         disconnect_gamepad(&mut app, gamepad);
@@ -279,6 +299,24 @@ fn horizon_runner(mut app: App) -> AppExit {
     // Deko3D's default window remains valid for the process lifetime.
     drop(app);
     exit
+}
+
+fn probe_romfs() {
+    for path in [
+        "romfs:/assets/fonts/Cinzel.ttf",
+        "romfs:/assets/ui/menu_backdrop.png",
+        "romfs:/assets/shaders/terrain.wgsl",
+    ] {
+        match std::fs::read(path) {
+            Ok(bytes) => println!(
+                "[warbell-switch] phase=asset_probe_ok path={path} bytes={}",
+                bytes.len()
+            ),
+            Err(error) => {
+                eprintln!("[warbell-switch] phase=asset_probe_error path={path} error={error}")
+            }
+        }
+    }
 }
 
 fn prepare_app(app: &mut App) {

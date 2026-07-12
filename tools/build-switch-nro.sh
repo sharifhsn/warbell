@@ -19,6 +19,7 @@ OUT_ELF="$OUT_DIR/tileworld_bevy_forest"
 OUT_NACP="$OUT_DIR/tileworld_bevy_forest.nacp"
 OUT_NRO="$OUT_DIR/warbell-switch.nro"
 CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"}
+LOCK_BACKUP="$OUT_ROOT/Cargo.lock.original"
 
 export DEVKITPRO DEVKITA64 CARGO_TARGET_DIR
 export PATH="$DEVKITPRO/tools/bin:$DEVKITA64/bin:$PATH"
@@ -90,6 +91,8 @@ require_command aarch64-none-elf-ar
 require_command aarch64-none-elf-nm
 require_command nacptool
 require_command elf2nro
+require_command git
+require_command shasum
 require_file "$ROOT_DIR/Cargo.lock"
 require_file "$TARGET_JSON"
 
@@ -160,15 +163,28 @@ RUSTFLAGS="$RUSTFLAGS -C link-arg=-Wl,--end-group"
 export RUSTFLAGS
 
 cd "$ROOT_DIR"
+cp Cargo.lock "$LOCK_BACKUP"
+trap 'cp "$LOCK_BACKUP" "$ROOT_DIR/Cargo.lock"' EXIT INT TERM
 cargo +nightly build --offline \
   --config "patch.crates-io.libc.path='$LIBC_PATCHED'" \
   --config "patch.crates-io.polling.path='$POLLING_PATCHED'" \
   --no-default-features --features switch \
   --target "$GENERATED_TARGET" \
   -Z json-target-spec -Z build-std=std,panic_abort
+cp "$LOCK_BACKUP" Cargo.lock
+trap - EXIT INT TERM
+rm -f "$LOCK_BACKUP"
 
 require_file "$OUT_ELF"
 nacptool --create Warbell miskibin 0.20.0 "$OUT_NACP"
 elf2nro "$OUT_ELF" "$OUT_NRO" --nacp="$OUT_NACP" --romfsdir="$ROMFS_STAGE"
 require_file "$OUT_NRO"
+shasum -a 256 "$OUT_NRO" > "$OUT_NRO.sha256"
+{
+  echo "warbell=$(git -C "$ROOT_DIR" rev-parse HEAD)"
+  echo "bevy=$(git -C "$ROOT_DIR/../bevy-deko3d-019" rev-parse HEAD)"
+  echo "wgpu=$(git -C "$ROOT_DIR/../wgpu-deko3d-29" rev-parse HEAD)"
+  echo "bytes=$(wc -c < "$OUT_NRO" | tr -d ' ')"
+  echo "sha256=$(cut -d ' ' -f 1 "$OUT_NRO.sha256")"
+} > "$OUT_NRO.build-info.txt"
 echo "built $OUT_NRO"

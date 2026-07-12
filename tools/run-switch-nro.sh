@@ -4,6 +4,7 @@ set -eu
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 DEVKITPRO=${DEVKITPRO:-/tmp/devkitpro-switch1/opt/devkitpro}
 NRO=${NRO:-$ROOT_DIR/target/switch-nro/cargo-target/horizon-newlib-gcc/debug/warbell-switch.nro}
+LOG_DIR=${LOG_DIR:-$ROOT_DIR/target/switch-nro/logs}
 
 if [ "$#" -ne 1 ]; then
   echo "usage: $0 <switch-ip>" >&2
@@ -19,4 +20,7 @@ if [ ! -f "$NRO" ]; then
   exit 1
 fi
 
-exec "$DEVKITPRO/tools/bin/nxlink" -s -a "$1" "$NRO"
+mkdir -p "$LOG_DIR"
+LOG="$LOG_DIR/nxlink-$(date +%Y%m%d-%H%M%S).log"
+echo "logging nxlink output to $LOG"
+"$DEVKITPRO/tools/bin/nxlink" -s -a "$1" "$NRO" 2>&1 | tee "$LOG"
