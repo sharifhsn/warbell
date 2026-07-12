@@ -1,6 +1,8 @@
 use bevy::{
+    asset::{io::Reader, AssetLoader, AssetServer, LoadContext, LoadState},
     prelude::*,
     render::{
+        extract_resource::{ExtractResource, ExtractResourcePlugin},
         Render, RenderApp, RenderStartup, RenderSystems,
         render_resource::{
             FragmentState, LoadOp, Operations, PipelineCache, RenderPassColorAttachment,
@@ -9,6 +11,7 @@ use bevy::{
         renderer::{RenderDevice, RenderQueue},
         view::window::ExtractedWindows,
     },
+    reflect::TypePath,
 };
 
 #[cfg(feature = "shader-proof-capture")]
@@ -49,6 +52,91 @@ pub fn run_capture() {
 
 pub struct ShaderProofPlugin;
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Resource)]
+pub struct ProofInputState {
+    left_stick: Vec2,
+    action_pressed: bool,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Resource)]
+struct ExtractedProofInput(ProofInputState);
+
+impl ExtractResource for ExtractedProofInput {
+    type Source = ProofInputState;
+
+    fn extract_resource(source: &Self::Source) -> Self {
+        Self(*source)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+enum ProofAssetState {
+    #[default]
+    NotLoaded,
+    Loading,
+    Loaded,
+    Failed,
+}
+
+impl ProofAssetState {
+    fn from_load_state(state: &LoadState) -> Self {
+        match state {
+            LoadState::NotLoaded => Self::NotLoaded,
+            LoadState::Loading => Self::Loading,
+            LoadState::Loaded => Self::Loaded,
+            LoadState::Failed(_) => Self::Failed,
+        }
+    }
+}
+
+#[derive(Resource)]
+struct ProofAssets {
+    png: Handle<Image>,
+    font: Handle<ProofFontAsset>,
+    wgsl: Handle<Shader>,
+}
+
+#[derive(Asset, TypePath)]
+struct ProofFontAsset;
+
+#[derive(Default, TypePath)]
+struct ProofFontLoader;
+
+impl AssetLoader for ProofFontLoader {
+    type Asset = ProofFontAsset;
+    type Settings = ();
+    type Error = std::io::Error;
+
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _settings: &(),
+        _load_context: &mut LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
+        if bytes.starts_with(&[0, 1, 0, 0]) || bytes.starts_with(b"OTTO") {
+            Ok(ProofFontAsset)
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "proof font has an unsupported signature",
+            ))
+        }
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["ttf", "otf"]
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Resource)]
+struct ProofAssetStates {
+    png: ProofAssetState,
+    font: ProofAssetState,
+    wgsl: ProofAssetState,
+}
+
 #[derive(Resource)]
 struct ProofShader(Handle<Shader>);
 
@@ -57,10 +145,25 @@ struct ProofPipeline(bevy::render::render_resource::CachedRenderPipelineId);
 
 impl Plugin for ShaderProofPlugin {
     fn build(&self, app: &mut App) {
+        app.init_asset::<ProofFontAsset>()
+            .init_asset_loader::<ProofFontLoader>();
+        let proof_assets = {
+            let asset_server = app.world().resource::<AssetServer>();
+            ProofAssets {
+                png: asset_server.load("ui/menu_backdrop.png"),
+                font: asset_server.load("fonts/Cinzel.ttf"),
+                wgsl: asset_server.load("shaders/terrain.wgsl"),
+            }
+        };
         let shader = app
             .world_mut()
             .resource_mut::<Assets<Shader>>()
             .add(Shader::from_wgsl(WGSL, "warbell_shader_proof.wgsl"));
+        app.insert_resource(proof_assets)
+            .init_resource::<ProofAssetStates>()
+            .init_resource::<ProofInputState>()
+            .add_plugins(ExtractResourcePlugin::<ExtractedProofInput>::default())
+            .add_systems(Update, track_proof_assets);
         app.sub_app_mut(RenderApp)
             .insert_resource(ProofShader(shader))
             .add_systems(RenderStartup, queue_proof_pipeline)
@@ -104,6 +207,7 @@ fn draw_proof(
     windows: Res<ExtractedWindows>,
     pipeline_cache: Res<PipelineCache>,
     proof_pipeline: Res<ProofPipeline>,
+    input: Res<ExtractedProofInput>,
     render_device: Res<RenderDevice>,
     render_queue: Res<RenderQueue>,
 ) {
@@ -126,12 +230,7 @@ fn draw_proof(
                 depth_slice: None,
                 resolve_target: None,
                 ops: Operations {
-                    load: LoadOp::Clear(wgpu::Color {
-                        r: 0.02,
-                        g: 0.08,
-                        b: 0.02,
-                        a: 1.0,
-                    }),
+                    load: LoadOp::Clear(proof_clear_color(input.0)),
                     store: StoreOp::Store,
                 },
             })],
@@ -144,6 +243,95 @@ fn draw_proof(
         pass.draw(0..3, 0..1);
     }
     render_queue.submit([encoder.finish()]);
+}
+
+pub fn set_switch_input(world: &mut World, left_stick: Vec2, action_pressed: bool) {
+    let next = ProofInputState {
+        left_stick,
+        action_pressed,
+    };
+    let mut input = world.resource_mut::<ProofInputState>();
+    if *input != next {
+        *input = next;
+    }
+}
+
+pub fn log_switch_frame_status(world: &World, frame: u64) {
+    let assets = world.resource::<ProofAssetStates>();
+    let input = world.resource::<ProofInputState>();
+    println!(
+        "[warbell-switch] phase=frame frame={frame} asset_png={:?} asset_font={:?} asset_wgsl={:?} provider=embedded_dksh proof_input_x={:.3} proof_input_y={:.3} proof_action={} proof_assets_ready={}",
+        assets.png,
+        assets.font,
+        assets.wgsl,
+        input.left_stick.x,
+        input.left_stick.y,
+        input.action_pressed,
+        proof_assets_ready(*assets),
+    );
+}
+
+fn track_proof_assets(
+    asset_server: Res<AssetServer>,
+    assets: Res<ProofAssets>,
+    mut states: ResMut<ProofAssetStates>,
+) {
+    update_asset_state(
+        "png",
+        &mut states.png,
+        asset_server.get_load_state(&assets.png),
+    );
+    update_asset_state(
+        "font",
+        &mut states.font,
+        asset_server.get_load_state(&assets.font),
+    );
+    update_asset_state(
+        "wgsl",
+        &mut states.wgsl,
+        asset_server.get_load_state(&assets.wgsl),
+    );
+}
+
+fn update_asset_state(name: &str, current: &mut ProofAssetState, observed: Option<LoadState>) {
+    let observed = observed.unwrap_or(LoadState::NotLoaded);
+    let next = ProofAssetState::from_load_state(&observed);
+    if !asset_state_changed(*current, next) {
+        return;
+    }
+    *current = next;
+    match observed {
+        LoadState::Loaded => {
+            println!("[warbell-switch] phase=proof_asset_loaded asset={name}")
+        }
+        LoadState::Failed(error) => {
+            eprintln!("[warbell-switch] phase=proof_asset_failed asset={name} error={error}")
+        }
+        _ => println!("[warbell-switch] phase=proof_asset_state asset={name} state={next:?}"),
+    }
+}
+
+fn asset_state_changed(current: ProofAssetState, next: ProofAssetState) -> bool {
+    current != next
+}
+
+fn proof_assets_ready(states: ProofAssetStates) -> bool {
+    matches!(states.png, ProofAssetState::Loaded)
+        && matches!(states.font, ProofAssetState::Loaded)
+        && matches!(states.wgsl, ProofAssetState::Loaded)
+}
+
+fn proof_clear_color(input: ProofInputState) -> wgpu::Color {
+    let stick = input.left_stick;
+    let x = stick.x as f64;
+    let y = stick.y as f64;
+    let action = if input.action_pressed { 0.55 } else { 0.0 };
+    wgpu::Color {
+        r: (0.02 + 0.25 * x.max(0.0) + action).min(1.0),
+        g: (0.08 + 0.25 * y.max(0.0) + action * 0.3).min(1.0),
+        b: (0.02 + 0.25 * (-x).max(0.0)).min(1.0),
+        a: 1.0,
+    }
 }
 
 #[cfg(feature = "shader-proof-capture")]
@@ -169,7 +357,12 @@ fn proof_draw_ready(
 
 #[cfg(test)]
 mod tests {
-    use super::proof_draw_ready;
+    use super::{
+        asset_state_changed, proof_clear_color, proof_draw_ready, ExtractedProofInput,
+        ProofAssetState, ProofInputState,
+    };
+    use bevy::prelude::Vec2;
+    use bevy::render::extract_resource::ExtractResource;
 
     #[test]
     fn draw_waits_for_window_view_and_pipeline() {
@@ -177,5 +370,41 @@ mod tests {
         assert!(!proof_draw_ready(false, true, true));
         assert!(!proof_draw_ready(true, false, true));
         assert!(!proof_draw_ready(true, true, false));
+    }
+
+    #[test]
+    fn asset_state_transitions_are_logged_once_per_change() {
+        assert!(asset_state_changed(
+            ProofAssetState::NotLoaded,
+            ProofAssetState::Loading
+        ));
+        assert!(asset_state_changed(
+            ProofAssetState::Loading,
+            ProofAssetState::Loaded
+        ));
+        assert!(!asset_state_changed(
+            ProofAssetState::Loaded,
+            ProofAssetState::Loaded
+        ));
+    }
+
+    #[test]
+    fn extracted_input_changes_the_clear_color() {
+        let idle = proof_clear_color(ProofInputState::default());
+        let active = proof_clear_color(ProofInputState {
+            left_stick: Vec2::new(1.0, 0.5),
+            action_pressed: true,
+        });
+        assert!(active.r > idle.r);
+        assert!(active.g > idle.g);
+    }
+
+    #[test]
+    fn extraction_preserves_controller_input_for_the_render_world() {
+        let source = ProofInputState {
+            left_stick: Vec2::new(-0.75, 0.25),
+            action_pressed: true,
+        };
+        assert_eq!(ExtractedProofInput::extract_resource(&source).0, source);
     }
 }

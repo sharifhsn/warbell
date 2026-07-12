@@ -284,7 +284,7 @@ fn horizon_runner(mut app: App) -> AppExit {
         app.update();
         frame += 1;
         if matches!(frame, 1 | 60 | 300) {
-            println!("[warbell-switch] phase=frame frame={frame}");
+            crate::shader_proof::log_switch_frame_status(app.world(), frame);
         }
         if let Some(exit) = app.should_exit() {
             break exit;
@@ -358,6 +358,7 @@ fn inject_input(app: &mut App, window: Entity, pad: &nx::PadState) {
     let buttons = pad.buttons_cur;
     let left_stick = stick(pad.sticks[0]);
     let right_stick = stick(pad.sticks[1]);
+    crate::shader_proof::set_switch_input(app.world_mut(), left_stick, buttons & A != 0);
     let (gamepad, previous) = {
         let world = app.world_mut();
         let gamepad = world.resource::<HorizonGamepad>().0;
