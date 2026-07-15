@@ -54,7 +54,10 @@ pub struct CombatJuice {
 
 impl Default for CombatJuice {
     fn default() -> Self {
-        CombatJuice { trauma: 0.0, fov_kick: 0.0 }
+        CombatJuice {
+            trauma: 0.0,
+            fov_kick: 0.0,
+        }
     }
 }
 
@@ -121,13 +124,19 @@ mod tests {
         j.add_shake(1.0);
         // The very first read (dt ~0) returns MAX_SHAKE · 1² = MAX_SHAKE.
         let s = j.step_shake(0.0);
-        assert!((s - MAX_SHAKE).abs() < 1e-9, "full trauma → MAX_SHAKE, got {s}");
+        assert!(
+            (s - MAX_SHAKE).abs() < 1e-9,
+            "full trauma → MAX_SHAKE, got {s}"
+        );
 
         // Trauma squared: at trauma 0.5 the offset is MAX_SHAKE · 0.25.
         let mut k = CombatJuice::new();
         k.trauma = 0.5;
         let s = k.step_shake(0.0);
-        assert!((s - MAX_SHAKE * 0.25).abs() < 1e-9, "trauma² curve, got {s}");
+        assert!(
+            (s - MAX_SHAKE * 0.25).abs() < 1e-9,
+            "trauma² curve, got {s}"
+        );
     }
 
     #[test]
@@ -135,7 +144,11 @@ mod tests {
         let mut j = CombatJuice::new();
         j.add_shake(0.8);
         j.add_shake(0.8); // would be 1.6 — clamps to 1.
-        assert!((j.trauma - 1.0).abs() < 1e-9, "trauma clamps to 1, got {}", j.trauma);
+        assert!(
+            (j.trauma - 1.0).abs() < 1e-9,
+            "trauma clamps to 1, got {}",
+            j.trauma
+        );
     }
 
     #[test]
@@ -149,7 +162,11 @@ mod tests {
             assert!(s <= last + 1e-9, "shake is monotonically non-increasing");
             last = s;
         }
-        assert_eq!(j.step_shake(1.0 / 60.0), 0.0, "shake settles to 0 within a second");
+        assert_eq!(
+            j.step_shake(1.0 / 60.0),
+            0.0,
+            "shake settles to 0 within a second"
+        );
     }
 
     #[test]
@@ -160,13 +177,19 @@ mod tests {
 
         // Clamp at FOV_MAX.
         j.add_fov_kick(100.0);
-        assert!((j.fov_kick - FOV_MAX).abs() < 1e-9, "FOV kick clamps to FOV_MAX");
+        assert!(
+            (j.fov_kick - FOV_MAX).abs() < 1e-9,
+            "FOV kick clamps to FOV_MAX"
+        );
 
         // Linear decay: one second sheds FOV_DECAY degrees (but not below 0).
         let mut k = CombatJuice::new();
         k.add_fov_kick(5.0);
         let after = k.step_fov(0.1); // 0.1 s → −2.2 deg
-        assert!((after - (5.0 - FOV_DECAY * 0.1)).abs() < 1e-9, "linear FOV decay, got {after}");
+        assert!(
+            (after - (5.0 - FOV_DECAY * 0.1)).abs() < 1e-9,
+            "linear FOV decay, got {after}"
+        );
     }
 
     #[test]

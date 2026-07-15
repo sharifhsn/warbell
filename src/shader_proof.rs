@@ -1,17 +1,17 @@
 use bevy::{
-    asset::{io::Reader, AssetLoader, AssetServer, LoadContext, LoadState},
+    asset::{AssetLoader, AssetServer, LoadContext, LoadState, io::Reader},
     prelude::*,
+    reflect::TypePath,
     render::{
+        RenderApp, RenderStartup,
         extract_resource::{ExtractResource, ExtractResourcePlugin},
-        Render, RenderApp, RenderStartup, RenderSystems,
         render_resource::{
-            FragmentState, LoadOp, Operations, PipelineCache, RenderPassColorAttachment,
-            RenderPassDescriptor, RenderPipelineDescriptor, StoreOp, TextureFormat, VertexState,
+            LoadOp, Operations, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
+            StoreOp,
         },
-        renderer::{RenderDevice, RenderQueue},
+        renderer::{PendingCommandBuffers, RenderDevice, RenderGraph, RenderGraphSystems},
         view::window::ExtractedWindows,
     },
-    reflect::TypePath,
 };
 
 #[cfg(feature = "shader-proof-capture")]
@@ -138,10 +138,7 @@ struct ProofAssetStates {
 }
 
 #[derive(Resource)]
-struct ProofShader(Handle<Shader>);
-
-#[derive(Resource)]
-struct ProofPipeline(bevy::render::render_resource::CachedRenderPipelineId);
+struct ProofPipeline(RenderPipeline);
 
 impl Plugin for ShaderProofPlugin {
     fn build(&self, app: &mut App) {
@@ -155,82 +152,90 @@ impl Plugin for ShaderProofPlugin {
                 wgsl: asset_server.load("shaders/terrain.wgsl"),
             }
         };
-        let shader = app
-            .world_mut()
-            .resource_mut::<Assets<Shader>>()
-            .add(Shader::from_wgsl(WGSL, "warbell_shader_proof.wgsl"));
         app.insert_resource(proof_assets)
             .init_resource::<ProofAssetStates>()
             .init_resource::<ProofInputState>()
             .add_plugins(ExtractResourcePlugin::<ExtractedProofInput>::default())
             .add_systems(Update, track_proof_assets);
         app.sub_app_mut(RenderApp)
-            .insert_resource(ProofShader(shader))
             .add_systems(RenderStartup, queue_proof_pipeline)
             .add_systems(
-                Render,
+                RenderGraph,
                 draw_proof
-                    .after(RenderSystems::PrepareViews)
-                    .before(RenderSystems::Render),
+                    .after(RenderGraphSystems::Render)
+                    .before(RenderGraphSystems::Submit),
             );
     }
 }
 
-fn queue_proof_pipeline(
-    mut commands: Commands,
-    shader: Res<ProofShader>,
-    pipeline_cache: Res<PipelineCache>,
-) {
-    let pipeline = pipeline_cache.queue_render_pipeline(RenderPipelineDescriptor {
-        label: Some(LABEL.into()),
-        vertex: VertexState {
-            shader: shader.0.clone(),
-            entry_point: Some("vs_main".into()),
-            ..default()
+fn queue_proof_pipeline(mut commands: Commands, render_device: Res<RenderDevice>) {
+    let shader = render_device
+        .wgpu_device()
+        .create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some(LABEL),
+            source: wgpu::ShaderSource::Wgsl(WGSL.into()),
+        });
+    let layout =
+        render_device
+            .wgpu_device()
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some(LABEL),
+                bind_group_layouts: &[],
+                immediate_size: 0,
+            });
+    let pipeline = render_device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some(LABEL),
+        layout: Some(&layout),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: Some("vs_main"),
+            buffers: &[],
+            compilation_options: default(),
         },
-        fragment: Some(FragmentState {
-            shader: shader.0.clone(),
-            entry_point: Some("fs_main".into()),
-            targets: vec![Some(bevy::render::render_resource::ColorTargetState {
-                format: TextureFormat::Rgba8Unorm,
+        primitive: default(),
+        depth_stencil: None,
+        multisample: default(),
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: Some("fs_main"),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: None,
-                write_mask: bevy::render::render_resource::ColorWrites::ALL,
+                write_mask: wgpu::ColorWrites::ALL,
             })],
-            ..default()
+            compilation_options: default(),
         }),
-        ..default()
+        multiview_mask: None,
+        cache: None,
     });
     commands.insert_resource(ProofPipeline(pipeline));
 }
 
 fn draw_proof(
     windows: Res<ExtractedWindows>,
-    pipeline_cache: Res<PipelineCache>,
     proof_pipeline: Res<ProofPipeline>,
-    input: Res<ExtractedProofInput>,
     render_device: Res<RenderDevice>,
-    render_queue: Res<RenderQueue>,
+    mut pending_command_buffers: ResMut<PendingCommandBuffers>,
 ) {
-    let window = windows
-        .primary
-        .and_then(|entity| windows.windows.get(&entity));
-    let view = window.and_then(|window| window.swap_chain_texture_view.as_ref());
-    let pipeline = pipeline_cache.get_render_pipeline(proof_pipeline.0);
-    if !proof_draw_ready(window.is_some(), view.is_some(), pipeline.is_some()) {
+    let primary = windows.primary;
+    let view = primary
+        .and_then(|entity| windows.windows.get(&entity))
+        .and_then(|window| window.swap_chain_texture_view.clone());
+    if !proof_draw_ready(primary.is_some(), view.is_some(), true) {
         return;
     }
     let view = view.expect("proof draw readiness requires a swap-chain view");
-    let pipeline = pipeline.expect("proof draw readiness requires a pipeline");
+    let pipeline = &proof_pipeline.0;
     let mut encoder = render_device.create_command_encoder(&default());
     {
         let mut pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: Some(LABEL),
             color_attachments: &[Some(RenderPassColorAttachment {
-                view,
+                view: &view,
                 depth_slice: None,
                 resolve_target: None,
                 ops: Operations {
-                    load: LoadOp::Clear(proof_clear_color(input.0)),
+                    load: LoadOp::Load,
                     store: StoreOp::Store,
                 },
             })],
@@ -240,9 +245,10 @@ fn draw_proof(
             multiview_mask: None,
         });
         pass.set_pipeline(pipeline);
+        pass.set_viewport(0.0, 0.0, 320.0, 180.0, 0.0, 1.0);
         pass.draw(0..3, 0..1);
     }
-    render_queue.submit([encoder.finish()]);
+    pending_command_buffers.push([encoder.finish()]);
 }
 
 pub fn set_switch_input(world: &mut World, left_stick: Vec2, action_pressed: bool) {
@@ -259,7 +265,7 @@ pub fn set_switch_input(world: &mut World, left_stick: Vec2, action_pressed: boo
 pub fn log_switch_frame_status(world: &World, frame: u64) {
     let assets = world.resource::<ProofAssetStates>();
     let input = world.resource::<ProofInputState>();
-    println!(
+    eprintln!(
         "[warbell-switch] phase=frame frame={frame} asset_png={:?} asset_font={:?} asset_wgsl={:?} provider=embedded_dksh proof_input_x={:.3} proof_input_y={:.3} proof_action={} proof_assets_ready={}",
         assets.png,
         assets.font,
@@ -327,9 +333,9 @@ fn proof_clear_color(input: ProofInputState) -> wgpu::Color {
     let y = stick.y as f64;
     let action = if input.action_pressed { 0.55 } else { 0.0 };
     wgpu::Color {
-        r: (0.02 + 0.25 * x.max(0.0) + action).min(1.0),
+        r: (0.55 + 0.25 * x.max(0.0) + action).min(1.0),
         g: (0.08 + 0.25 * y.max(0.0) + action * 0.3).min(1.0),
-        b: (0.02 + 0.25 * (-x).max(0.0)).min(1.0),
+        b: (0.08 + 0.25 * (-x).max(0.0)).min(1.0),
         a: 1.0,
     }
 }
@@ -358,8 +364,8 @@ fn proof_draw_ready(
 #[cfg(test)]
 mod tests {
     use super::{
-        asset_state_changed, proof_clear_color, proof_draw_ready, ExtractedProofInput,
-        ProofAssetState, ProofInputState,
+        ExtractedProofInput, ProofAssetState, ProofInputState, asset_state_changed,
+        proof_clear_color, proof_draw_ready,
     };
     use bevy::prelude::Vec2;
     use bevy::render::extract_resource::ExtractResource;

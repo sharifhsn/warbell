@@ -70,8 +70,14 @@ mod tests {
         // A nearby tile a few steps south, also snapped onto open ground.
         let goal = find_spawn_near(start.0, start.1 + 6.0, 8);
 
-        let start_pt = PathPoint { x: start.0, z: start.1 };
-        let goal_pt = PathPoint { x: goal.0, z: goal.1 };
+        let start_pt = PathPoint {
+            x: start.0,
+            z: start.1,
+        };
+        let goal_pt = PathPoint {
+            x: goal.0,
+            z: goal.1,
+        };
         let path = find_path(&g, start_pt, goal_pt, 800);
 
         assert!(

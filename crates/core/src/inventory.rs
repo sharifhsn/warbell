@@ -212,37 +212,141 @@ impl ItemDef {
     pub fn icon_spec(&self) -> IconSpec {
         // A few id-specific recipes first (the bespoke icons the brief calls for).
         match self.id {
-            "apple" => return IconSpec { shape: IconShape::Apple, fg: (210, 50, 45), accent: (70, 150, 55) },
-            "marsh_herb" => return IconSpec { shape: IconShape::Herb, fg: (90, 165, 70), accent: (60, 120, 50) },
-            "croc_steak" => return IconSpec { shape: IconShape::Meat, fg: (170, 70, 65), accent: (235, 220, 200) },
-            "elk_jerky" => return IconSpec { shape: IconShape::Meat, fg: (140, 78, 50), accent: (235, 220, 200) },
-            "meat" => return IconSpec { shape: IconShape::Meat, fg: (175, 80, 72), accent: (235, 220, 200) },
-            "potion" => return IconSpec { shape: IconShape::Potion, fg: (210, 60, 90), accent: (180, 140, 90) },
-            "mercenary_contract" => return IconSpec { shape: IconShape::Scroll, fg: (215, 195, 150), accent: (150, 120, 80) },
+            "apple" => {
+                return IconSpec {
+                    shape: IconShape::Apple,
+                    fg: (210, 50, 45),
+                    accent: (70, 150, 55),
+                };
+            }
+            "marsh_herb" => {
+                return IconSpec {
+                    shape: IconShape::Herb,
+                    fg: (90, 165, 70),
+                    accent: (60, 120, 50),
+                };
+            }
+            "croc_steak" => {
+                return IconSpec {
+                    shape: IconShape::Meat,
+                    fg: (170, 70, 65),
+                    accent: (235, 220, 200),
+                };
+            }
+            "elk_jerky" => {
+                return IconSpec {
+                    shape: IconShape::Meat,
+                    fg: (140, 78, 50),
+                    accent: (235, 220, 200),
+                };
+            }
+            "meat" => {
+                return IconSpec {
+                    shape: IconShape::Meat,
+                    fg: (175, 80, 72),
+                    accent: (235, 220, 200),
+                };
+            }
+            "potion" => {
+                return IconSpec {
+                    shape: IconShape::Potion,
+                    fg: (210, 60, 90),
+                    accent: (180, 140, 90),
+                };
+            }
+            "mercenary_contract" => {
+                return IconSpec {
+                    shape: IconShape::Scroll,
+                    fg: (215, 195, 150),
+                    accent: (150, 120, 80),
+                };
+            }
             // The three buff charms — tinted by their buff hue (resist blue, power red,
             // haste cyan/green) so they read apart on the QuickBar.
-            "fur" => return IconSpec { shape: IconShape::Orb, fg: (150, 120, 90), accent: (220, 200, 180) },
-            "venom" => return IconSpec { shape: IconShape::Orb, fg: (110, 175, 70), accent: (210, 235, 180) },
-            "goat_charm" => return IconSpec { shape: IconShape::Orb, fg: (215, 185, 80), accent: (250, 235, 170) },
+            "fur" => {
+                return IconSpec {
+                    shape: IconShape::Orb,
+                    fg: (150, 120, 90),
+                    accent: (220, 200, 180),
+                };
+            }
+            "venom" => {
+                return IconSpec {
+                    shape: IconShape::Orb,
+                    fg: (110, 175, 70),
+                    accent: (210, 235, 180),
+                };
+            }
+            "goat_charm" => {
+                return IconSpec {
+                    shape: IconShape::Orb,
+                    fg: (215, 185, 80),
+                    accent: (250, 235, 170),
+                };
+            }
             // The top-tier rim gear — distinct hues from the base swords/plate.
-            "blade_frost" => return IconSpec { shape: IconShape::Blade, fg: (170, 210, 240), accent: (90, 110, 140) },
-            "dragon_plate" => return IconSpec { shape: IconShape::Shield, fg: (70, 120, 80), accent: (40, 70, 50) },
-            "sword_gold" => return IconSpec { shape: IconShape::Blade, fg: (235, 205, 90), accent: (150, 110, 50) },
-            "gold_armor" => return IconSpec { shape: IconShape::Shield, fg: (220, 185, 90), accent: (150, 115, 50) },
+            "blade_frost" => {
+                return IconSpec {
+                    shape: IconShape::Blade,
+                    fg: (170, 210, 240),
+                    accent: (90, 110, 140),
+                };
+            }
+            "dragon_plate" => {
+                return IconSpec {
+                    shape: IconShape::Shield,
+                    fg: (70, 120, 80),
+                    accent: (40, 70, 50),
+                };
+            }
+            "sword_gold" => {
+                return IconSpec {
+                    shape: IconShape::Blade,
+                    fg: (235, 205, 90),
+                    accent: (150, 110, 50),
+                };
+            }
+            "gold_armor" => {
+                return IconSpec {
+                    shape: IconShape::Shield,
+                    fg: (220, 185, 90),
+                    accent: (150, 115, 50),
+                };
+            }
             _ => {}
         }
         // Fallbacks grouped by kind.
         match self.kind {
-            ItemKind::Weapon => IconSpec { shape: IconShape::Blade, fg: (190, 195, 205), accent: (120, 90, 55) },
-            ItemKind::Armor => IconSpec { shape: IconShape::Shield, fg: (150, 155, 165), accent: (90, 95, 105) },
-            ItemKind::Token => IconSpec { shape: IconShape::Scroll, fg: (215, 195, 150), accent: (150, 120, 80) },
+            ItemKind::Weapon => IconSpec {
+                shape: IconShape::Blade,
+                fg: (190, 195, 205),
+                accent: (120, 90, 55),
+            },
+            ItemKind::Armor => IconSpec {
+                shape: IconShape::Shield,
+                fg: (150, 155, 165),
+                accent: (90, 95, 105),
+            },
+            ItemKind::Token => IconSpec {
+                shape: IconShape::Scroll,
+                fg: (215, 195, 150),
+                accent: (150, 120, 80),
+            },
             ItemKind::Consumable => {
                 // A consumable with no bespoke spec: a buff item → tinted orb, a healer
                 // → a loaf/food round.
                 if self.buff.is_some() {
-                    IconSpec { shape: IconShape::Orb, fg: (150, 130, 200), accent: (220, 210, 245) }
+                    IconSpec {
+                        shape: IconShape::Orb,
+                        fg: (150, 130, 200),
+                        accent: (220, 210, 245),
+                    }
                 } else {
-                    IconSpec { shape: IconShape::Food, fg: (200, 160, 95), accent: (150, 110, 60) }
+                    IconSpec {
+                        shape: IconShape::Food,
+                        fg: (200, 160, 95),
+                        accent: (150, 110, 60),
+                    }
                 }
             }
         }
@@ -252,14 +356,26 @@ impl ItemDef {
 /// The full item table (port of `ITEM_DEFS`). Kept as a slice of definitions;
 /// `item_def(id)` resolves an id, mirroring the TS `ITEM_DEFS[id]` lookup.
 pub static ITEM_DEFS: &[ItemDef] = &[
-    ItemDef::new("bread", "Bread", "🍞", ItemKind::Consumable).heal(15.0).stack(),
-    ItemDef::new("potion", "Health Potion", "🧪", ItemKind::Consumable).heal(40.0).stack(),
-    ItemDef::new("feast", "Tavern Feast", "🍖", ItemKind::Consumable).heal(100.0).stack(),
+    ItemDef::new("bread", "Bread", "🍞", ItemKind::Consumable)
+        .heal(15.0)
+        .stack(),
+    ItemDef::new("potion", "Health Potion", "🧪", ItemKind::Consumable)
+        .heal(40.0)
+        .stack(),
+    ItemDef::new("feast", "Tavern Feast", "🍖", ItemKind::Consumable)
+        .heal(100.0)
+        .stack(),
     // Gear stacks too: duplicate weapons/armor collapse into one bag cell with a count instead of
     // each taking its own slot (equipping pulls one off the stack; the spares can be sold/dropped).
-    ItemDef::new("sword_iron", "Iron Sword", "⚔️", ItemKind::Weapon).dmg(11.0).stack(),
-    ItemDef::new("sword_gold", "Golden Blade", "🗡️", ItemKind::Weapon).dmg(21.0).stack(),
-    ItemDef::new("axe", "Battle Axe", "🪓", ItemKind::Weapon).dmg(15.0).stack(),
+    ItemDef::new("sword_iron", "Iron Sword", "⚔️", ItemKind::Weapon)
+        .dmg(11.0)
+        .stack(),
+    ItemDef::new("sword_gold", "Golden Blade", "🗡️", ItemKind::Weapon)
+        .dmg(21.0)
+        .stack(),
+    ItemDef::new("axe", "Battle Axe", "🪓", ItemKind::Weapon)
+        .dmg(15.0)
+        .stack(),
     // ─── Biome creature drops ─────────────────────────────────────
     ItemDef::new("fur", "Thick Fur", "🧥", ItemKind::Consumable)
         .stack()
@@ -270,10 +386,16 @@ pub static ITEM_DEFS: &[ItemDef] = &[
     ItemDef::new("goat_charm", "Goat Charm", "🔔", ItemKind::Consumable)
         .stack()
         .buff(BuffKind::Haste, 12000.0, 1.3),
-    ItemDef::new("croc_steak", "Croc Steak", "🥩", ItemKind::Consumable).heal(70.0).stack(),
-    ItemDef::new("elk_jerky", "Elk Jerky", "🍖", ItemKind::Consumable).heal(35.0).stack(),
+    ItemDef::new("croc_steak", "Croc Steak", "🥩", ItemKind::Consumable)
+        .heal(70.0)
+        .stack(),
+    ItemDef::new("elk_jerky", "Elk Jerky", "🍖", ItemKind::Consumable)
+        .heal(35.0)
+        .stack(),
     // Generic meat — guaranteed off every wild-animal kill (see `verbs::animal_drops`). A modest heal.
-    ItemDef::new("meat", "Raw Meat", "🍖", ItemKind::Consumable).heal(25.0).stack(),
+    ItemDef::new("meat", "Raw Meat", "🍖", ItemKind::Consumable)
+        .heal(25.0)
+        .stack(),
     // Foraged in the swamp — heal + resist poultice, tagged Food (the resist is a
     // bonus on eating; the tag decides where it shows, not what it does).
     ItemDef::new("marsh_herb", "Marsh Herb", "🌿", ItemKind::Consumable)
@@ -282,17 +404,42 @@ pub static ITEM_DEFS: &[ItemDef] = &[
         .buff(BuffKind::Resist, 14000.0, 0.6)
         .quick(QuickKind::Food),
     // Foraged in the western forest — a quick snack heal.
-    ItemDef::new("apple", "Forest Apple", "🍎", ItemKind::Consumable).heal(18.0).stack(),
-    ItemDef::new("stone_maul", "Stone Maul", "🔨", ItemKind::Weapon).dmg(18.0).stack(),
+    ItemDef::new("apple", "Forest Apple", "🍎", ItemKind::Consumable)
+        .heal(18.0)
+        .stack(),
+    ItemDef::new("stone_maul", "Stone Maul", "🔨", ItemKind::Weapon)
+        .dmg(18.0)
+        .stack(),
     // ─── Wearable armor ───────────────────────────────────────────
-    ItemDef::new("leather_armor", "Leather Armor", "🦺", ItemKind::Armor).def(0.11).stack(),
-    ItemDef::new("iron_armor", "Iron Cuirass", "🛡️", ItemKind::Armor).def(0.2).stack(),
-    ItemDef::new("gold_armor", "Gilded Plate", "👑", ItemKind::Armor).def(0.28).stack(),
+    ItemDef::new("leather_armor", "Leather Armor", "🦺", ItemKind::Armor)
+        .def(0.11)
+        .stack(),
+    ItemDef::new("iron_armor", "Iron Cuirass", "🛡️", ItemKind::Armor)
+        .def(0.2)
+        .stack(),
+    ItemDef::new("gold_armor", "Gilded Plate", "👑", ItemKind::Armor)
+        .def(0.28)
+        .stack(),
     // ─── Rim-only top tier (frontier gradient) ────────────────────
-    ItemDef::new("blade_frost", "Frostfang Greatsword", "🗡️", ItemKind::Weapon).dmg(34.0).stack(),
-    ItemDef::new("dragon_plate", "Dragonscale Plate", "🐉", ItemKind::Armor).def(0.42).stack(),
+    ItemDef::new(
+        "blade_frost",
+        "Frostfang Greatsword",
+        "🗡️",
+        ItemKind::Weapon,
+    )
+    .dmg(34.0)
+    .stack(),
+    ItemDef::new("dragon_plate", "Dragonscale Plate", "🐉", ItemKind::Armor)
+        .def(0.42)
+        .stack(),
     // ─── Key items (tokens) ───────────────────────────────────────
-    ItemDef::new("mercenary_contract", "Mercenary Contract", "📜", ItemKind::Token).stack(),
+    ItemDef::new(
+        "mercenary_contract",
+        "Mercenary Contract",
+        "📜",
+        ItemKind::Token,
+    )
+    .stack(),
 ];
 
 /// Resolve an item id to its definition (the TS `ITEM_DEFS[id]`).
@@ -308,7 +455,9 @@ pub fn sell_value(id: &str) -> i64 {
     match d.kind {
         ItemKind::Weapon => 4 + (d.damage_bonus * 1.5).round() as i64,
         ItemKind::Armor => 4 + (d.defense * 60.0).round() as i64,
-        ItemKind::Consumable => 1 + (d.heal / 8.0).round() as i64 + if d.buff.is_some() { 3 } else { 0 },
+        ItemKind::Consumable => {
+            1 + (d.heal / 8.0).round() as i64 + if d.buff.is_some() { 3 } else { 0 }
+        }
         ItemKind::Token => 0,
     }
 }
@@ -342,7 +491,10 @@ pub struct Slot {
 
 impl Slot {
     fn empty() -> Self {
-        Slot { item_id: None, count: 0 }
+        Slot {
+            item_id: None,
+            count: 0,
+        }
     }
     fn clear(&mut self) {
         self.item_id = None;
@@ -414,7 +566,10 @@ impl Bag {
             return false;
         };
         if def.stackable
-            && let Some(existing) = self.bag.iter_mut().find(|s| s.item_id.as_deref() == Some(item_id))
+            && let Some(existing) = self
+                .bag
+                .iter_mut()
+                .find(|s| s.item_id.as_deref() == Some(item_id))
         {
             existing.count += count;
             return true;
@@ -449,7 +604,9 @@ impl Bag {
     pub fn coalesce(&mut self) {
         let mut first: Vec<(String, usize)> = Vec::new(); // (id, slot of its first stack)
         for i in 0..self.bag.len() {
-            let Some(id) = self.bag[i].item_id.clone() else { continue };
+            let Some(id) = self.bag[i].item_id.clone() else {
+                continue;
+            };
             if !item_def(&id).map(|d| d.stackable).unwrap_or(false) {
                 continue;
             }
@@ -500,7 +657,9 @@ impl Bag {
         match item_def(id) {
             Some(d) if matches!(d.kind, ItemKind::Weapon) => d.damage_bonus > self.weapon_bonus,
             // `armor_damage_mult` is `1 - defense`, so a better piece has a LOWER mult.
-            Some(d) if matches!(d.kind, ItemKind::Armor) => (1.0 - d.defense) < self.armor_damage_mult,
+            Some(d) if matches!(d.kind, ItemKind::Armor) => {
+                (1.0 - d.defense) < self.armor_damage_mult
+            }
             _ => false,
         }
     }
@@ -678,7 +837,9 @@ impl Bag {
         if def.kind != ItemKind::Consumable {
             return;
         }
-        let QuickKind::Buff(kind) = def.quick_of() else { return };
+        let QuickKind::Buff(kind) = def.quick_of() else {
+            return;
+        };
         let slot = match kind {
             BuffKind::Resist => 0,
             BuffKind::Power => 1,
@@ -701,7 +862,10 @@ impl Bag {
             return None;
         }
         if let Some(id) = self.quick_binds[slot].clone() {
-            let i = self.bag.iter().position(|s| s.item_id.as_deref() == Some(id.as_str()))?;
+            let i = self
+                .bag
+                .iter()
+                .position(|s| s.item_id.as_deref() == Some(id.as_str()))?;
             return self.consume_at(i);
         }
         let kind = quick_default_kind(slot)?;
@@ -716,7 +880,10 @@ impl Bag {
             return None;
         }
         if let Some(id) = self.quick_binds[slot].as_deref() {
-            return Some(QuickSlot { item_id: id.to_string(), count: self.count_item(id) });
+            return Some(QuickSlot {
+                item_id: id.to_string(),
+                count: self.count_item(id),
+            });
         }
         let kind = quick_default_kind(slot)?;
         self.buff_slot(kind)
@@ -872,7 +1039,10 @@ mod tests {
         assert_eq!(eff.heal, 15.0);
         assert_eq!(
             b.food_slot(),
-            Some(QuickSlot { item_id: "bread".into(), count: 1 })
+            Some(QuickSlot {
+                item_id: "bread".into(),
+                count: 1
+            })
         );
     }
 
@@ -885,7 +1055,10 @@ mod tests {
         b.eat_food(); // apple gone
         assert_eq!(
             b.food_slot(),
-            Some(QuickSlot { item_id: "feast".into(), count: 1 })
+            Some(QuickSlot {
+                item_id: "feast".into(),
+                count: 1
+            })
         );
     }
 
@@ -1094,7 +1267,13 @@ mod tests {
         b.coalesce();
         assert_eq!(b.count_item("dragon_plate"), 2);
         // Collapsed into a single cell.
-        assert_eq!(b.bag.iter().filter(|s| s.item_id.as_deref() == Some("dragon_plate")).count(), 1);
+        assert_eq!(
+            b.bag
+                .iter()
+                .filter(|s| s.item_id.as_deref() == Some("dragon_plate"))
+                .count(),
+            1
+        );
         assert_eq!(b.count_item("bread"), 2); // untouched single stack
     }
 
@@ -1102,11 +1281,20 @@ mod tests {
     #[test]
     fn stat_line_formats_per_kind() {
         assert_eq!(item_def("sword_iron").unwrap().stat_line(), "+11 attack");
-        assert_eq!(item_def("leather_armor").unwrap().stat_line(), "-11% damage taken");
+        assert_eq!(
+            item_def("leather_armor").unwrap().stat_line(),
+            "-11% damage taken"
+        );
         assert_eq!(item_def("bread").unwrap().stat_line(), "+15 HP");
-        assert_eq!(item_def("mercenary_contract").unwrap().stat_line(), "Key item");
+        assert_eq!(
+            item_def("mercenary_contract").unwrap().stat_line(),
+            "Key item"
+        );
         assert_eq!(item_def("fur").unwrap().stat_line(), "Resist 12s");
-        assert_eq!(item_def("marsh_herb").unwrap().stat_line(), "+30 HP, Resist 14s");
+        assert_eq!(
+            item_def("marsh_herb").unwrap().stat_line(),
+            "+30 HP, Resist 14s"
+        );
     }
 
     // ── icon spec (the procedural-icon recipe the game crate rasterises) ──
@@ -1116,18 +1304,39 @@ mod tests {
         // the herb a green sprig, the contract a tan scroll.
         let apple = item_def("apple").unwrap().icon_spec();
         assert_eq!(apple.shape, IconShape::Apple);
-        assert!(apple.fg.0 > apple.fg.1 && apple.fg.0 > apple.fg.2, "apple body reads red");
+        assert!(
+            apple.fg.0 > apple.fg.1 && apple.fg.0 > apple.fg.2,
+            "apple body reads red"
+        );
         assert!(apple.accent.1 > apple.accent.0, "apple leaf reads green");
-        assert_eq!(item_def("marsh_herb").unwrap().icon_spec().shape, IconShape::Herb);
-        assert_eq!(item_def("croc_steak").unwrap().icon_spec().shape, IconShape::Meat);
-        assert_eq!(item_def("potion").unwrap().icon_spec().shape, IconShape::Potion);
-        assert_eq!(item_def("mercenary_contract").unwrap().icon_spec().shape, IconShape::Scroll);
+        assert_eq!(
+            item_def("marsh_herb").unwrap().icon_spec().shape,
+            IconShape::Herb
+        );
+        assert_eq!(
+            item_def("croc_steak").unwrap().icon_spec().shape,
+            IconShape::Meat
+        );
+        assert_eq!(
+            item_def("potion").unwrap().icon_spec().shape,
+            IconShape::Potion
+        );
+        assert_eq!(
+            item_def("mercenary_contract").unwrap().icon_spec().shape,
+            IconShape::Scroll
+        );
 
         // Kind fallbacks: an un-bespoke weapon → a blade, armor → a shield, a plain
         // healer → a food round, a buff item → a tinted orb.
         assert_eq!(item_def("axe").unwrap().icon_spec().shape, IconShape::Blade);
-        assert_eq!(item_def("leather_armor").unwrap().icon_spec().shape, IconShape::Shield);
-        assert_eq!(item_def("bread").unwrap().icon_spec().shape, IconShape::Food);
+        assert_eq!(
+            item_def("leather_armor").unwrap().icon_spec().shape,
+            IconShape::Shield
+        );
+        assert_eq!(
+            item_def("bread").unwrap().icon_spec().shape,
+            IconShape::Food
+        );
         // `fur` is a buff consumable → an orb (bespoke), but the generic-buff fallback
         // also yields an orb; assert the kind-level path via a buff item without a
         // bespoke entry would be Orb too. (All buff items here are bespoke, so check
@@ -1259,10 +1468,22 @@ mod tests {
     fn quick_view_reports_pinned_id_and_count_for_the_hud() {
         let mut b = Bag::new();
         b.add("fur", 3); // pins Z, count 3
-        assert_eq!(b.quick_view(0), Some(QuickSlot { item_id: "fur".into(), count: 3 }));
+        assert_eq!(
+            b.quick_view(0),
+            Some(QuickSlot {
+                item_id: "fur".into(),
+                count: 3
+            })
+        );
         // Depleted but still pinned → count 0 (HUD greys it, keeps the icon).
         b.consume_item("fur", 3);
-        assert_eq!(b.quick_view(0), Some(QuickSlot { item_id: "fur".into(), count: 0 }));
+        assert_eq!(
+            b.quick_view(0),
+            Some(QuickSlot {
+                item_id: "fur".into(),
+                count: 0
+            })
+        );
         // Truly unbound with nothing of its kind → None (HUD draws the ghost).
         assert_eq!(b.quick_view(1), None);
     }

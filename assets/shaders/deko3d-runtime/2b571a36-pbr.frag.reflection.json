@@ -1,0 +1,82 @@
+{
+  "auto_bind_resources": true,
+  "coordinate_space": "adjusted",
+  "entry": "fragment",
+  "explicit_bindings": [],
+  "glsl_version": 460,
+  "immediates": [],
+  "immediates_binding": null,
+  "resources": [
+    {
+      "binding": 3,
+      "binding_map_target": 1,
+      "count": 1,
+      "group": 0,
+      "kind": "sampled_texture",
+      "name": "dt_lut_textureX_naga_oil_mod_XMJSXM6K7MNXXEZK7OBUXAZLMNFXGKOR2ORXW4ZLNMFYHA2LOM5PWY5LUL5RGS3TENFXGO4YX"
+    },
+    {
+      "binding": 4,
+      "binding_map_target": 1,
+      "count": 1,
+      "group": 0,
+      "kind": "sampler",
+      "name": "dt_lut_samplerX_naga_oil_mod_XMJSXM6K7MNXXEZK7OBUXAZLMNFXGKOR2ORXW4ZLNMFYHA2LOM5PWY5LUL5RGS3TENFXGO4YX"
+    },
+    {
+      "binding": 0,
+      "binding_map_target": 0,
+      "count": 1,
+      "group": 0,
+      "kind": "uniform_buffer",
+      "name": "view"
+    },
+    {
+      "binding": 1,
+      "binding_map_target": 0,
+      "count": 1,
+      "group": 0,
+      "kind": "sampled_texture",
+      "name": "hdr_texture"
+    },
+    {
+      "binding": 2,
+      "binding_map_target": 0,
+      "count": 1,
+      "group": 0,
+      "kind": "sampler",
+      "name": "hdr_sampler"
+    }
+  ],
+  "sampled_pairs": [
+    {
+      "glsl_combined_binding": 1,
+      "image": {
+        "binding": 3,
+        "group": 0,
+        "name": "dt_lut_textureX_naga_oil_mod_XMJSXM6K7MNXXEZK7OBUXAZLMNFXGKOR2ORXW4ZLNMFYHA2LOM5PWY5LUL5RGS3TENFXGO4YX"
+      },
+      "sampler": {
+        "binding": 4,
+        "group": 0,
+        "name": "dt_lut_samplerX_naga_oil_mod_XMJSXM6K7MNXXEZK7OBUXAZLMNFXGKOR2ORXW4ZLNMFYHA2LOM5PWY5LUL5RGS3TENFXGO4YX"
+      }
+    },
+    {
+      "glsl_combined_binding": 0,
+      "image": {
+        "binding": 1,
+        "group": 0,
+        "name": "hdr_texture"
+      },
+      "sampler": {
+        "binding": 2,
+        "group": 0,
+        "name": "hdr_sampler"
+      }
+    }
+  ],
+  "schema": "wgsl-to-dksh-reflection-v0",
+  "source": "/Users/sharif/Library/Application Support/Ryujinx/sdcard/switch/warbell-shaders/2b571a36a45133871328ad19c3aa30fe79f29ace18b6d9c1b2df85c6e43aca19-fragment-main.wgsl",
+  "stage": "fragment"
+}

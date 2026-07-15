@@ -31,7 +31,8 @@ pub const CAT_WANDER_RADIUS: f64 = 3.2;
 /// The four cat home anchors — base-map coords from `World.tsx` `CAT_HOMES`, shifted
 /// onto the enlarged map exactly like the TS `.map(shiftToCentre)`. Paired with the
 /// TS per-cat `seed` literals `[0.7, 2.1, 3.4, 5.6]`.
-pub const CAT_BASE_HOMES: [(f64, f64); 4] = [(72.0, 67.0), (50.0, 40.0), (66.0, 50.0), (80.0, 58.0)];
+pub const CAT_BASE_HOMES: [(f64, f64); 4] =
+    [(72.0, 67.0), (50.0, 40.0), (66.0, 50.0), (80.0, 58.0)];
 /// Per-cat seeds (TS `seed={[0.7, 2.1, 3.4, 5.6][i]}`).
 pub const CAT_SEEDS: [f64; 4] = [0.7, 2.1, 3.4, 5.6];
 
@@ -114,12 +115,52 @@ pub struct Flock {
 
 /// The five flocks from `Birds.tsx` `FLOCKS` (world coords, unchanged).
 pub const FLOCKS: [Flock; 5] = [
-    Flock { cx: -28.0, cy: 11.0, cz: 18.0, radius: 10.0, count: 5, speed: 0.32, phase: 0.0 },
-    Flock { cx: 24.0, cy: 12.0, cz: -22.0, radius: 12.0, count: 5, speed: 0.28, phase: 1.5 },
-    Flock { cx: 18.0, cy: 11.0, cz: 22.0, radius: 9.0, count: 4, speed: 0.36, phase: 3.2 },
+    Flock {
+        cx: -28.0,
+        cy: 11.0,
+        cz: 18.0,
+        radius: 10.0,
+        count: 5,
+        speed: 0.32,
+        phase: 0.0,
+    },
+    Flock {
+        cx: 24.0,
+        cy: 12.0,
+        cz: -22.0,
+        radius: 12.0,
+        count: 5,
+        speed: 0.28,
+        phase: 1.5,
+    },
+    Flock {
+        cx: 18.0,
+        cy: 11.0,
+        cz: 22.0,
+        radius: 9.0,
+        count: 4,
+        speed: 0.36,
+        phase: 3.2,
+    },
     // over the castle
-    Flock { cx: 6.0, cy: 13.0, cz: -2.0, radius: 13.0, count: 5, speed: 0.24, phase: 2.1 },
-    Flock { cx: -10.0, cy: 10.0, cz: -20.0, radius: 8.0, count: 4, speed: 0.4, phase: 4.6 },
+    Flock {
+        cx: 6.0,
+        cy: 13.0,
+        cz: -2.0,
+        radius: 13.0,
+        count: 5,
+        speed: 0.24,
+        phase: 2.1,
+    },
+    Flock {
+        cx: -10.0,
+        cy: 10.0,
+        cz: -20.0,
+        radius: 8.0,
+        count: 4,
+        speed: 0.4,
+        phase: 4.6,
+    },
 ];
 
 /// Total bird count across all flocks (TS `TOTAL`).
@@ -147,7 +188,12 @@ pub fn bird_layout() -> Vec<BirdMeta> {
         for i in 0..f.count {
             let ring_r = f.radius * (0.9 + (i % 3) as f64 * 0.06);
             let ring_y = ((i as f64 * 1.7 + fi as f64 * 0.3).sin() * 0.5 + 0.5) * 1.4 - 0.7;
-            list.push(BirdMeta { fi, ii: i, ring_r, ring_y });
+            list.push(BirdMeta {
+                fi,
+                ii: i,
+                ring_r,
+                ring_y,
+            });
         }
     }
     list
@@ -189,7 +235,10 @@ mod tests {
         assert!(cat_home(4).is_none());
         let (x0, _z0) = cat_home(0).unwrap();
         // Base 72 is the BASE_CENTER_X, so its shift lands at CENTER_X exactly.
-        assert!((x0 - CENTER_X).abs() < 1e-9, "base-centre x maps to CENTER_X");
+        assert!(
+            (x0 - CENTER_X).abs() < 1e-9,
+            "base-centre x maps to CENTER_X"
+        );
     }
 
     #[test]
@@ -233,7 +282,10 @@ mod tests {
                 }
             }
         }
-        assert!(saw_sit && saw_idle && saw_walk, "all three modes should occur across time");
+        assert!(
+            saw_sit && saw_idle && saw_walk,
+            "all three modes should occur across time"
+        );
     }
 
     // ─── Birds ───────────────────────────────────────────────────────────────────
@@ -262,7 +314,10 @@ mod tests {
             let t = k as f64 * 0.37;
             let (x, y, z) = bird_position(m, t);
             let r = ((x - f.cx).powi(2) + (z - f.cz).powi(2)).sqrt();
-            assert!((r - m.ring_r).abs() < 1e-9, "bird should ride its ring radius");
+            assert!(
+                (r - m.ring_r).abs() < 1e-9,
+                "bird should ride its ring radius"
+            );
             // y within cy + ring_y ± 0.4 bob.
             assert!((y - (f.cy + m.ring_y)).abs() <= 0.4 + 1e-9);
             // High overhead — never near the ground.

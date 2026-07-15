@@ -1,0 +1,12 @@
+    var pbr_input: PbrInputX_naga_oil_mod_XMJSXM6K7OBRHEOR2OBRHEX3UPFYGK4YX;
+    var out: FragmentOutputX_naga_oil_mod_XMJSXM6K7OBRHEOR2MZXXE53BOJSF62LPX;
+    pbr_input = pbr_input_from_standard_materialX_naga_oil_mod_XMJSXM6K7OBRHEOR2OBRHEX3GOJQWO3LFNZ2AX(vertex_output, is_front);
+    let lit = apply_pbr_lightingX_naga_oil_mod_XMJSXM6K7OBRHEOR2OBRHEX3GOVXGG5DJN5XHGX(pbr_input);
+    var color = max(lit.xyz, vec3(0.0));
+    color *= powsafeX_naga_oil_mod_XMJSXM6K7OJSW4ZDFOI5DU3LBORUHGX(
+        vec3(2.0),
+        viewX_naga_oil_mod_XMJSXM6K7OBRHEOR2NVSXG2C7OZUWK527MJUW4ZDJNZTXGX.color_grading.exposure,
+    );
+    color = applyAgXLogX_naga_oil_mod_XMJSXM6K7MNXXEZK7OBUXAZLMNFXGKOR2ORXW4ZLNMFYHA2LOM4X(color);
+    out.color = vec4(color, lit.w);
+    return out;

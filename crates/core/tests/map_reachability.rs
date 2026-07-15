@@ -7,12 +7,12 @@
 //! (reset_bridges + register the road bridges) and the flood-fill ONCE, then
 //! asserts ALL targets in a loop. Splitting per-target would race the registry.
 
+use std::collections::HashSet;
+use std::collections::VecDeque;
 use tileworld_core::bridges::{BridgeSpan, register_bridge, reset_bridges};
 use tileworld_core::obstacles::{find_spawn_near, is_obstacle_tile};
 use tileworld_core::roads::get_road_bridges;
 use tileworld_core::tilemap::{COLS, ROWS, can_step, from_base, shift_to_centre, standable};
-use std::collections::HashSet;
-use std::collections::VecDeque;
 
 fn walkable(cx: i32, cz: i32) -> bool {
     if cx < 0 || cz < 0 || cx >= COLS || cz >= ROWS {

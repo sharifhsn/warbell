@@ -1,0 +1,1 @@
+return clamp(Image_1, vec3<f32>(0.0), vec3<f32>(1.0));

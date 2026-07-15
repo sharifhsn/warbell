@@ -1,0 +1,32 @@
+{
+  "auto_bind_resources": true,
+  "coordinate_space": "adjusted",
+  "entry": "fragment_main",
+  "explicit_bindings": [],
+  "files": {
+    "dksh": {
+      "path": "assets/shaders/deko3d-runtime/f0a19f98-post-process.frag.dksh",
+      "sha256": "ea0da948b63832a2757d969be96eb167535271e78c1a95dbb9940661dc065ebb",
+      "size": 2412
+    },
+    "glsl": {
+      "path": "assets/shaders/deko3d-runtime/f0a19f98-post-process.frag.glsl",
+      "sha256": "696090b8efae23deaf3462d88e0de0c55ae63d983c96a601247cdefb543b0a90",
+      "size": 8526
+    },
+    "reflection": {
+      "path": "assets/shaders/deko3d-runtime/f0a19f98-post-process.frag.reflection.json",
+      "sha256": "1d6ce9de78fc09f5b5ba045236c942c0882cb8a3ff2ca4b8a1f301bdc546a1e0",
+      "size": 3016
+    }
+  },
+  "glsl_version": 460,
+  "immediates_binding": 15,
+  "schema": "wgsl-to-dksh-artifact-v0",
+  "source": {
+    "path": "/Users/sharif/Library/Application Support/Ryujinx/sdcard/switch/warbell-shaders/f0a19f98c14d6801952b1c480e8f8e504cafdc107468e5b78d330a99791a3943-fragment-main.wgsl",
+    "sha256": "f0a19f98c14d6801952b1c480e8f8e504cafdc107468e5b78d330a99791a3943",
+    "size": 11168
+  },
+  "stage": "fragment"
+}

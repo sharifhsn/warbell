@@ -87,7 +87,10 @@ pub fn from_base(x: f64, z: f64) -> (f64, f64) {
 
 /// Base/original CASTLE-attached coord → new grid coord by pure translation.
 pub fn shift_to_centre(x: f64, z: f64) -> (f64, f64) {
-    (x + (CENTER_X - BASE_CENTER_X), z + (CENTER_Z - BASE_CENTER_Z))
+    (
+        x + (CENTER_X - BASE_CENTER_X),
+        z + (CENTER_Z - BASE_CENTER_Z),
+    )
 }
 
 // ─── Noise ───────────────────────────────────────────────────────────────────
@@ -112,8 +115,18 @@ struct Plateau {
     peak: i32,
 }
 const PLATEAUS: [Plateau; 2] = [
-    Plateau { x: 98.0, z: 72.0, r: 9.0, peak: 5 }, // SE grass belt
-    Plateau { x: 52.0, z: 50.0, r: 7.0, peak: 4 }, // W grass belt
+    Plateau {
+        x: 98.0,
+        z: 72.0,
+        r: 9.0,
+        peak: 5,
+    }, // SE grass belt
+    Plateau {
+        x: 52.0,
+        z: 50.0,
+        r: 7.0,
+        peak: 4,
+    }, // W grass belt
 ];
 
 /// Plateau height class at (x,z): 0 = none, else 2..peak stepped by distance.
@@ -230,11 +243,46 @@ struct Region {
 }
 
 const REGIONS: [Region; 5] = [
-    Region { x: 26.0, z: 24.0, r: 26.0, biome: Biome::Snow, peak: Some(9), ramp_ang: None },
-    Region { x: 112.0, z: 28.0, r: 34.0, biome: Biome::Desert, peak: None, ramp_ang: None },
-    Region { x: 122.0, z: 58.0, r: 22.0, biome: Biome::Rock, peak: Some(15), ramp_ang: None },
-    Region { x: 32.0, z: 80.0, r: 34.0, biome: Biome::Forest, peak: None, ramp_ang: None },
-    Region { x: 72.0, z: 92.0, r: 32.0, biome: Biome::Swamp, peak: None, ramp_ang: None },
+    Region {
+        x: 26.0,
+        z: 24.0,
+        r: 26.0,
+        biome: Biome::Snow,
+        peak: Some(9),
+        ramp_ang: None,
+    },
+    Region {
+        x: 112.0,
+        z: 28.0,
+        r: 34.0,
+        biome: Biome::Desert,
+        peak: None,
+        ramp_ang: None,
+    },
+    Region {
+        x: 122.0,
+        z: 58.0,
+        r: 22.0,
+        biome: Biome::Rock,
+        peak: Some(15),
+        ramp_ang: None,
+    },
+    Region {
+        x: 32.0,
+        z: 80.0,
+        r: 34.0,
+        biome: Biome::Forest,
+        peak: None,
+        ramp_ang: None,
+    },
+    Region {
+        x: 72.0,
+        z: 92.0,
+        r: 32.0,
+        biome: Biome::Swamp,
+        peak: None,
+        ramp_ang: None,
+    },
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -320,7 +368,11 @@ fn region_at(x: f64, z: f64) -> Option<&'static Region> {
     let mut best: Option<&'static Region> = None;
     let mut best_edge = f64::INFINITY;
     for reg in REGIONS.iter() {
-        let fray = if reg.peak.is_none() { edge_fray(x, z) } else { 0.0 };
+        let fray = if reg.peak.is_none() {
+            edge_fray(x, z)
+        } else {
+            0.0
+        };
         let d = (x - reg.x).hypot(z - reg.z) + wob + fray;
         let edge = d - reg.r;
         if edge < 0.0 && edge < best_edge {
@@ -394,7 +446,10 @@ fn classify_biome(x: f64, z: f64) -> Option<Tile> {
 
     let dc = dist_from_castle(x, z);
     if dc < BASE_CASTLE_SAFE_R + (-4.0_f64).max(edge_fray(x, z)) {
-        return Some(Tile { biome: Biome::Grass, height: 1 });
+        return Some(Tile {
+            biome: Biome::Grass,
+            height: 1,
+        });
     }
 
     if is_river_at(x, z) {
@@ -411,17 +466,26 @@ fn classify_biome(x: f64, z: f64) -> Option<Tile> {
             1.0 + (x * 0.6 + z * 0.42 + 2.1).sin() * 0.8 + (x * 1.25 - z * 0.95 + 0.4).sin() * 0.6,
         );
     if (d as f64) <= beach_w {
-        return Some(Tile { biome: Biome::Sand, height: 1 });
+        return Some(Tile {
+            biome: Biome::Sand,
+            height: 1,
+        });
     }
 
     let ph = plateau_height_at(x, z);
     if ph != 0 {
-        return Some(Tile { biome: Biome::Grass, height: ph });
+        return Some(Tile {
+            biome: Biome::Grass,
+            height: ph,
+        });
     }
 
     if let Some(reg) = region_at(x, z) {
         if reg.biome == Biome::Swamp && dc < BASE_CASTLE_SAFE_R {
-            return Some(Tile { biome: Biome::Grass, height: 1 });
+            return Some(Tile {
+                biome: Biome::Grass,
+                height: 1,
+            });
         }
         if reg.peak.is_some() {
             return Some(Tile {
@@ -429,15 +493,24 @@ fn classify_biome(x: f64, z: f64) -> Option<Tile> {
                 height: mountain_height(x, z, reg),
             });
         }
-        return Some(Tile { biome: reg.biome, height: 1 });
+        return Some(Tile {
+            biome: reg.biome,
+            height: 1,
+        });
     }
 
     let forest_n = noise_a(x, z) * noise_b(x + 7.0, z - 3.0);
     if forest_n > 0.5 {
-        return Some(Tile { biome: Biome::Forest, height: 1 });
+        return Some(Tile {
+            biome: Biome::Forest,
+            height: 1,
+        });
     }
 
-    Some(Tile { biome: Biome::Grass, height: 1 })
+    Some(Tile {
+        biome: Biome::Grass,
+        height: 1,
+    })
 }
 
 // ─── Tile cache ──────────────────────────────────────────────────────────────
@@ -457,7 +530,10 @@ fn ensure_tiles() -> &'static Vec<Vec<Option<Tile>>> {
                         // Height re-sampled at the base GRID tile this falls in.
                         let q = classify_biome(bx.round(), bz.round());
                         let height = q.map(|q| q.height).unwrap_or(t.height);
-                        row.push(Some(Tile { biome: t.biome, height }));
+                        row.push(Some(Tile {
+                            biome: t.biome,
+                            height,
+                        }));
                     }
                 }
             }

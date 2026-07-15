@@ -1,0 +1,6 @@
+    var out: FragmentOutputX_naga_oil_mod_XMJSXM6K7OBRHEOR2MZXXE53BOJSF62LPX;
+    let dimensions = vec3<f32>(textureDimensions(
+        dt_lut_textureX_naga_oil_mod_XMJSXM6K7MNXXEZK7OBUXAZLMNFXGKOR2ORXW4ZLNMFYHA2LOM5PWY5LUL5RGS3TENFXGO4YX,
+    ));
+    out.color = vec4(dimensions / 64.0, 1.0);
+    return out;

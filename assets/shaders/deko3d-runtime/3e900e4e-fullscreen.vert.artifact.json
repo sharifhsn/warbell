@@ -1,0 +1,32 @@
+{
+  "auto_bind_resources": true,
+  "coordinate_space": "native",
+  "entry": "fullscreen_vertex_shader",
+  "explicit_bindings": [],
+  "files": {
+    "dksh": {
+      "path": "assets/shaders/deko3d-runtime/3e900e4e-fullscreen.vert.dksh",
+      "sha256": "5daec126f9fd315f1ba9f421cb88c9a22f84e08d60c9fda241862af6edd83f98",
+      "size": 780
+    },
+    "glsl": {
+      "path": "assets/shaders/deko3d-runtime/3e900e4e-fullscreen.vert.glsl",
+      "sha256": "90a0246f9c1a4f31f53a0c63fc6b6e0f54e721a9c2a1c26f5a8541d1f29e3bae",
+      "size": 545
+    },
+    "reflection": {
+      "path": "assets/shaders/deko3d-runtime/3e900e4e-fullscreen.vert.reflection.json",
+      "sha256": "d55aa0cf32e25e4138525068a926c36765e61e1e617a02ab491a5a8716943fc9",
+      "size": 507
+    }
+  },
+  "glsl_version": 460,
+  "immediates_binding": 15,
+  "schema": "wgsl-to-dksh-artifact-v0",
+  "source": {
+    "path": "/Users/sharif/Library/Application Support/Ryujinx/sdcard/switch/warbell-shaders/3e900e4e70cd9636a4ddadd4999bf00d79194ddebe7d29c166a1195a5af26016-vertex-fullscreen_vertex_shader.wgsl",
+    "sha256": "3e900e4e70cd9636a4ddadd4999bf00d79194ddebe7d29c166a1195a5af26016",
+    "size": 473
+  },
+  "stage": "vertex"
+}

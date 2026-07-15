@@ -60,13 +60,19 @@ pub const LARDER_REGROW_RATE: f64 = 0.56;
 pub const REPAIR_PER_SEC: f64 = 8.0;
 /// Base cost to raise the FIRST House (inside the walls). Houses don't burn, so cost + `MAX_HOUSES`
 /// are the only gates. The real cost climbs with the count — see [`house_cost`].
-pub const HOUSE_COST: Cost = Cost { wood: 12.0, stone: 8.0 };
+pub const HOUSE_COST: Cost = Cost {
+    wood: 12.0,
+    stone: 8.0,
+};
 /// Per-already-standing-House surcharge added on top of [`HOUSE_COST`]. The population snowball
 /// (more houses → more peasants → more gold/workers → faster everything) still runs, but each new
 /// dwelling is a bigger haul, so the ramp decelerates instead of letting you spam all `MAX_HOUSES`
 /// for a flat pittance. House #2 (1 standing) = 17 wood / 11.5 stone; the 12th = 67 / 46.5.
 /// Step trimmed ~15% (was 6/4) to ease the population ramp. Tunable.
-pub const HOUSE_COST_STEP: Cost = Cost { wood: 5.0, stone: 3.5 };
+pub const HOUSE_COST_STEP: Cost = Cost {
+    wood: 5.0,
+    stone: 3.5,
+};
 
 /// Cost to raise the next House given how many already stand: `HOUSE_COST + houses × HOUSE_COST_STEP`.
 pub fn house_cost(houses: u32) -> Cost {
@@ -114,9 +120,18 @@ pub struct Cost {
 impl BuildKind {
     pub fn cost(self) -> Cost {
         match self {
-            BuildKind::Farm => Cost { wood: 16.0, stone: 0.0 },
-            BuildKind::Lumber => Cost { wood: 0.0, stone: 12.0 },
-            BuildKind::Mine => Cost { wood: 12.0, stone: 0.0 },
+            BuildKind::Farm => Cost {
+                wood: 16.0,
+                stone: 0.0,
+            },
+            BuildKind::Lumber => Cost {
+                wood: 0.0,
+                stone: 12.0,
+            },
+            BuildKind::Mine => Cost {
+                wood: 12.0,
+                stone: 0.0,
+            },
         }
     }
 
@@ -178,7 +193,11 @@ pub struct Plot {
 
 impl Plot {
     pub fn empty() -> Self {
-        Self { kind: None, state: PlotState::Empty, staffed: false }
+        Self {
+            kind: None,
+            state: PlotState::Empty,
+            staffed: false,
+        }
     }
 
     pub fn is_buildable(&self) -> bool {
@@ -215,7 +234,12 @@ impl Town {
     /// A fresh town with `n` empty producer plots and the given starting population
     /// (houses default to 0 — the game uses [`Town::reset`] for its `START_*` state).
     pub fn new(n: usize, start_population: u32) -> Self {
-        Self { plots: vec![Plot::empty(); n], population: start_population, houses: 0, growth: 0.0 }
+        Self {
+            plots: vec![Plot::empty(); n],
+            population: start_population,
+            houses: 0,
+            growth: 0.0,
+        }
     }
 
     /// Re-init for a new run: empty plots, the starting houses + peasants, zeroed meter.
@@ -275,7 +299,9 @@ impl Town {
     /// Build `kind` on a buildable plot, spending wood+stone atomically.
     /// Returns true on success.
     pub fn build(&mut self, idx: usize, kind: BuildKind, bank: &mut ResourceState) -> bool {
-        let Some(plot) = self.plots.get(idx) else { return false };
+        let Some(plot) = self.plots.get(idx) else {
+            return false;
+        };
         if !plot.is_buildable() || !self.can_afford(kind, bank) {
             return false;
         }
@@ -285,7 +311,10 @@ impl Town {
         bank.spend_stone(c.stone);
         self.plots[idx] = Plot {
             kind: Some(kind),
-            state: PlotState::Built { hp: kind.max_hp(), burning: false },
+            state: PlotState::Built {
+                hp: kind.max_hp(),
+                burning: false,
+            },
             staffed: false,
         };
         true
@@ -365,12 +394,16 @@ impl Town {
     /// comes from real felled trees) — but the mechanism stays for future quarry-like producers.
     pub fn production_tick(&mut self, dt: f64, bank: &mut ResourceState) {
         for plot in &self.plots {
-            let PlotState::Built { burning, .. } = plot.state else { continue };
+            let PlotState::Built { burning, .. } = plot.state else {
+                continue;
+            };
             if burning || !plot.staffed {
                 continue;
             }
             let Some(kind) = plot.kind else { continue };
-            let Some((res, rate)) = kind.produces() else { continue };
+            let Some((res, rate)) = kind.produces() else {
+                continue;
+            };
             let amount = rate * dt;
             match res {
                 Resource::Food => {} // a flow, not banked
@@ -382,7 +415,9 @@ impl Town {
 
     /// Apply `amount` damage to a built plot, igniting it. Collapses to Rubble at <= 0.
     pub fn damage(&mut self, idx: usize, amount: f64) {
-        let Some(plot) = self.plots.get_mut(idx) else { return };
+        let Some(plot) = self.plots.get_mut(idx) else {
+            return;
+        };
         if let PlotState::Built { hp, burning } = &mut plot.state {
             *hp -= amount;
             *burning = true;
@@ -397,15 +432,15 @@ impl Town {
     /// Heal built (damaged) plots toward max; clear `burning` once full. Day-only.
     pub fn repair(&mut self, dt: f64) {
         for plot in &mut self.plots {
-            if let PlotState::Built { hp, burning } = &mut plot.state {
-                if let Some(kind) = plot.kind {
-                    let max = kind.max_hp();
-                    if *hp < max {
-                        *hp = (*hp + REPAIR_PER_SEC * dt).min(max);
-                    }
-                    if *hp >= max {
-                        *burning = false;
-                    }
+            if let PlotState::Built { hp, burning } = &mut plot.state
+                && let Some(kind) = plot.kind
+            {
+                let max = kind.max_hp();
+                if *hp < max {
+                    *hp = (*hp + REPAIR_PER_SEC * dt).min(max);
+                }
+                if *hp >= max {
+                    *burning = false;
                 }
             }
         }
@@ -495,18 +530,48 @@ mod tests {
     #[test]
     fn house_cost_escalates_with_count() {
         // First house at the base; each subsequent adds the step (5 wood / 3.5 stone).
-        assert_eq!(house_cost(0), Cost { wood: 12.0, stone: 8.0 });
-        assert_eq!(house_cost(1), Cost { wood: 17.0, stone: 11.5 });
-        assert_eq!(house_cost(11), Cost { wood: 67.0, stone: 46.5 });
+        assert_eq!(
+            house_cost(0),
+            Cost {
+                wood: 12.0,
+                stone: 8.0
+            }
+        );
+        assert_eq!(
+            house_cost(1),
+            Cost {
+                wood: 17.0,
+                stone: 11.5
+            }
+        );
+        assert_eq!(
+            house_cost(11),
+            Cost {
+                wood: 67.0,
+                stone: 46.5
+            }
+        );
 
         // Build two in a row: the second deducts the escalated cost, not the base.
         let mut t = Town::new(0, 0);
         let mut bank = bank_with(100.0, 100.0, 0.0);
-        assert_eq!(t.next_house_cost(), Cost { wood: 12.0, stone: 8.0 });
+        assert_eq!(
+            t.next_house_cost(),
+            Cost {
+                wood: 12.0,
+                stone: 8.0
+            }
+        );
         assert!(t.build_house(&mut bank));
         assert_eq!(bank.wood(), 88.0); // 100 - 12
         assert_eq!(bank.stone(), 92.0); // 100 - 8
-        assert_eq!(t.next_house_cost(), Cost { wood: 17.0, stone: 11.5 });
+        assert_eq!(
+            t.next_house_cost(),
+            Cost {
+                wood: 17.0,
+                stone: 11.5
+            }
+        );
         assert!(t.build_house(&mut bank));
         assert_eq!(bank.wood(), 71.0); // 88 - 17
         assert_eq!(bank.stone(), 80.5); // 92 - 11.5
@@ -682,7 +747,13 @@ mod tests {
         t.build(0, BuildKind::Farm, &mut bank);
         t.damage(0, 30.0); // burning
         t.repair(100.0); // heals to max, clears burning
-        assert_eq!(t.plots[0].state, PlotState::Built { hp: 165.0, burning: false });
+        assert_eq!(
+            t.plots[0].state,
+            PlotState::Built {
+                hp: 165.0,
+                burning: false
+            }
+        );
     }
 
     #[test]

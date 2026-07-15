@@ -29,14 +29,54 @@ use OrkVariant::*;
 /// Escalating assault waves; the final entry is the lone boss push.
 pub fn waves() -> Vec<WaveDef> {
     vec![
-        WaveDef { count: 6, hp_scale: 1.0, variants: &[Grunt, Grunt, Scout, Grunt], spawn_interval: 1.2 },
-        WaveDef { count: 8, hp_scale: 1.18, variants: &[Grunt, Scout, Grunt, Berserker], spawn_interval: 1.1 },
-        WaveDef { count: 12, hp_scale: 1.45, variants: &[Grunt, Scout, Berserker, Shaman], spawn_interval: 1.1 },
-        WaveDef { count: 15, hp_scale: 1.67, variants: &[Grunt, Berserker, Scout, Shaman], spawn_interval: 1.0 },
-        WaveDef { count: 18, hp_scale: 1.92, variants: &[Berserker, Scout, Grunt, Shaman], spawn_interval: 0.95 },
-        WaveDef { count: 22, hp_scale: 2.21, variants: &[Berserker, Scout, Shaman, Grunt], spawn_interval: 0.85 },
-        WaveDef { count: 26, hp_scale: 2.54, variants: &[Berserker, Shaman, Scout, Grunt], spawn_interval: 0.75 },
-        WaveDef { count: 1, hp_scale: 14.0, variants: &[Berserker], spawn_interval: 0.5 }, // boss
+        WaveDef {
+            count: 6,
+            hp_scale: 1.0,
+            variants: &[Grunt, Grunt, Scout, Grunt],
+            spawn_interval: 1.2,
+        },
+        WaveDef {
+            count: 8,
+            hp_scale: 1.18,
+            variants: &[Grunt, Scout, Grunt, Berserker],
+            spawn_interval: 1.1,
+        },
+        WaveDef {
+            count: 12,
+            hp_scale: 1.45,
+            variants: &[Grunt, Scout, Berserker, Shaman],
+            spawn_interval: 1.1,
+        },
+        WaveDef {
+            count: 15,
+            hp_scale: 1.67,
+            variants: &[Grunt, Berserker, Scout, Shaman],
+            spawn_interval: 1.0,
+        },
+        WaveDef {
+            count: 18,
+            hp_scale: 1.92,
+            variants: &[Berserker, Scout, Grunt, Shaman],
+            spawn_interval: 0.95,
+        },
+        WaveDef {
+            count: 22,
+            hp_scale: 2.21,
+            variants: &[Berserker, Scout, Shaman, Grunt],
+            spawn_interval: 0.85,
+        },
+        WaveDef {
+            count: 26,
+            hp_scale: 2.54,
+            variants: &[Berserker, Shaman, Scout, Grunt],
+            spawn_interval: 0.75,
+        },
+        WaveDef {
+            count: 1,
+            hp_scale: 14.0,
+            variants: &[Berserker],
+            spawn_interval: 0.5,
+        }, // boss
     ]
 }
 
@@ -53,7 +93,11 @@ pub struct WaveTimers {
 
 impl Default for WaveTimers {
     fn default() -> Self {
-        Self { prep_ends_at: 0.0, next_spawn_at: 0.0, spawn_index: 0 }
+        Self {
+            prep_ends_at: 0.0,
+            next_spawn_at: 0.0,
+            spawn_index: 0,
+        }
     }
 }
 
@@ -69,9 +113,18 @@ pub struct WaveProgress {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WaveAction {
-    BeginWave { index: i64 },
-    SetPhase { phase: GamePhase },
-    Spawn { variant: OrkVariant, hp: i64, spawn_index: i64, wave_index: i64 },
+    BeginWave {
+        index: i64,
+    },
+    SetPhase {
+        phase: GamePhase,
+    },
+    Spawn {
+        variant: OrkVariant,
+        hp: i64,
+        spawn_index: i64,
+        wave_index: i64,
+    },
 }
 
 pub struct WaveStepInput {
@@ -103,11 +156,15 @@ pub fn step_wave_director(input: &WaveStepInput) -> WaveStepResult {
             timers.prep_ends_at = now + PREP_DURATION;
         }
         if input.skip || now >= timers.prep_ends_at {
-            actions.push(WaveAction::BeginWave { index: wave.index + 1 });
+            actions.push(WaveAction::BeginWave {
+                index: wave.index + 1,
+            });
             timers.spawn_index = 0;
             timers.next_spawn_at = now;
             timers.prep_ends_at = 0.0;
-            actions.push(WaveAction::SetPhase { phase: GamePhase::Wave });
+            actions.push(WaveAction::SetPhase {
+                phase: GamePhase::Wave,
+            });
         }
         return WaveStepResult { actions, timers };
     }
@@ -163,8 +220,21 @@ mod tests {
             prep_seconds_left: 0.0,
         }
     }
-    fn step(phase: GamePhase, w: WaveProgress, t: WaveTimers, now: f64, alive: i64) -> WaveStepResult {
-        step_wave_director(&WaveStepInput { phase, wave: w, timers: t, now, alive, skip: false })
+    fn step(
+        phase: GamePhase,
+        w: WaveProgress,
+        t: WaveTimers,
+        now: f64,
+        alive: i64,
+    ) -> WaveStepResult {
+        step_wave_director(&WaveStepInput {
+            phase,
+            wave: w,
+            timers: t,
+            now,
+            alive,
+            skip: false,
+        })
     }
 
     // --- prep phase ---
@@ -177,7 +247,10 @@ mod tests {
 
     #[test]
     fn waits_while_countdown_running() {
-        let t = WaveTimers { prep_ends_at: 112.0, ..timers() };
+        let t = WaveTimers {
+            prep_ends_at: 112.0,
+            ..timers()
+        };
         let r = step(GamePhase::Prep, wave(-1, 0), t, 111.0, 0);
         assert_eq!(r.actions, vec![]);
         assert_eq!(r.timers.prep_ends_at, 112.0);
@@ -185,16 +258,28 @@ mod tests {
 
     #[test]
     fn begins_next_wave_when_timer_elapses() {
-        let t = WaveTimers { prep_ends_at: 112.0, ..timers() };
+        let t = WaveTimers {
+            prep_ends_at: 112.0,
+            ..timers()
+        };
         let r = step(GamePhase::Prep, wave(-1, 0), t, 112.0, 0);
         assert_eq!(
             r.actions,
             vec![
                 WaveAction::BeginWave { index: 0 },
-                WaveAction::SetPhase { phase: GamePhase::Wave },
+                WaveAction::SetPhase {
+                    phase: GamePhase::Wave
+                },
             ]
         );
-        assert_eq!(r.timers, WaveTimers { prep_ends_at: 0.0, next_spawn_at: 112.0, spawn_index: 0 });
+        assert_eq!(
+            r.timers,
+            WaveTimers {
+                prep_ends_at: 0.0,
+                next_spawn_at: 112.0,
+                spawn_index: 0
+            }
+        );
     }
 
     // --- wave phase: spawning ---
@@ -203,7 +288,12 @@ mod tests {
         let r = step(GamePhase::Wave, wave(0, 0), timers(), 0.0, 0);
         assert_eq!(
             r.actions,
-            vec![WaveAction::Spawn { variant: OrkVariant::Grunt, hp: 254, spawn_index: 0, wave_index: 0 }]
+            vec![WaveAction::Spawn {
+                variant: OrkVariant::Grunt,
+                hp: 254,
+                spawn_index: 0,
+                wave_index: 0
+            }]
         );
         assert_eq!(r.timers.spawn_index, 1);
         assert_eq!(r.timers.next_spawn_at, waves()[0].spawn_interval);
@@ -211,15 +301,28 @@ mod tests {
 
     #[test]
     fn holds_fire_until_interval_passed() {
-        let t = WaveTimers { next_spawn_at: 1.6, spawn_index: 1, ..timers() };
-        assert_eq!(step(GamePhase::Wave, wave(0, 1), t, 1.0, 1).actions.len(), 0);
-        assert_eq!(step(GamePhase::Wave, wave(0, 1), t, 1.6, 1).actions.len(), 1);
+        let t = WaveTimers {
+            next_spawn_at: 1.6,
+            spawn_index: 1,
+            ..timers()
+        };
+        assert_eq!(
+            step(GamePhase::Wave, wave(0, 1), t, 1.0, 1).actions.len(),
+            0
+        );
+        assert_eq!(
+            step(GamePhase::Wave, wave(0, 1), t, 1.6, 1).actions.len(),
+            1
+        );
     }
 
     #[test]
     fn rotates_variant_pool_by_spawn_index() {
         // Wave 2 (index 1) pool is [grunt, scout, grunt, berserker]; index 1 -> scout.
-        let t = WaveTimers { spawn_index: 1, ..timers() };
+        let t = WaveTimers {
+            spawn_index: 1,
+            ..timers()
+        };
         let r = step(GamePhase::Wave, wave(1, 1), t, 5.0, 1);
         match &r.actions[0] {
             WaveAction::Spawn { variant, .. } => assert_eq!(*variant, OrkVariant::Scout),
@@ -244,14 +347,21 @@ mod tests {
     fn stops_spawning_once_quota_met() {
         let full = waves()[0].count;
         let r = step(GamePhase::Wave, wave(0, full), timers(), 99.0, 3);
-        assert!(!r.actions.iter().any(|a| matches!(a, WaveAction::Spawn { .. })));
+        assert!(
+            !r.actions
+                .iter()
+                .any(|a| matches!(a, WaveAction::Spawn { .. }))
+        );
     }
 
     // --- wave phase: clearing ---
     #[test]
     fn does_not_advance_while_enemies_remain() {
         let full = waves()[0].count;
-        let t = WaveTimers { spawn_index: full, ..timers() };
+        let t = WaveTimers {
+            spawn_index: full,
+            ..timers()
+        };
         let r = step(GamePhase::Wave, wave(0, full), t, 99.0, 2);
         assert_eq!(r.actions, vec![]);
     }
@@ -259,17 +369,39 @@ mod tests {
     #[test]
     fn returns_to_prep_after_non_final_wave_cleared() {
         let full = waves()[0].count;
-        let t = WaveTimers { spawn_index: full, ..timers() };
+        let t = WaveTimers {
+            spawn_index: full,
+            ..timers()
+        };
         let r = step(GamePhase::Wave, wave(0, full), t, 99.0, 0);
-        assert_eq!(r.actions, vec![WaveAction::SetPhase { phase: GamePhase::Prep }]);
+        assert_eq!(
+            r.actions,
+            vec![WaveAction::SetPhase {
+                phase: GamePhase::Prep
+            }]
+        );
     }
 
     #[test]
     fn declares_victory_after_final_wave_cleared() {
         let last = (waves().len() - 1) as i64;
-        let t = WaveTimers { spawn_index: 1, ..timers() };
-        let r = step(GamePhase::Wave, wave(last, waves()[last as usize].count), t, 99.0, 0);
-        assert_eq!(r.actions, vec![WaveAction::SetPhase { phase: GamePhase::Victory }]);
+        let t = WaveTimers {
+            spawn_index: 1,
+            ..timers()
+        };
+        let r = step(
+            GamePhase::Wave,
+            wave(last, waves()[last as usize].count),
+            t,
+            99.0,
+            0,
+        );
+        assert_eq!(
+            r.actions,
+            vec![WaveAction::SetPhase {
+                phase: GamePhase::Victory
+            }]
+        );
     }
 
     // --- boss wave ---
@@ -289,7 +421,10 @@ mod tests {
     // --- inert states ---
     #[test]
     fn does_nothing_for_out_of_range_index() {
-        assert_eq!(step(GamePhase::Wave, wave(99, 0), timers(), 0.0, 0).actions, vec![]);
+        assert_eq!(
+            step(GamePhase::Wave, wave(99, 0), timers(), 0.0, 0).actions,
+            vec![]
+        );
     }
 
     #[test]
@@ -303,7 +438,14 @@ mod tests {
     fn never_mutates_input_timers() {
         let t = timers();
         step(GamePhase::Wave, wave(0, 0), t, 0.0, 0);
-        assert_eq!(t, WaveTimers { prep_ends_at: 0.0, next_spawn_at: 0.0, spawn_index: 0 });
+        assert_eq!(
+            t,
+            WaveTimers {
+                prep_ends_at: 0.0,
+                next_spawn_at: 0.0,
+                spawn_index: 0
+            }
+        );
     }
 
     // --- table shape (from waveStore.test.ts essentials) ---

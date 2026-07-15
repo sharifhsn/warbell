@@ -10,6 +10,7 @@
 //!   - `damage_dummy` (a hit just sets the two deadlines — NO HP, NO reward),
 //!   - the pell quintain's deterministic arm-yaw curve over its swing cycle, and
 //!   - the recoil-wobble angle curve.
+//!
 //! The model (TrainingDummy.tsx) + the live drive + the block resolve (which read the
 //! Bevy player/block state + spawn FX) live in `crates/game`.
 //!
@@ -128,7 +129,14 @@ pub struct DummyState {
 
 impl DummyState {
     pub fn new(x: f64, z: f64, seed: f64, is_pell: bool) -> Self {
-        DummyState { x, z, seed, hurt_flash_until: 0.0, wobble_until: 0.0, is_pell }
+        DummyState {
+            x,
+            z,
+            seed,
+            hurt_flash_until: 0.0,
+            wobble_until: 0.0,
+            is_pell,
+        }
     }
 
     /// Register a hit: brief straw-flash + recoil wobble. No HP, no reward
@@ -162,10 +170,26 @@ pub struct DummySpec {
 /// The muster-yard dummy table (`MusterYard.tsx` `YARDS[0].dummies`): a pell + a plain
 /// target flanking the spawn (south), and a pair by the north gate. BASE coords.
 pub const DUMMY_SPECS: [DummySpec; 4] = [
-    DummySpec { base: (68.0, 58.0), seed: 0.2, is_pell: true },
-    DummySpec { base: (76.0, 58.0), seed: 0.55, is_pell: false },
-    DummySpec { base: (68.0, 50.0), seed: 0.36, is_pell: false },
-    DummySpec { base: (76.0, 50.0), seed: 0.68, is_pell: false },
+    DummySpec {
+        base: (68.0, 58.0),
+        seed: 0.2,
+        is_pell: true,
+    },
+    DummySpec {
+        base: (76.0, 58.0),
+        seed: 0.55,
+        is_pell: false,
+    },
+    DummySpec {
+        base: (68.0, 50.0),
+        seed: 0.36,
+        is_pell: false,
+    },
+    DummySpec {
+        base: (76.0, 50.0),
+        seed: 0.68,
+        is_pell: false,
+    },
 ];
 
 /// The muster-yard signpost placement (`MusterYard.tsx` `YARDS[0].signpost`), BASE coords.
@@ -198,8 +222,14 @@ mod tests {
         let mut d = DummyState::new(0.0, 0.0, 0.2, false);
         assert_eq!(d.hurt_flash_until, 0.0);
         d.damage(10.0);
-        assert!((d.hurt_flash_until - 10.18).abs() < 1e-9, "flash decays at now+0.18");
-        assert!((d.wobble_until - 10.5).abs() < 1e-9, "wobble decays at now+0.5");
+        assert!(
+            (d.hurt_flash_until - 10.18).abs() < 1e-9,
+            "flash decays at now+0.18"
+        );
+        assert!(
+            (d.wobble_until - 10.5).abs() < 1e-9,
+            "wobble decays at now+0.5"
+        );
         // No HP field exists — the dummy is indestructible by construction.
     }
 
@@ -211,7 +241,11 @@ mod tests {
         assert!(flash_intensity(0.0, d.hurt_flash_until) > 0.0);
         assert!(wobble_angle(0.01, d.wobble_until).abs() >= 0.0); // defined
         // Past both windows: settled.
-        assert_eq!(flash_intensity(1.0, d.hurt_flash_until), 0.0, "flash settled");
+        assert_eq!(
+            flash_intensity(1.0, d.hurt_flash_until),
+            0.0,
+            "flash settled"
+        );
         assert_eq!(wobble_angle(1.0, d.wobble_until), 0.0, "wobble settled");
         // Peak flash is 0.6 at the instant of the hit.
         assert!((flash_intensity(0.0, d.hurt_flash_until) - 0.6).abs() < 1e-9);
@@ -231,15 +265,30 @@ mod tests {
         assert!((pell_arm_yaw(0.0) - YAW_REST).abs() < 1e-9);
         assert!((pell_arm_yaw(REST - 0.01) - YAW_REST).abs() < 1e-9);
         // Top of the wind-up: at YAW_WOUND.
-        assert!((pell_arm_yaw(STRIKE_START) - YAW_WOUND).abs() < 1e-9, "wound by strike start");
+        assert!(
+            (pell_arm_yaw(STRIKE_START) - YAW_WOUND).abs() < 1e-9,
+            "wound by strike start"
+        );
         // End of the strike: swept to the front.
-        assert!((pell_arm_yaw(STRIKE_END) - YAW_FRONT).abs() < 1e-9, "at front by strike end");
+        assert!(
+            (pell_arm_yaw(STRIKE_END) - YAW_FRONT).abs() < 1e-9,
+            "at front by strike end"
+        );
         // End of recovery: back to rest.
-        assert!((pell_arm_yaw(CYCLE) - YAW_REST).abs() < 1e-6, "recovered to rest");
+        assert!(
+            (pell_arm_yaw(CYCLE) - YAW_REST).abs() < 1e-6,
+            "recovered to rest"
+        );
         // The strike window flag matches the timings.
         assert!(!pell_in_strike(REST), "resting, not striking");
-        assert!(pell_in_strike((STRIKE_START + STRIKE_END) / 2.0), "mid-strike");
-        assert!(!pell_in_strike(STRIKE_END + 0.01), "recovering, not striking");
+        assert!(
+            pell_in_strike((STRIKE_START + STRIKE_END) / 2.0),
+            "mid-strike"
+        );
+        assert!(
+            !pell_in_strike(STRIKE_END + 0.01),
+            "recovering, not striking"
+        );
     }
 
     #[test]
@@ -247,7 +296,10 @@ mod tests {
         // Wrap into [0, CYCLE).
         let tc = pell_cycle_time(CYCLE * 3.5, 0.0);
         assert!((0.0..CYCLE).contains(&tc));
-        assert!((tc - CYCLE * 0.5).abs() < 1e-9, "3.5 cycles → half a cycle in");
+        assert!(
+            (tc - CYCLE * 0.5).abs() < 1e-9,
+            "3.5 cycles → half a cycle in"
+        );
         // Two different seeds land at different phases for the same `now`.
         let a = pell_cycle_time(1.0, 0.2);
         let b = pell_cycle_time(1.0, 0.55);
@@ -259,11 +311,23 @@ mod tests {
         // Every dummy + the signpost sits inside the wall bounds (the muster ground is
         // a courtyard staging area, so placements are inside `is_inside_castle`).
         for d in muster_dummies() {
-            assert!(is_inside_castle(d.x, d.z), "dummy ({},{}) inside the walls", d.x, d.z);
+            assert!(
+                is_inside_castle(d.x, d.z),
+                "dummy ({},{}) inside the walls",
+                d.x,
+                d.z
+            );
         }
         let (sx, sz) = muster_signpost();
-        assert!(is_inside_castle(sx, sz), "signpost ({sx},{sz}) inside the walls");
+        assert!(
+            is_inside_castle(sx, sz),
+            "signpost ({sx},{sz}) inside the walls"
+        );
         // Exactly one pell among the dummies (the quintain).
-        assert_eq!(muster_dummies().iter().filter(|d| d.is_pell).count(), 1, "one quintain per yard");
+        assert_eq!(
+            muster_dummies().iter().filter(|d| d.is_pell).count(),
+            1,
+            "one quintain per yard"
+        );
     }
 }

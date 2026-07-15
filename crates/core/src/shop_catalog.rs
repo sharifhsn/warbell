@@ -21,16 +21,41 @@ pub struct ShopItem {
 
 /// The base consumables, always for sale (port of `SHOP_ITEMS`).
 pub static SHOP_ITEMS: &[ShopItem] = &[
-    ShopItem { id: "bread", name: "Bread", icon: "🍞", price: 4 },
-    ShopItem { id: "potion", name: "Health Potion", icon: "🧪", price: 12 },
-    ShopItem { id: "feast", name: "Tavern Feast", icon: "🍖", price: 28 },
+    ShopItem {
+        id: "bread",
+        name: "Bread",
+        icon: "🍞",
+        price: 4,
+    },
+    ShopItem {
+        id: "potion",
+        name: "Health Potion",
+        icon: "🧪",
+        price: 12,
+    },
+    ShopItem {
+        id: "feast",
+        name: "Tavern Feast",
+        icon: "🍖",
+        price: 28,
+    },
 ];
 
 /// Weapons the Arsenal upgrade branch can unlock for sale (port of `WEAPON_CATALOG`).
 /// Added to the live list once their id is in the unlocked set.
 pub static WEAPON_CATALOG: &[ShopItem] = &[
-    ShopItem { id: "axe", name: "Battle Axe", icon: "🪓", price: 45 },
-    ShopItem { id: "sword_gold", name: "Golden Blade", icon: "🗡️", price: 80 },
+    ShopItem {
+        id: "axe",
+        name: "Battle Axe",
+        icon: "🪓",
+        price: 45,
+    },
+    ShopItem {
+        id: "sword_gold",
+        name: "Golden Blade",
+        icon: "🗡️",
+        price: 80,
+    },
 ];
 
 /// The base consumables plus any weapons whose id appears in `unlocked` (the TS
@@ -102,7 +127,10 @@ mod tests {
         assert_eq!(SHOP_ITEMS[1].price, 12);
         assert_eq!(SHOP_ITEMS[2].price, 28);
         let axe = WEAPON_CATALOG.iter().find(|w| w.id == "axe").unwrap();
-        let blade = WEAPON_CATALOG.iter().find(|w| w.id == "sword_gold").unwrap();
+        let blade = WEAPON_CATALOG
+            .iter()
+            .find(|w| w.id == "sword_gold")
+            .unwrap();
         assert_eq!(axe.price, 45);
         assert_eq!(blade.price, 80);
     }

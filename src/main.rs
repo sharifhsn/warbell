@@ -146,7 +146,7 @@ desktop_modules! {
 
 #[cfg(feature = "switch")]
 mod deko_provider;
-#[cfg(any(feature = "shader-proof-capture", feature = "switch"))]
+#[cfg(feature = "shader-proof-capture")]
 mod shader_proof;
 #[cfg(feature = "switch")]
 mod switch;

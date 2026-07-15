@@ -171,7 +171,10 @@ mod tests {
     #[test]
     fn draining_to_empty_locks_the_shield() {
         let mut b = BlockState::new();
-        assert!(hold_until_locked(&mut b), "holding the shield drains it to empty");
+        assert!(
+            hold_until_locked(&mut b),
+            "holding the shield drains it to empty"
+        );
         assert_eq!(b.stamina, 0.0, "locks at empty");
         assert!(b.locked);
         assert!(!b.blocking, "a locked shield is not blocking");

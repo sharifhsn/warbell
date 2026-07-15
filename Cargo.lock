@@ -5178,8 +5178,10 @@ dependencies = [
  "image",
  "serde",
  "serde_json",
+ "sha2",
  "tileworld_core",
  "wgpu",
+ "wgpu-hal",
  "winit",
  "winresource",
 ]

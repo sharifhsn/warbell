@@ -59,7 +59,7 @@ pub struct CampSlot {
 
 // Authored in BASE coords; converted via from_base + round.
 const BASE_CAMPS: [(i32, i32, Biome); 3] = [
-    (74, 26, Biome::Snow),   // N — snow/desert frontier
+    (74, 26, Biome::Snow),    // N — snow/desert frontier
     (104, 32, Biome::Desert), // NE — deep dunes
     (34, 72, Biome::Forest),  // SW — clearing in the wood
 ];
@@ -101,11 +101,11 @@ fn build_reserved() -> HashSet<i64> {
     // baseBox: authored in BASE coords, mapped via transform t, corners
     // floored/ceiled to whole tiles.
     let base_box = |r: &mut HashSet<i64>,
-                        x0: i32,
-                        x1: i32,
-                        z0: i32,
-                        z1: i32,
-                        t: fn(f64, f64) -> (f64, f64)| {
+                    x0: i32,
+                    x1: i32,
+                    z0: i32,
+                    z1: i32,
+                    t: fn(f64, f64) -> (f64, f64)| {
         let (ax, az) = t(x0 as f64, z0 as f64);
         let (bx, bz) = t(x1 as f64, z1 as f64);
         let nx0 = ax.min(bx).floor() as i32;
@@ -127,7 +127,13 @@ fn build_reserved() -> HashSet<i64> {
     base_box(&mut r, 90, 102, 28, 38, from_base);
     // Biome signature landmarks — margin around each.
     for l in landmarks() {
-        add_box(&mut r, l.x - l.r - 1, l.x + l.r + 1, l.z - l.r - 1, l.z + l.r + 1);
+        add_box(
+            &mut r,
+            l.x - l.r - 1,
+            l.x + l.r + 1,
+            l.z - l.r - 1,
+            l.z + l.r + 1,
+        );
     }
     r
 }
@@ -198,10 +204,20 @@ struct Roll {
     cluster_max: Option<i32>,
 }
 const fn roll(kind: ObstacleKind, until: f64) -> Roll {
-    Roll { kind, until, cluster_min: None, cluster_max: None }
+    Roll {
+        kind,
+        until,
+        cluster_min: None,
+        cluster_max: None,
+    }
 }
 const fn cluster(kind: ObstacleKind, until: f64, cmin: i32, cmax: i32) -> Roll {
-    Roll { kind, until, cluster_min: Some(cmin), cluster_max: Some(cmax) }
+    Roll {
+        kind,
+        until,
+        cluster_min: Some(cmin),
+        cluster_max: Some(cmax),
+    }
 }
 
 use ObstacleKind::*;
@@ -288,7 +304,15 @@ pub fn get_obstacles() -> &'static [Obstacle] {
     OBSTACLES.get_or_init(generate)
 }
 
-fn push(out: &mut Vec<Obstacle>, kind: ObstacleKind, x: f64, z: f64, scale: f64, rot: f64, variant: i32) {
+fn push(
+    out: &mut Vec<Obstacle>,
+    kind: ObstacleKind,
+    x: f64,
+    z: f64,
+    scale: f64,
+    rot: f64,
+    variant: i32,
+) {
     let base_tile = tile_at(x.floor() as i32, z.floor() as i32);
     let y = if base_tile.is_some() {
         tile_top_y(x.floor() as i32, z.floor() as i32)
@@ -357,7 +381,11 @@ fn generate() -> Vec<Obstacle> {
                 // A spec with `cluster_min` but no `cluster_max` is malformed data; fall back to a
                 // single-value span (cmin) instead of panicking in a release build.
                 let cmax = picked.cluster_max.unwrap_or(cmin);
-                debug_assert!(cmax >= cmin, "cluster_max < cluster_min for {:?}", picked.kind);
+                debug_assert!(
+                    cmax >= cmin,
+                    "cluster_max < cluster_min for {:?}",
+                    picked.kind
+                );
                 // For valid specs (cmin <= cmax) this span is `cmax - cmin + 1` and the
                 // RNG draw + result are unchanged. The `.max(1)` only guards a malformed
                 // span (cmax < cmin) from producing a negative range; the final `.max(cmin)`

@@ -22,6 +22,7 @@ impl Mulberry32 {
     }
 
     /// Next f64 in [0, 1). mulberry32.
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> f64 {
         self.s = self.s.wrapping_add(0x6D2B_79F5);
         let mut t = self.s;
@@ -51,10 +52,7 @@ mod tests {
         ];
         for (i, e) in expected.iter().enumerate() {
             let got = rng.next();
-            assert!(
-                (got - e).abs() < 1e-15,
-                "draw {i}: got {got}, expected {e}"
-            );
+            assert!((got - e).abs() < 1e-15, "draw {i}: got {got}, expected {e}");
         }
     }
 }

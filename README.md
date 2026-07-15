@@ -32,6 +32,9 @@ tools/run-switch-nro.sh <switch-ip>
 The build packages `assets/` at `romfs:/assets`, disables desktop audio and
 windowing, and uses the Horizon runner and Deko3D surface path.
 
+See [the Switch port handoff](docs/switch-port-handoff.md) for the current
+milestone, repository ownership, hardware acceptance gate, and roadmap.
+
 ## Play
 
 - **Windows:** download [**`Warbell-Setup.msi`**](https://github.com/miskibin/warbell/releases/latest/download/Warbell-Setup.msi) and run it. The installer is self-signed, so Windows SmartScreen shows "Unknown Publisher" — click **More info → Run anyway**.

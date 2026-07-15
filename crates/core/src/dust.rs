@@ -53,7 +53,10 @@ pub struct BiomeDust {
 }
 
 /// Default earthy tint for grass / forest / pine dirt (`dustStore.ts` `DUST_DEFAULT`).
-pub const DUST_DEFAULT: BiomeDust = BiomeDust { color: "#c9b893", loose: false };
+pub const DUST_DEFAULT: BiomeDust = BiomeDust {
+    color: "#c9b893",
+    loose: false,
+};
 
 /// The dust look for a biome. Mirrors `dustStore.ts` `dustForBiome`: snow / desert /
 /// rock are LOOSE (puff on a plain walk); swamp puffs only on a sprint/landing;
@@ -65,10 +68,22 @@ pub const DUST_DEFAULT: BiomeDust = BiomeDust { color: "#c9b893", loose: false }
 /// paraphrase — the ground-truth table is what's mirrored.
 pub fn dust_for_biome(biome: Option<Biome>) -> BiomeDust {
     match biome {
-        Some(Biome::Snow) => BiomeDust { color: "#eaf1f7", loose: true },
-        Some(Biome::Desert) => BiomeDust { color: "#e3d2a0", loose: true },
-        Some(Biome::Rock) => BiomeDust { color: "#bcb8b0", loose: true },
-        Some(Biome::Swamp) => BiomeDust { color: "#6f6a4e", loose: false },
+        Some(Biome::Snow) => BiomeDust {
+            color: "#eaf1f7",
+            loose: true,
+        },
+        Some(Biome::Desert) => BiomeDust {
+            color: "#e3d2a0",
+            loose: true,
+        },
+        Some(Biome::Rock) => BiomeDust {
+            color: "#bcb8b0",
+            loose: true,
+        },
+        Some(Biome::Swamp) => BiomeDust {
+            color: "#6f6a4e",
+            loose: false,
+        },
         _ => DUST_DEFAULT,
     }
 }
@@ -173,7 +188,13 @@ impl Default for DustOpts {
     fn default() -> Self {
         // The TS `spawnDust` defaults: count 5, spread 0.9, size 1, up 0.5, and the
         // DUST_DEFAULT grass tint (carried as a float triple by the caller).
-        DustOpts { count: 5, spread: 0.9, size: 1.0, up: 0.5, color: (0.0, 0.0, 0.0) }
+        DustOpts {
+            count: 5,
+            spread: 0.9,
+            size: 1.0,
+            up: 0.5,
+            color: (0.0, 0.0, 0.0),
+        }
     }
 }
 
@@ -205,7 +226,13 @@ impl DustPool {
     /// `spawnDust`. Saturating the pool drops the OLDEST mote (TS `motes.shift()`).
     /// Per-mote jitter comes from `rng` (replacing the TS `Math.random()`).
     pub fn spawn(&mut self, x: f64, y: f64, z: f64, opts: DustOpts, rng: &mut DustRng) {
-        let DustOpts { count, spread, size, up, color } = opts;
+        let DustOpts {
+            count,
+            spread,
+            size,
+            up,
+            color,
+        } = opts;
         for i in 0..count {
             if self.motes.len() >= MAX_MOTES {
                 self.motes.remove(0); // drop the oldest (TS `motes.shift()`)
@@ -262,17 +289,45 @@ mod tests {
     use super::*;
 
     fn opts(count: usize) -> DustOpts {
-        DustOpts { count, color: (0.5, 0.4, 0.3), ..Default::default() }
+        DustOpts {
+            count,
+            color: (0.5, 0.4, 0.3),
+            ..Default::default()
+        }
     }
 
     #[test]
     fn dust_for_biome_matches_the_ts_table() {
         // Loose biomes (a plain walk stirs them) — snow / desert / rock.
-        assert_eq!(dust_for_biome(Some(Biome::Snow)), BiomeDust { color: "#eaf1f7", loose: true });
-        assert_eq!(dust_for_biome(Some(Biome::Desert)), BiomeDust { color: "#e3d2a0", loose: true });
-        assert_eq!(dust_for_biome(Some(Biome::Rock)), BiomeDust { color: "#bcb8b0", loose: true });
+        assert_eq!(
+            dust_for_biome(Some(Biome::Snow)),
+            BiomeDust {
+                color: "#eaf1f7",
+                loose: true
+            }
+        );
+        assert_eq!(
+            dust_for_biome(Some(Biome::Desert)),
+            BiomeDust {
+                color: "#e3d2a0",
+                loose: true
+            }
+        );
+        assert_eq!(
+            dust_for_biome(Some(Biome::Rock)),
+            BiomeDust {
+                color: "#bcb8b0",
+                loose: true
+            }
+        );
         // Swamp puffs but is NOT loose (sprint/landing only).
-        assert_eq!(dust_for_biome(Some(Biome::Swamp)), BiomeDust { color: "#6f6a4e", loose: false });
+        assert_eq!(
+            dust_for_biome(Some(Biome::Swamp)),
+            BiomeDust {
+                color: "#6f6a4e",
+                loose: false
+            }
+        );
         // Grass / forest / plains / sand / off-map all fall to the default tint.
         assert_eq!(dust_for_biome(Some(Biome::Grass)), DUST_DEFAULT);
         assert_eq!(dust_for_biome(Some(Biome::Forest)), DUST_DEFAULT);
@@ -289,7 +344,11 @@ mod tests {
         pool.spawn(10.0, 1.0, 12.0, opts(5), &mut rng);
         assert_eq!(pool.len(), 5, "five motes in a default puff");
         for m in pool.motes() {
-            assert_eq!((m.r, m.g, m.b), (0.5, 0.4, 0.3), "every mote carries the puff colour");
+            assert_eq!(
+                (m.r, m.g, m.b),
+                (0.5, 0.4, 0.3),
+                "every mote carries the puff colour"
+            );
             // Lives are in the TS band 0.45..0.85.
             assert!((0.45..=0.85).contains(&m.life), "life {} in band", m.life);
             // Spawned near the puff origin (±0.12 jitter in x/z).
@@ -352,7 +411,11 @@ mod tests {
             pool.step(1.0 / 60.0);
         }
         let m = &pool.motes()[0];
-        assert!(m.y >= GROUND_Y - 1e-9, "mote settled at/above the ground, y = {}", m.y);
+        assert!(
+            m.y >= GROUND_Y - 1e-9,
+            "mote settled at/above the ground, y = {}",
+            m.y
+        );
         assert_eq!(m.vy, 0.0, "downward velocity zeroed on landing");
     }
 
@@ -380,7 +443,10 @@ mod tests {
         // End of the grow window (k = 0.2): grow = 1, out = 0.8 → size*0.55*0.8.
         m.age = 0.2;
         let peak = m.render_scale();
-        assert!((peak - RENDER_SCALE * 0.8).abs() < 1e-9, "peak at end of grow, got {peak}");
+        assert!(
+            (peak - RENDER_SCALE * 0.8).abs() < 1e-9,
+            "peak at end of grow, got {peak}"
+        );
         // Mid-life is past the peak and shrinking.
         m.age = 0.6;
         assert!(m.render_scale() < peak, "shrinking after the peak");

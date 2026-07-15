@@ -16,7 +16,11 @@ pub struct ResourceState {
 
 impl Default for ResourceState {
     fn default() -> Self {
-        Self { stone: 0.0, food: 0.0, wood: 0.0 }
+        Self {
+            stone: 0.0,
+            food: 0.0,
+            wood: 0.0,
+        }
     }
 }
 

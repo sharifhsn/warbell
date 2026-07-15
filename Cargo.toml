@@ -57,6 +57,7 @@ tileworld_core = { path = "crates/core", features = ["serde"] }
 # Save/continue: JSON snapshot of a run, written at each dawn (`src/savegame.rs`).
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
 # Same wgpu major bevy 0.19 depends on (29.x) — used in quality.rs to inspect
 # RenderAdapterInfo::device_type for the hardware-aware startup preset. Kept at the bare major so
 # cargo unifies it with bevy's own wgpu (same compiled crate → DeviceType types match).
@@ -73,6 +74,7 @@ image = { version = "0.25", default-features = false, features = ["png"], option
 # the platform loop on the exact crate lets Cargo unify its native link directives.
 deko3d-sys = { path = "../wgpu-deko3d-29/wgpu-hal/deko3d-sys", features = ["release-deko3d"] }
 getrandom = "0.3"
+wgpu-hal = { version = "29", default-features = false, features = ["deko3d"] }
 
 # Profiling build: turns on Bevy's per-system tracing spans, written to a chrome-trace JSON on exit
 # (`trace-<ts>.json`). `cargo run --features profiling` then `tools/trace_summary.py <file>` gives an
@@ -110,6 +112,10 @@ shader-proof-capture = ["shader-capture"]
 # window icon, audio, and post-processing gates can be added under this feature
 # without changing the default desktop build.
 switch = ["bevy/horizon", "wgpu/deko3d"]
+# Ryujinx does not currently keep libnx's applet main loop alive for this
+# homebrew NRO. This mode runs the normal Switch app for a bounded 300-frame
+# acceptance pass without changing physical-hardware exit handling.
+switch-emulator = ["switch"]
 
 [patch.crates-io]
 # Keep Bevy 0.19 and the direct adapter query on one local wgpu 29 graph. Patching

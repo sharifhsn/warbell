@@ -36,23 +36,43 @@ pub struct FireProfile {
 pub const TOWER_MAX_HP: f64 = 180.0;
 
 /// Base watchtower fire profile — `Towers.tsx` `BASE` (+ the TS `speed: 11`).
-pub const TOWER_BASE: FireProfile =
-    FireProfile { range: 18.0, damage: 7.0, cooldown: 1.6, max_range: 22.0, speed: 11.0 };
+pub const TOWER_BASE: FireProfile = FireProfile {
+    range: 18.0,
+    damage: 7.0,
+    cooldown: 1.6,
+    max_range: 22.0,
+    speed: 11.0,
+};
 
 /// Tower-Mastery upgrade profile — `Towers.tsx` `MASTERY` (faster/farther/harder).
-pub const TOWER_MASTERY: FireProfile =
-    FireProfile { range: 24.0, damage: 12.0, cooldown: 1.0, max_range: 28.0, speed: 11.0 };
+pub const TOWER_MASTERY: FireProfile = FireProfile {
+    range: 24.0,
+    damage: 12.0,
+    cooldown: 1.0,
+    max_range: 28.0,
+    speed: 11.0,
+};
 
 /// Ballista fire profile — `Ballista.tsx` `PROFILE` (long range, big single hits,
 /// the TS `speed: 16`).
-pub const BALLISTA: FireProfile =
-    FireProfile { range: 24.0, damage: 45.0, cooldown: 2.6, max_range: 28.0, speed: 16.0 };
+pub const BALLISTA: FireProfile = FireProfile {
+    range: 24.0,
+    damage: 45.0,
+    cooldown: 2.6,
+    max_range: 28.0,
+    speed: 16.0,
+};
 
 /// Keep-archer fire profile — `KeepArchers.tsx` `ARCHER` (+ the TS bolt `speed: 12`).
 /// Four bowmen on the keep-roof corners; shorter range / lighter hits than a tower,
 /// but stationed right over the gate the orks funnel toward.
-pub const KEEP_ARCHER: FireProfile =
-    FireProfile { range: 13.0, damage: 6.0, cooldown: 1.7, max_range: 16.0, speed: 12.0 };
+pub const KEEP_ARCHER: FireProfile = FireProfile {
+    range: 13.0,
+    damage: 6.0,
+    cooldown: 1.7,
+    max_range: 16.0,
+    speed: 12.0,
+};
 
 /// Bolt muzzle height above a tower's base (`Towers.tsx` `TOWER_MUZZLE_Y`).
 pub const TOWER_MUZZLE_Y: f64 = 6.0;

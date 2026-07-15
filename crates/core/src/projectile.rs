@@ -167,7 +167,12 @@ mod tests {
     use super::*;
 
     fn alive_at(x: f64, y: f64, z: f64) -> TargetPose {
-        TargetPose { x, y, z, alive: true }
+        TargetPose {
+            x,
+            y,
+            z,
+            alive: true,
+        }
     }
 
     #[test]
@@ -205,7 +210,12 @@ mod tests {
     #[test]
     fn drops_a_bolt_whose_target_is_already_dead() {
         let mut b = Bolt::new(10.0, 1.0, 20.0, BoltTarget::Ork, 25.0);
-        let dead = TargetPose { x: 10.0, y: 1.0, z: 20.0, alive: false };
+        let dead = TargetPose {
+            x: 10.0,
+            y: 1.0,
+            z: 20.0,
+            alive: false,
+        };
         let out = step_bolt(&mut b, &dead, 0.1);
         assert_eq!(out, BoltOutcome::Fizzle);
     }

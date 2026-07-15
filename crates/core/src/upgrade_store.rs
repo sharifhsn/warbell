@@ -126,7 +126,17 @@ const fn node(
     prereq_id: Option<&'static str>,
     effect: UpgradeEffect,
 ) -> UpgradeNode {
-    UpgradeNode { id, branch, name, desc, icon, base_cost, stone_cost, prereq_id, effect }
+    UpgradeNode {
+        id,
+        branch,
+        name,
+        desc,
+        icon,
+        base_cost,
+        stone_cost,
+        prereq_id,
+        effect,
+    }
 }
 
 use UpgradeBranch::*;
@@ -138,80 +148,295 @@ pub static UPGRADE_NODES: &[UpgradeNode] = &[
     // ── Economy: gold & trade ─────────────────────────────────────────────────
     // (Food/population growth lives in the town city-building layer — build Farm
     // and House plots in the suburb; the tree no longer duplicates them.)
-    node("eco_bounty", Economy, "Bounty",
+    node(
+        "eco_bounty",
+        Economy,
+        "Bounty",
         "+50% gold from every ork you slay — reach the costly upgrades sooner.",
-        "💰", 60, 0, None, Bounty(1.5)),
-    node("eco_tax_office", Economy, "Tax Office",
+        "💰",
+        60,
+        0,
+        None,
+        Bounty(1.5),
+    ),
+    node(
+        "eco_tax_office",
+        Economy,
+        "Tax Office",
         "Doubles the dawn tithe — every villager pays twice the gold each night you survive.",
-        "🏛️", 75, 0, None, TaxOffice),
-    node("eco_merchant_guild", Economy, "Merchant Guild",
+        "🏛️",
+        75,
+        0,
+        None,
+        TaxOffice,
+    ),
+    node(
+        "eco_merchant_guild",
+        Economy,
+        "Merchant Guild",
         "−20% on everything the wandering merchant sells.",
-        "⚖️", 70, 0, None, MerchantGuild(0.8)),
-
+        "⚖️",
+        70,
+        0,
+        None,
+        MerchantGuild(0.8),
+    ),
     // ── Defense: fortify the city ─────────────────────────────────────────────
-    node("def_walls", Defense, "Palisade Walls",
+    node(
+        "def_walls",
+        Defense,
+        "Palisade Walls",
         "Ring the town in timber walls — orks must funnel to the gates instead of swarming in.",
-        "🧱", 50, 20, None, Walls),
-    node("def_gate", Defense, "Gatehouse",
+        "🧱",
+        50,
+        20,
+        None,
+        Walls,
+    ),
+    node(
+        "def_gate",
+        Defense,
+        "Gatehouse",
         "Raise torchlit gatehouse arches over the four wall openings — the front your folk and the night-wave both funnel through.",
-        "🚪", 35, 10, Some("def_walls"), Gate),
-    node("def_towers", Defense, "Watchtowers",
+        "🚪",
+        35,
+        10,
+        Some("def_walls"),
+        Gate,
+    ),
+    node(
+        "def_towers",
+        Defense,
+        "Watchtowers",
         "Four corner towers that auto-fire arrows at any ork in range.",
-        "🗼", 80, 25, Some("def_walls"), Towers),
-    node("def_tower_mastery", Defense, "Tower Mastery",
+        "🗼",
+        80,
+        25,
+        Some("def_walls"),
+        Towers,
+    ),
+    node(
+        "def_tower_mastery",
+        Defense,
+        "Tower Mastery",
         "Watchtowers fire faster, farther, and hit harder.",
-        "🎯", 120, 0, Some("def_towers"), TowerMastery),
-    node("def_keep_archers", Defense, "Keep Archers",
+        "🎯",
+        120,
+        0,
+        Some("def_towers"),
+        TowerMastery,
+    ),
+    node(
+        "def_keep_archers",
+        Defense,
+        "Keep Archers",
         "Bowmen on the keep roof rain arrows down on the courtyard all night.",
-        "🏹", 100, 0, None, KeepArchers),
-    node("def_reinforce", Defense, "Reinforced Keep",
+        "🏹",
+        100,
+        0,
+        None,
+        KeepArchers,
+    ),
+    node(
+        "def_reinforce",
+        Defense,
+        "Reinforced Keep",
         "Greatly raises the keep's max HP — far more stone to grind through before it falls.",
-        "🏰", 130, 30, None, ReinforceKeep),
-    node("def_armor_1", Defense, "Town Guard Arms",
+        "🏰",
+        130,
+        30,
+        None,
+        ReinforceKeep,
+    ),
+    node(
+        "def_armor_1",
+        Defense,
+        "Town Guard Arms",
         "Arm the townsfolk: guards hit far harder (16 dmg) and chase orks from farther.",
-        "🪖", 40, 0, None, VillagerArmor),
-    node("def_armor_2", Defense, "Veteran Guard",
+        "🪖",
+        40,
+        0,
+        None,
+        VillagerArmor,
+    ),
+    node(
+        "def_armor_2",
+        Defense,
+        "Veteran Guard",
         "Steel arms and drilling: guards hit harder still (23 dmg) and hold a wider watch.",
-        "🛡️", 90, 0, Some("def_armor_1"), VillagerArmor),
-    node("def_armor_3", Defense, "Town Champions",
+        "🛡️",
+        90,
+        0,
+        Some("def_armor_1"),
+        VillagerArmor,
+    ),
+    node(
+        "def_armor_3",
+        Defense,
+        "Town Champions",
         "Masterwork blades for the militia: guards hit like knights (32 dmg).",
-        "⚔️", 150, 0, Some("def_armor_2"), VillagerArmor),
-    node("def_guard_hp_1", Defense, "Garrison Infirmary",
+        "⚔️",
+        150,
+        0,
+        Some("def_armor_2"),
+        VillagerArmor,
+    ),
+    node(
+        "def_guard_hp_1",
+        Defense,
+        "Garrison Infirmary",
         "A healer's hall for the watch — every guard soaks +30 max HP.",
-        "❤️", 55, 0, None, GuardHealth(30.0)),
-    node("def_guard_hp_2", Defense, "Iron Constitution",
+        "❤️",
+        55,
+        0,
+        None,
+        GuardHealth(30.0),
+    ),
+    node(
+        "def_guard_hp_2",
+        Defense,
+        "Iron Constitution",
         "Hardened, well-fed militia: another +55 max HP per guard.",
-        "💗", 100, 0, Some("def_guard_hp_1"), GuardHealth(55.0)),
-    node("def_ballista", Defense, "Ballista",
+        "💗",
+        100,
+        0,
+        Some("def_guard_hp_1"),
+        GuardHealth(55.0),
+    ),
+    node(
+        "def_ballista",
+        Defense,
+        "Ballista",
         "A heavy bolt-thrower at the north gate: long range, big single hits.",
-        "🎱", 110, 0, None, Ballista),
-    node("def_shrine", Defense, "Healing Shrine",
+        "🎱",
+        110,
+        0,
+        None,
+        Ballista,
+    ),
+    node(
+        "def_shrine",
+        Defense,
+        "Healing Shrine",
         "A shrine that steadily heals the hero while you stay inside the walls.",
-        "⛲", 95, 0, None, HealingShrine),
-
+        "⛲",
+        95,
+        0,
+        None,
+        HealingShrine,
+    ),
     // ── Hero: the player knight ───────────────────────────────────────────────
-    node("hero_hp_1", Hero, "Vigor", "+18 max HP.", "❤️", 30, 0, None, MaxHp(18.0)),
-    node("hero_hp_2", Hero, "Greater Vigor", "+35 max HP.", "💗", 70, 0, Some("hero_hp_1"), MaxHp(35.0)),
-    node("hero_dmg_1", Hero, "Sharpened Blade", "+4 attack damage.", "⚔️", 30, 0, None, AttackDamage(4.0)),
-    node("hero_dmg_2", Hero, "Honed Edge", "+7 attack damage.", "🗡️", 70, 0, Some("hero_dmg_1"), AttackDamage(7.0)),
-    node("hero_crit", Hero, "Crit Strike",
+    node(
+        "hero_hp_1",
+        Hero,
+        "Vigor",
+        "+18 max HP.",
+        "❤️",
+        30,
+        0,
+        None,
+        MaxHp(18.0),
+    ),
+    node(
+        "hero_hp_2",
+        Hero,
+        "Greater Vigor",
+        "+35 max HP.",
+        "💗",
+        70,
+        0,
+        Some("hero_hp_1"),
+        MaxHp(35.0),
+    ),
+    node(
+        "hero_dmg_1",
+        Hero,
+        "Sharpened Blade",
+        "+4 attack damage.",
+        "⚔️",
+        30,
+        0,
+        None,
+        AttackDamage(4.0),
+    ),
+    node(
+        "hero_dmg_2",
+        Hero,
+        "Honed Edge",
+        "+7 attack damage.",
+        "🗡️",
+        70,
+        0,
+        Some("hero_dmg_1"),
+        AttackDamage(7.0),
+    ),
+    node(
+        "hero_crit",
+        Hero,
+        "Crit Strike",
         "14% chance for a swing to deal double damage.",
-        "💥", 80, 0, Some("hero_dmg_1"), Crit(0.14)),
-    node("hero_lifesteal", Hero, "Lifesteal",
+        "💥",
+        80,
+        0,
+        Some("hero_dmg_1"),
+        Crit(0.14),
+    ),
+    node(
+        "hero_lifesteal",
+        Hero,
+        "Lifesteal",
         "Heal 7 HP every time you slay an ork.",
-        "🩸", 90, 0, Some("hero_hp_1"), Lifesteal(7.0)),
-    node("hero_swift", Hero, "Swift Boots", "Move 13% faster.", "👢", 60, 0, None, MoveSpeed(1.13)),
-    node("hero_cleave", Hero, "Cleave",
+        "🩸",
+        90,
+        0,
+        Some("hero_hp_1"),
+        Lifesteal(7.0),
+    ),
+    node(
+        "hero_swift",
+        Hero,
+        "Swift Boots",
+        "Move 13% faster.",
+        "👢",
+        60,
+        0,
+        None,
+        MoveSpeed(1.13),
+    ),
+    node(
+        "hero_cleave",
+        Hero,
+        "Cleave",
         "Strikes splash 21% damage to orks beside your target.",
-        "🌀", 110, 0, Some("hero_dmg_2"), Cleave(0.21)),
-
+        "🌀",
+        110,
+        0,
+        Some("hero_dmg_2"),
+        Cleave(0.21),
+    ),
     // ── Arsenal: unlock shop weapons ──────────────────────────────────────────
-    node("ars_axe", Arsenal, "Unlock Battle Axe",
+    node(
+        "ars_axe",
+        Arsenal,
+        "Unlock Battle Axe",
         "Stocks the Battle Axe (+15 attack) at the wandering merchant.",
-        "🪓", 50, 0, None, UnlockWeapon("axe")),
-    node("ars_sword", Arsenal, "Unlock Golden Blade",
+        "🪓",
+        50,
+        0,
+        None,
+        UnlockWeapon("axe"),
+    ),
+    node(
+        "ars_sword",
+        Arsenal,
+        "Unlock Golden Blade",
         "Stocks the Golden Blade (+21 attack) at the wandering merchant.",
-        "🌟", 90, 0, Some("ars_axe"), UnlockWeapon("sword_gold")),
+        "🌟",
+        90,
+        0,
+        Some("ars_axe"),
+        UnlockWeapon("sword_gold"),
+    ),
 ];
 
 /// Resolve a node id to its definition (the TS `UPGRADE_NODES.find`).
@@ -338,7 +563,11 @@ mod tests {
     fn every_prereq_resolves_to_a_real_node() {
         for n in UPGRADE_NODES {
             if let Some(req) = n.prereq_id {
-                assert!(node_by_id(req).is_some(), "{} has dangling prereq {req}", n.id);
+                assert!(
+                    node_by_id(req).is_some(),
+                    "{} has dangling prereq {req}",
+                    n.id
+                );
             }
         }
     }
@@ -426,18 +655,42 @@ mod tests {
 
     #[test]
     fn hero_effects_carry_the_ts_magnitudes() {
-        assert_eq!(node_by_id("hero_hp_1").unwrap().effect, UpgradeEffect::MaxHp(18.0));
-        assert_eq!(node_by_id("hero_dmg_2").unwrap().effect, UpgradeEffect::AttackDamage(7.0));
-        assert_eq!(node_by_id("hero_crit").unwrap().effect, UpgradeEffect::Crit(0.14));
-        assert_eq!(node_by_id("hero_lifesteal").unwrap().effect, UpgradeEffect::Lifesteal(7.0));
-        assert_eq!(node_by_id("hero_swift").unwrap().effect, UpgradeEffect::MoveSpeed(1.13));
-        assert_eq!(node_by_id("hero_cleave").unwrap().effect, UpgradeEffect::Cleave(0.21));
-        assert_eq!(node_by_id("eco_bounty").unwrap().effect, UpgradeEffect::Bounty(1.5));
+        assert_eq!(
+            node_by_id("hero_hp_1").unwrap().effect,
+            UpgradeEffect::MaxHp(18.0)
+        );
+        assert_eq!(
+            node_by_id("hero_dmg_2").unwrap().effect,
+            UpgradeEffect::AttackDamage(7.0)
+        );
+        assert_eq!(
+            node_by_id("hero_crit").unwrap().effect,
+            UpgradeEffect::Crit(0.14)
+        );
+        assert_eq!(
+            node_by_id("hero_lifesteal").unwrap().effect,
+            UpgradeEffect::Lifesteal(7.0)
+        );
+        assert_eq!(
+            node_by_id("hero_swift").unwrap().effect,
+            UpgradeEffect::MoveSpeed(1.13)
+        );
+        assert_eq!(
+            node_by_id("hero_cleave").unwrap().effect,
+            UpgradeEffect::Cleave(0.21)
+        );
+        assert_eq!(
+            node_by_id("eco_bounty").unwrap().effect,
+            UpgradeEffect::Bounty(1.5)
+        );
     }
 
     #[test]
     fn arsenal_nodes_unlock_the_right_weapon_ids() {
-        assert_eq!(node_by_id("ars_axe").unwrap().effect, UpgradeEffect::UnlockWeapon("axe"));
+        assert_eq!(
+            node_by_id("ars_axe").unwrap().effect,
+            UpgradeEffect::UnlockWeapon("axe")
+        );
         assert_eq!(
             node_by_id("ars_sword").unwrap().effect,
             UpgradeEffect::UnlockWeapon("sword_gold")
@@ -450,11 +703,23 @@ mod tests {
         for id in ["def_armor_1", "def_armor_2", "def_armor_3"] {
             assert_eq!(node_by_id(id).unwrap().effect, UpgradeEffect::VillagerArmor);
         }
-        assert_eq!(node_by_id("def_armor_3").unwrap().prereq_id, Some("def_armor_2"));
+        assert_eq!(
+            node_by_id("def_armor_3").unwrap().prereq_id,
+            Some("def_armor_2")
+        );
         // Two stacking guard-health lines.
-        assert_eq!(node_by_id("def_guard_hp_1").unwrap().effect, UpgradeEffect::GuardHealth(30.0));
-        assert_eq!(node_by_id("def_guard_hp_2").unwrap().effect, UpgradeEffect::GuardHealth(55.0));
-        assert_eq!(node_by_id("def_guard_hp_2").unwrap().prereq_id, Some("def_guard_hp_1"));
+        assert_eq!(
+            node_by_id("def_guard_hp_1").unwrap().effect,
+            UpgradeEffect::GuardHealth(30.0)
+        );
+        assert_eq!(
+            node_by_id("def_guard_hp_2").unwrap().effect,
+            UpgradeEffect::GuardHealth(55.0)
+        );
+        assert_eq!(
+            node_by_id("def_guard_hp_2").unwrap().prereq_id,
+            Some("def_guard_hp_1")
+        );
     }
 
     #[test]

@@ -27,7 +27,10 @@ pub struct ToastStack {
 
 impl Default for ToastStack {
     fn default() -> Self {
-        Self { toasts: Vec::new(), next_id: 1 }
+        Self {
+            toasts: Vec::new(),
+            next_id: 1,
+        }
     }
 }
 

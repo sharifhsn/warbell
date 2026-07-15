@@ -394,7 +394,11 @@ pub fn guard_aggro(tier: i64) -> f64 {
 /// How far a guard will range from the keep to engage — wider during a wave so the
 /// militia pushes out to meet the assault (`GUARD_DEFEND_RADIUS × 1.8` at night).
 pub fn guard_defend_radius(in_wave: bool) -> f64 {
-    if in_wave { GUARD_DEFEND_RADIUS * GUARD_DEFEND_WAVE_MULT } else { GUARD_DEFEND_RADIUS }
+    if in_wave {
+        GUARD_DEFEND_RADIUS * GUARD_DEFEND_WAVE_MULT
+    } else {
+        GUARD_DEFEND_RADIUS
+    }
 }
 
 /// Day-phase schedule for a villager (Villager.tsx `scheduledMode`). The day is

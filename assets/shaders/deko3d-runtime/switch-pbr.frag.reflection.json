@@ -1,0 +1,61 @@
+{
+  "auto_bind_resources": true,
+  "coordinate_space": "native",
+  "entry": "fragment",
+  "explicit_bindings": [],
+  "glsl_version": 460,
+  "immediates": [],
+  "immediates_binding": null,
+  "resources": [
+    {
+      "binding": 1,
+      "binding_map_target": 0,
+      "count": 1,
+      "group": 0,
+      "kind": "uniform_buffer",
+      "name": "lights"
+    },
+    {
+      "binding": 0,
+      "binding_map_target": 1,
+      "count": 1,
+      "group": 3,
+      "kind": "uniform_buffer",
+      "name": "material"
+    },
+    {
+      "binding": 1,
+      "binding_map_target": 0,
+      "count": 1,
+      "group": 3,
+      "kind": "sampled_texture",
+      "name": "base_color_texture"
+    },
+    {
+      "binding": 2,
+      "binding_map_target": 0,
+      "count": 1,
+      "group": 3,
+      "kind": "sampler",
+      "name": "base_color_sampler"
+    }
+  ],
+  "sampled_pairs": [
+    {
+      "glsl_combined_binding": 0,
+      "image": {
+        "binding": 1,
+        "group": 3,
+        "name": "base_color_texture"
+      },
+      "sampler": {
+        "binding": 2,
+        "group": 3,
+        "name": "base_color_sampler"
+      }
+    }
+  ],
+  "schema": "wgsl-to-dksh-reflection-v0",
+  "source": "assets/shaders/deko3d-runtime/switch-pbr.frag.wgsl",
+  "stage": "fragment"
+}

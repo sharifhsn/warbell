@@ -205,7 +205,11 @@ mod tests {
         // Burst at (5,5) relative to a hero at the origin; step well past the life
         // cap so every orb is collected (by contact or cap) and tally the grant.
         let mut orbs = spawn_orbs(OrbKind::Gold, 5.0, 0.0, 5.0, 4, 13, &mut rng);
-        let player = PlayerPose { x: 0.0, y: 1.0, z: 0.0 };
+        let player = PlayerPose {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        };
         let mut granted = 0i64;
         for _ in 0..200 {
             orbs.retain_mut(|o| match step_orb(o, &player, 0.05) {

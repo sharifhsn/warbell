@@ -1,0 +1,8 @@
+    var out: FragmentOutputX_naga_oil_mod_XMJSXM6K7OBRHEOR2MZXXE53BOJSF62LPX;
+    out.color = textureSampleLevel(
+        dt_lut_textureX_naga_oil_mod_XMJSXM6K7MNXXEZK7OBUXAZLMNFXGKOR2ORXW4ZLNMFYHA2LOM5PWY5LUL5RGS3TENFXGO4YX,
+        dt_lut_samplerX_naga_oil_mod_XMJSXM6K7MNXXEZK7OBUXAZLMNFXGKOR2ORXW4ZLNMFYHA2LOM5PWY5LUL5RGS3TENFXGO4YX,
+        vec3(0.5),
+        0.0,
+    );
+    return out;

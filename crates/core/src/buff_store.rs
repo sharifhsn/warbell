@@ -38,7 +38,11 @@ struct Buff {
 
 impl Buff {
     const fn inactive() -> Self {
-        Self { until: 0.0, mag: 1.0, full_sec: 0.0 }
+        Self {
+            until: 0.0,
+            mag: 1.0,
+            full_sec: 0.0,
+        }
     }
 }
 
@@ -140,7 +144,12 @@ impl BuffStore {
             let b = self.slot(kind);
             let remain = b.until - now;
             if remain > 0.0 {
-                out.push(ActiveBuff { kind, remain, full_sec: b.full_sec, mag: b.mag });
+                out.push(ActiveBuff {
+                    kind,
+                    remain,
+                    full_sec: b.full_sec,
+                    mag: b.mag,
+                });
             }
         }
         out
@@ -211,7 +220,10 @@ mod tests {
         let now = 100.0;
         s.apply_buff(BuffKind::Haste, 2000.0, 1.3, now);
         let active = s.active_buffs(now);
-        assert_eq!(active.iter().map(|b| b.kind).collect::<Vec<_>>(), vec![BuffKind::Haste]);
+        assert_eq!(
+            active.iter().map(|b| b.kind).collect::<Vec<_>>(),
+            vec![BuffKind::Haste]
+        );
         assert!(active[0].remain > 0.0);
         assert!(active[0].remain <= 2.0);
     }

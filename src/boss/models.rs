@@ -399,7 +399,7 @@ fn golem() -> BossSpec {
         put(
             lathe(&[[0.0, 0.1], [0.14, 0.07], [0.2, 0.0], [0.14, -0.04], [0.0, -0.05]], 10),
             Vec3::ONE,
-            rx(1.5708),
+            rx(std::f32::consts::FRAC_PI_2),
             v(0.0, 1.12, 0.38),
             CORE,
         ),
@@ -550,10 +550,10 @@ fn hag() -> BossSpec {
         blob(0.28, v(1.0, 0.85, 0.9), v(0.0, 0.02, 0.0), HIDE), // skull
         blob(0.22, v(1.15, 0.5, 0.85), v(0.0, -0.18, 0.14), BELLY), // wide croaking jaw
         // jagged teeth
-        cone(0.045, 0.16, v(-0.16, -0.13, 0.26), rx(3.14159), TOOTH),
-        cone(0.045, 0.18, v(-0.05, -0.15, 0.29), rx(3.14159), TOOTH),
-        cone(0.045, 0.16, v(0.07, -0.13, 0.27), rx(3.14159), TOOTH),
-        cone(0.045, 0.18, v(0.18, -0.14, 0.25), rx(3.14159), TOOTH),
+        cone(0.045, 0.16, v(-0.16, -0.13, 0.26), rx(std::f32::consts::PI), TOOTH),
+        cone(0.045, 0.18, v(-0.05, -0.15, 0.29), rx(std::f32::consts::PI), TOOTH),
+        cone(0.045, 0.16, v(0.07, -0.13, 0.27), rx(std::f32::consts::PI), TOOTH),
+        cone(0.045, 0.18, v(0.18, -0.14, 0.25), rx(std::f32::consts::PI), TOOTH),
         blob(0.06, v(1.6, 0.45, 0.6), v(-0.15, 0.06, 0.24), EYE), // narrowed eyes
         blob(0.06, v(1.6, 0.45, 0.6), v(0.15, 0.06, 0.24), EYE),
         blob(0.16, v(1.35, 0.45, 0.8), v(0.0, 0.17, 0.14), DARK), // heavy brow

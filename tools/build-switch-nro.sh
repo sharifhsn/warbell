@@ -9,7 +9,7 @@ TARGET_JSON=${TARGET_JSON:-"$SWITCH_REPO/experiments/switch1-deko3d-wgpu/targets
 PATCH_DIR=${PATCH_DIR:-"$SWITCH_REPO/experiments/switch1-deko3d-wgpu/dependency-patches"}
 OUT_ROOT=${OUT_ROOT:-"$ROOT_DIR/target/switch-nro"}
 LIBNX_FILTERED="$OUT_ROOT/libnx.a"
-CLEAN_BUILD=${CLEAN_BUILD:-1}
+CLEAN_BUILD=${CLEAN_BUILD:-0}
 GENERATED_TARGET="$OUT_ROOT/horizon-newlib-gcc.json"
 DEPS_DIR="$OUT_ROOT/deps"
 ROMFS_STAGE="$OUT_ROOT/romfs"
@@ -20,8 +20,12 @@ OUT_NACP="$OUT_DIR/tileworld_bevy_forest.nacp"
 OUT_NRO="$OUT_DIR/warbell-switch.nro"
 CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"}
 LOCK_BACKUP="$OUT_ROOT/Cargo.lock.original"
+SYSROOT=$(rustc +nightly --print sysroot)
+SYSROOT_LOCK="$SYSROOT/lib/rustlib/src/rust/library/Cargo.lock"
+SYSROOT_MANIFEST="$SYSROOT/lib/rustlib/src/rust/library/Cargo.toml"
 
 export DEVKITPRO DEVKITA64 CARGO_TARGET_DIR
+export CARGO_INCREMENTAL=${CARGO_INCREMENTAL:-0}
 export PATH="$DEVKITPRO/tools/bin:$DEVKITA64/bin:$PATH"
 
 require_command() {
@@ -67,11 +71,15 @@ copy_crate() {
 patch_libc_horizon() {
   require_file "$PATCH_DIR/0001-libc-horizon-newlib-rustix-surface.patch"
   perl -0pi -e 's/pub type clockid_t = c_ulong;/cfg_if! {\n    if #[cfg(target_os = "horizon")] {\n        pub type clockid_t = c_int;\n    } else {\n        pub type clockid_t = c_ulong;\n    }\n}/' "$LIBC_PATCHED/src/unix/newlib/mod.rs"
+  perl -0pi -e 's/pub type blkcnt_t = i32;\npub type blksize_t = i32;/cfg_if! {\n    if #[cfg(target_os = "horizon")] {\n        pub type blkcnt_t = c_long;\n        pub type blksize_t = c_long;\n    } else {\n        pub type blkcnt_t = i32;\n        pub type blksize_t = i32;\n    }\n}/' "$LIBC_PATCHED/src/unix/newlib/mod.rs"
+  perl -0pi -e 's/    } else \{\n        pub type dev_t = u32;\n        pub type ino_t = u32;\n        pub type off_t = i64;\n/    } else if #[cfg(target_os = "horizon")] {\n        pub type dev_t = c_short;\n        pub type ino_t = c_ushort;\n        pub type off_t = c_long;\n    } else {\n        pub type dev_t = u32;\n        pub type ino_t = u32;\n        pub type off_t = i64;\n/' "$LIBC_PATCHED/src/unix/newlib/mod.rs"
   perl -0pi -e 's/pub events: c_int,\n        pub revents: c_int,/pub events: c_short,\n        pub revents: c_short,/' "$LIBC_PATCHED/src/unix/newlib/horizon/mod.rs"
   perl -0pi -e 's/pub const POLLIN: c_int = 0x0001;\npub const POLLPRI: c_int = 0x0002;\npub const POLLOUT: c_int = 0x0004;\npub const POLLRDNORM: c_int = 0x0040;\npub const POLLWRNORM: c_int = POLLOUT;\npub const POLLRDBAND: c_int = 0x0080;\npub const POLLWRBAND: c_int = 0x0100;\npub const POLLERR: c_int = 0x0008;\npub const POLLHUP: c_int = 0x0010;\npub const POLLNVAL: c_int = 0x0020;/pub const POLLIN: c_short = 0x0001;\npub const POLLPRI: c_short = 0x0002;\npub const POLLOUT: c_short = 0x0004;\npub const POLLRDNORM: c_short = 0x0040;\npub const POLLWRNORM: c_short = POLLOUT;\npub const POLLRDBAND: c_short = 0x0080;\npub const POLLWRBAND: c_short = 0x0100;\npub const POLLERR: c_short = 0x0008;\npub const POLLHUP: c_short = 0x0010;\npub const POLLNVAL: c_short = 0x0020;/' "$LIBC_PATCHED/src/unix/newlib/horizon/mod.rs"
   perl -0pi -e 's/    pub fn gethostid\(\) -> c_long;\n/    pub fn gethostid() -> c_long;\n\n    pub fn dirfd(dirp: *mut crate::DIR) -> c_int;\n\n    pub fn seekdir(dirp: *mut crate::DIR, loc: c_long);\n/' "$LIBC_PATCHED/src/unix/newlib/horizon/mod.rs"
   grep -q 'pub type clockid_t = c_int' "$LIBC_PATCHED/src/unix/newlib/mod.rs"
   grep -q 'pub events: c_short' "$LIBC_PATCHED/src/unix/newlib/horizon/mod.rs"
+  grep -q 'pub type blkcnt_t = c_long' "$LIBC_PATCHED/src/unix/newlib/mod.rs"
+  grep -q 'pub type dev_t = c_short' "$LIBC_PATCHED/src/unix/newlib/mod.rs"
   grep -q 'pub const POLLIN: c_short' "$LIBC_PATCHED/src/unix/newlib/horizon/mod.rs"
   grep -q 'pub fn dirfd' "$LIBC_PATCHED/src/unix/newlib/horizon/mod.rs"
   grep -q 'pub fn seekdir' "$LIBC_PATCHED/src/unix/newlib/horizon/mod.rs"
@@ -111,15 +119,24 @@ mkdir -p "$OUT_ROOT" "$DEPS_DIR"
 if [ "$CLEAN_BUILD" = 1 ]; then
   rm -rf "$CARGO_TARGET_DIR"
 fi
-copy_crate "$LIBC_SRC" "$LIBC_PATCHED"
-copy_crate "$POLLING_SRC" "$POLLING_PATCHED"
+if [ ! -d "$LIBC_PATCHED" ]; then
+  copy_crate "$LIBC_SRC" "$LIBC_PATCHED"
+  patch_libc_horizon
+fi
+if [ ! -d "$POLLING_PATCHED" ]; then
+  copy_crate "$POLLING_SRC" "$POLLING_PATCHED"
+  patch_polling_horizon
+fi
 grep -q "^version = \"$LIBC_VERSION\"$" "$LIBC_PATCHED/Cargo.toml"
 grep -q "^version = \"$POLLING_VERSION\"$" "$POLLING_PATCHED/Cargo.toml"
-patch_libc_horizon
-patch_polling_horizon
+grep -q 'pub type blkcnt_t = c_long' "$LIBC_PATCHED/src/unix/newlib/mod.rs"
+grep -q 'target_os = "horizon"' "$POLLING_PATCHED/src/poll.rs"
 
-jq --arg linker "$DEVKITA64/bin/aarch64-none-elf-gcc" \
-  'del(."link-script") | .linker = $linker | ."linker-flavor" = "gnu-cc"' \
+TARGET_FILTER='del(."link-script") | .linker = $linker | ."linker-flavor" = "gnu-cc"'
+if [ "${SWITCH_EMULATOR:-0}" = 1 ]; then
+  TARGET_FILTER='del(."link-script", ."has-thread-local") | .linker = $linker | ."linker-flavor" = "gnu-cc"'
+fi
+jq --arg linker "$DEVKITA64/bin/aarch64-none-elf-gcc" "$TARGET_FILTER" \
   "$TARGET_JSON" > "$GENERATED_TARGET"
 
 rm -rf "$ROMFS_STAGE"
@@ -160,15 +177,30 @@ RUSTFLAGS="$RUSTFLAGS -C link-arg=-lc"
 RUSTFLAGS="$RUSTFLAGS -C link-arg=-lm"
 RUSTFLAGS="$RUSTFLAGS -C link-arg=-lgcc"
 RUSTFLAGS="$RUSTFLAGS -C link-arg=-Wl,--end-group"
+if [ "${SWITCH_EMULATOR:-0}" = 1 ]; then
+  RUSTFLAGS="$RUSTFLAGS -C link-arg=-Wl,--wrap=pthread_key_create"
+  RUSTFLAGS="$RUSTFLAGS -C link-arg=-Wl,--wrap=pthread_key_delete"
+  RUSTFLAGS="$RUSTFLAGS -C link-arg=-Wl,--wrap=pthread_getspecific"
+  RUSTFLAGS="$RUSTFLAGS -C link-arg=-Wl,--wrap=pthread_setspecific"
+fi
 export RUSTFLAGS
+
+SWITCH_FEATURES=switch
+if [ "${SWITCH_EMULATOR:-0}" = 1 ]; then
+  SWITCH_FEATURES=switch-emulator
+fi
 
 cd "$ROOT_DIR"
 cp Cargo.lock "$LOCK_BACKUP"
 trap 'cp "$LOCK_BACKUP" "$ROOT_DIR/Cargo.lock"' EXIT INT TERM
+cargo +nightly update --offline --manifest-path "$SYSROOT_MANIFEST" \
+  -p libc --precise "$LIBC_VERSION" \
+  --config "patch.crates-io.libc.path='$LIBC_PATCHED'" \
+  --config "patch.crates-io.polling.path='$POLLING_PATCHED'"
 cargo +nightly build --offline \
   --config "patch.crates-io.libc.path='$LIBC_PATCHED'" \
   --config "patch.crates-io.polling.path='$POLLING_PATCHED'" \
-  --no-default-features --features switch \
+  --no-default-features --features "$SWITCH_FEATURES" \
   --target "$GENERATED_TARGET" \
   -Z json-target-spec -Z build-std=std,panic_abort
 cp "$LOCK_BACKUP" Cargo.lock
@@ -184,6 +216,7 @@ shasum -a 256 "$OUT_NRO" > "$OUT_NRO.sha256"
   echo "warbell=$(git -C "$ROOT_DIR" rev-parse HEAD)"
   echo "bevy=$(git -C "$ROOT_DIR/../bevy-deko3d-019" rev-parse HEAD)"
   echo "wgpu=$(git -C "$ROOT_DIR/../wgpu-deko3d-29" rev-parse HEAD)"
+  echo "switch_emulator=${SWITCH_EMULATOR:-0}"
   echo "bytes=$(wc -c < "$OUT_NRO" | tr -d ' ')"
   echo "sha256=$(cut -d ' ' -f 1 "$OUT_NRO.sha256")"
 } > "$OUT_NRO.build-info.txt"

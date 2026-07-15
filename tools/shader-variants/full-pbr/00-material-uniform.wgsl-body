@@ -1,0 +1,3 @@
+    var out: FragmentOutputX_naga_oil_mod_XMJSXM6K7OBRHEOR2MZXXE53BOJSF62LPX;
+    out.color = materialX_naga_oil_mod_XMJSXM6K7OBRHEOR2OBRHEX3CNFXGI2LOM5ZQX.base_color;
+    return out;

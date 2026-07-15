@@ -44,44 +44,259 @@ struct ChestSpec {
 /// The authored chest table — a faithful copy of `World.tsx`'s `CHESTS` (BASE coords).
 const CHESTS: &[ChestSpec] = &[
     // ---- Treasure (one-shot): unique gear ----
-    ChestSpec { bx: 59.0, bz: 59.0, rot: 0.3, gold: 6, loot: &["sword_iron"], cache: false },
-    ChestSpec { bx: 104.0, bz: 80.0, rot: -1.2, gold: 14, loot: &["feast", "mercenary_contract"], cache: false },
+    ChestSpec {
+        bx: 59.0,
+        bz: 59.0,
+        rot: 0.3,
+        gold: 6,
+        loot: &["sword_iron"],
+        cache: false,
+    },
+    ChestSpec {
+        bx: 104.0,
+        bz: 80.0,
+        rot: -1.2,
+        gold: 14,
+        loot: &["feast", "mercenary_contract"],
+        cache: false,
+    },
     // by the NE trader market — teaches recruiting
-    ChestSpec { bx: 96.0, bz: 39.0, rot: 2.6, gold: 10, loot: &["mercenary_contract"], cache: false },
-    ChestSpec { bx: 34.0, bz: 30.0, rot: 0.5, gold: 8, loot: &["fur", "leather_armor"], cache: false },
-    ChestSpec { bx: 120.0, bz: 58.0, rot: -1.4, gold: 8, loot: &["goat_charm"], cache: false },
-    ChestSpec { bx: 24.0, bz: 56.0, rot: 0.9, gold: 10, loot: &["stone_maul", "iron_armor"], cache: false },
-    ChestSpec { bx: 18.0, bz: 54.0, rot: 0.6, gold: 30, loot: &["gold_armor"], cache: false },
+    ChestSpec {
+        bx: 96.0,
+        bz: 39.0,
+        rot: 2.6,
+        gold: 10,
+        loot: &["mercenary_contract"],
+        cache: false,
+    },
+    ChestSpec {
+        bx: 34.0,
+        bz: 30.0,
+        rot: 0.5,
+        gold: 8,
+        loot: &["fur", "leather_armor"],
+        cache: false,
+    },
+    ChestSpec {
+        bx: 120.0,
+        bz: 58.0,
+        rot: -1.4,
+        gold: 8,
+        loot: &["goat_charm"],
+        cache: false,
+    },
+    ChestSpec {
+        bx: 24.0,
+        bz: 56.0,
+        rot: 0.9,
+        gold: 10,
+        loot: &["stone_maul", "iron_armor"],
+        cache: false,
+    },
+    ChestSpec {
+        bx: 18.0,
+        bz: 54.0,
+        rot: 0.6,
+        gold: 30,
+        loot: &["gold_armor"],
+        cache: false,
+    },
     // Deep-biome reward chests beside each biome's signature landmark (one-shot).
-    ChestSpec { bx: 33.0, bz: 30.0, rot: 0.7, gold: 18, loot: &["feast", "gold_armor"], cache: false }, // snow spire
-    ChestSpec { bx: 122.0, bz: 25.0, rot: -0.8, gold: 16, loot: &["venom", "iron_armor"], cache: false }, // desert pyramid
-    ChestSpec { bx: 116.0, bz: 82.0, rot: 1.5, gold: 16, loot: &["stone_maul"], cache: false }, // stone circle
-    ChestSpec { bx: 73.0, bz: 98.0, rot: 2.1, gold: 14, loot: &["croc_steak", "potion"], cache: false }, // swamp tree
-    ChestSpec { bx: 23.0, bz: 86.0, rot: -1.1, gold: 14, loot: &["elk_jerky", "goat_charm"], cache: false }, // forest shrine
-
+    ChestSpec {
+        bx: 33.0,
+        bz: 30.0,
+        rot: 0.7,
+        gold: 18,
+        loot: &["feast", "gold_armor"],
+        cache: false,
+    }, // snow spire
+    ChestSpec {
+        bx: 122.0,
+        bz: 25.0,
+        rot: -0.8,
+        gold: 16,
+        loot: &["venom", "iron_armor"],
+        cache: false,
+    }, // desert pyramid
+    ChestSpec {
+        bx: 116.0,
+        bz: 82.0,
+        rot: 1.5,
+        gold: 16,
+        loot: &["stone_maul"],
+        cache: false,
+    }, // stone circle
+    ChestSpec {
+        bx: 73.0,
+        bz: 98.0,
+        rot: 2.1,
+        gold: 14,
+        loot: &["croc_steak", "potion"],
+        cache: false,
+    }, // swamp tree
+    ChestSpec {
+        bx: 23.0,
+        bz: 86.0,
+        rot: -1.1,
+        gold: 14,
+        loot: &["elk_jerky", "goat_charm"],
+        cache: false,
+    }, // forest shrine
     // ---- Caches (respawning): gold + food, rung around the map edge ----
-    ChestSpec { bx: 50.0, bz: 22.0, rot: -0.5, gold: 8, loot: &["potion"], cache: true }, // N gap (snow↔desert)
-    ChestSpec { bx: 116.0, bz: 24.0, rot: -0.6, gold: 8, loot: &["venom"], cache: true }, // NE desert rim
-    ChestSpec { bx: 122.0, bz: 66.0, rot: 0.4, gold: 12, loot: &["potion"], cache: true }, // E rock rim
-    ChestSpec { bx: 84.0, bz: 92.0, rot: 1.3, gold: 8, loot: &["croc_steak"], cache: true }, // SE swamp rim
-    ChestSpec { bx: 60.0, bz: 94.0, rot: -0.9, gold: 12, loot: &["feast"], cache: true }, // S swamp rim
-    ChestSpec { bx: 30.0, bz: 86.0, rot: 1.6, gold: 9, loot: &["bread"], cache: true }, // SW forest rim
-    ChestSpec { bx: 20.0, bz: 62.0, rot: 2.0, gold: 8, loot: &["elk_jerky"], cache: true }, // W forest/coast rim
-
+    ChestSpec {
+        bx: 50.0,
+        bz: 22.0,
+        rot: -0.5,
+        gold: 8,
+        loot: &["potion"],
+        cache: true,
+    }, // N gap (snow↔desert)
+    ChestSpec {
+        bx: 116.0,
+        bz: 24.0,
+        rot: -0.6,
+        gold: 8,
+        loot: &["venom"],
+        cache: true,
+    }, // NE desert rim
+    ChestSpec {
+        bx: 122.0,
+        bz: 66.0,
+        rot: 0.4,
+        gold: 12,
+        loot: &["potion"],
+        cache: true,
+    }, // E rock rim
+    ChestSpec {
+        bx: 84.0,
+        bz: 92.0,
+        rot: 1.3,
+        gold: 8,
+        loot: &["croc_steak"],
+        cache: true,
+    }, // SE swamp rim
+    ChestSpec {
+        bx: 60.0,
+        bz: 94.0,
+        rot: -0.9,
+        gold: 12,
+        loot: &["feast"],
+        cache: true,
+    }, // S swamp rim
+    ChestSpec {
+        bx: 30.0,
+        bz: 86.0,
+        rot: 1.6,
+        gold: 9,
+        loot: &["bread"],
+        cache: true,
+    }, // SW forest rim
+    ChestSpec {
+        bx: 20.0,
+        bz: 62.0,
+        rot: 2.0,
+        gold: 8,
+        loot: &["elk_jerky"],
+        cache: true,
+    }, // W forest/coast rim
     // ---- Extra density: more grass-belt + biome-approach caches + deep treasure ----
-    ChestSpec { bx: 88.0, bz: 46.0, rot: 0.2, gold: 10, loot: &["bread"], cache: true }, // E grass belt
-    ChestSpec { bx: 56.0, bz: 64.0, rot: -0.7, gold: 10, loot: &["potion"], cache: true }, // SW grass belt
-    ChestSpec { bx: 92.0, bz: 58.0, rot: 1.1, gold: 9, loot: &["bread"], cache: true }, // E grass belt
-    ChestSpec { bx: 60.0, bz: 46.0, rot: 2.4, gold: 9, loot: &["potion"], cache: true }, // W grass belt
-    ChestSpec { bx: 36.0, bz: 40.0, rot: 0.5, gold: 11, loot: &["feast"], cache: true }, // snow approach
-    ChestSpec { bx: 106.0, bz: 42.0, rot: -1.1, gold: 10, loot: &["venom"], cache: true }, // desert approach
-    ChestSpec { bx: 108.0, bz: 64.0, rot: 0.9, gold: 12, loot: &["potion"], cache: true }, // rock approach
-    ChestSpec { bx: 42.0, bz: 84.0, rot: -0.4, gold: 9, loot: &["croc_steak"], cache: true }, // forest/swamp rim
+    ChestSpec {
+        bx: 88.0,
+        bz: 46.0,
+        rot: 0.2,
+        gold: 10,
+        loot: &["bread"],
+        cache: true,
+    }, // E grass belt
+    ChestSpec {
+        bx: 56.0,
+        bz: 64.0,
+        rot: -0.7,
+        gold: 10,
+        loot: &["potion"],
+        cache: true,
+    }, // SW grass belt
+    ChestSpec {
+        bx: 92.0,
+        bz: 58.0,
+        rot: 1.1,
+        gold: 9,
+        loot: &["bread"],
+        cache: true,
+    }, // E grass belt
+    ChestSpec {
+        bx: 60.0,
+        bz: 46.0,
+        rot: 2.4,
+        gold: 9,
+        loot: &["potion"],
+        cache: true,
+    }, // W grass belt
+    ChestSpec {
+        bx: 36.0,
+        bz: 40.0,
+        rot: 0.5,
+        gold: 11,
+        loot: &["feast"],
+        cache: true,
+    }, // snow approach
+    ChestSpec {
+        bx: 106.0,
+        bz: 42.0,
+        rot: -1.1,
+        gold: 10,
+        loot: &["venom"],
+        cache: true,
+    }, // desert approach
+    ChestSpec {
+        bx: 108.0,
+        bz: 64.0,
+        rot: 0.9,
+        gold: 12,
+        loot: &["potion"],
+        cache: true,
+    }, // rock approach
+    ChestSpec {
+        bx: 42.0,
+        bz: 84.0,
+        rot: -0.4,
+        gold: 9,
+        loot: &["croc_steak"],
+        cache: true,
+    }, // forest/swamp rim
     // Deep-biome treasure (gear rolled by frontier distance — chest_loot_for).
-    ChestSpec { bx: 96.0, bz: 70.0, rot: 1.4, gold: 14, loot: &["stone_maul"], cache: false }, // deep rock
-    ChestSpec { bx: 28.0, bz: 74.0, rot: -1.3, gold: 12, loot: &["fur"], cache: false }, // deep forest
-    ChestSpec { bx: 116.0, bz: 32.0, rot: 0.7, gold: 14, loot: &["venom"], cache: false }, // deep desert
-    ChestSpec { bx: 78.0, bz: 96.0, rot: 2.0, gold: 12, loot: &["croc_steak"], cache: false }, // deep swamp
+    ChestSpec {
+        bx: 96.0,
+        bz: 70.0,
+        rot: 1.4,
+        gold: 14,
+        loot: &["stone_maul"],
+        cache: false,
+    }, // deep rock
+    ChestSpec {
+        bx: 28.0,
+        bz: 74.0,
+        rot: -1.3,
+        gold: 12,
+        loot: &["fur"],
+        cache: false,
+    }, // deep forest
+    ChestSpec {
+        bx: 116.0,
+        bz: 32.0,
+        rot: 0.7,
+        gold: 14,
+        loot: &["venom"],
+        cache: false,
+    }, // deep desert
+    ChestSpec {
+        bx: 78.0,
+        bz: 96.0,
+        rot: 2.0,
+        gold: 12,
+        loot: &["croc_steak"],
+        cache: false,
+    }, // deep swamp
 ];
 
 /// A chest resolved onto the live (enlarged) map: re-centred position, final loot +
@@ -118,14 +333,20 @@ pub fn resolved_chests() -> Vec<ResolvedChest> {
             };
             // Token/teaching chests (any holding a mercenary contract) keep authored loot.
             let is_token = c.loot.contains(&"mercenary_contract");
-            let (loot, gold): (Vec<&'static str>, i64) =
-                if c.cache || is_token || castleish {
-                    (c.loot.to_vec(), c.gold)
-                } else {
-                    let ChestLoot { loot, gold } = chest_loot_for(x, z);
-                    (loot, gold)
-                };
-            ResolvedChest { x, z, rot: c.rot, gold, loot, cache: c.cache }
+            let (loot, gold): (Vec<&'static str>, i64) = if c.cache || is_token || castleish {
+                (c.loot.to_vec(), c.gold)
+            } else {
+                let ChestLoot { loot, gold } = chest_loot_for(x, z);
+                (loot, gold)
+            };
+            ResolvedChest {
+                x,
+                z,
+                rot: c.rot,
+                gold,
+                loot,
+                cache: c.cache,
+            }
         })
         .collect()
 }

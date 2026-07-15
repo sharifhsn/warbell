@@ -37,7 +37,11 @@ pub struct ForageStore {
 impl ForageStore {
     /// Build an independent forage field with the given respawn delay (seconds).
     pub fn new(respawn: f64) -> Self {
-        Self { items: Vec::new(), next_id: 0, respawn }
+        Self {
+            items: Vec::new(),
+            next_id: 0,
+            respawn,
+        }
     }
 
     pub fn respawn(&self) -> f64 {
@@ -80,7 +84,11 @@ impl ForageStore {
 
     /// Only the still-gatherable plants.
     pub fn active(&self) -> Vec<Forage> {
-        self.items.iter().copied().filter(|i| !i.collected).collect()
+        self.items
+            .iter()
+            .copied()
+            .filter(|i| !i.collected)
+            .collect()
     }
 
     /// Mark the plant with `id` foraged at time `now` (elapsed seconds). Returns

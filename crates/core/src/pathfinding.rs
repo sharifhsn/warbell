@@ -30,8 +30,16 @@ pub trait Grid {
     fn can_step(&self, fx: i32, fz: i32, tx: i32, tz: i32) -> bool;
 }
 
-const NEIGHBORS: [(i32, i32); 8] =
-    [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)];
+const NEIGHBORS: [(i32, i32); 8] = [
+    (1, 0),
+    (-1, 0),
+    (0, 1),
+    (0, -1),
+    (1, 1),
+    (1, -1),
+    (-1, 1),
+    (-1, -1),
+];
 
 /// Can a walker occupy tile (cx,cz) at all — terrain standable + no prop/house.
 fn is_walkable(g: &impl Grid, cx: i32, cz: i32) -> bool {
@@ -103,7 +111,12 @@ impl PartialOrd for OpenEntry {
 }
 
 /// A* path on the tile grid. `max_nodes` bounds the search (default 800 in TS).
-pub fn find_path(g: &impl Grid, start: PathPoint, goal: PathPoint, max_nodes: u32) -> Vec<PathPoint> {
+pub fn find_path(
+    g: &impl Grid,
+    start: PathPoint,
+    goal: PathPoint,
+    max_nodes: u32,
+) -> Vec<PathPoint> {
     let cols = g.cols() as i64;
     let sx0 = start.x.floor() as i32;
     let sz0 = start.z.floor() as i32;
@@ -138,7 +151,13 @@ pub fn find_path(g: &impl Grid, start: PathPoint, goal: PathPoint, max_nodes: u3
     let mut came_from: HashMap<i64, i64> = HashMap::new();
 
     let start_key = key(sx, sz);
-    open.push(OpenEntry { f: h(sx, sz), g: 0.0, x: sx, z: sz, key: start_key });
+    open.push(OpenEntry {
+        f: h(sx, sz),
+        g: 0.0,
+        x: sx,
+        z: sz,
+        key: start_key,
+    });
     best_g.insert(start_key, 0.0);
 
     let mut visited: u32 = 0;
@@ -207,7 +226,11 @@ pub fn find_path(g: &impl Grid, start: PathPoint, goal: PathPoint, max_nodes: u3
                     continue;
                 }
             }
-            let step = if dx != 0 && dz != 0 { std::f64::consts::SQRT_2 } else { 1.0 };
+            let step = if dx != 0 && dz != 0 {
+                std::f64::consts::SQRT_2
+            } else {
+                1.0
+            };
             let ng = gscore + step;
             let better = match best_g.get(&nk) {
                 Some(&existing) => ng < existing,
@@ -216,7 +239,13 @@ pub fn find_path(g: &impl Grid, start: PathPoint, goal: PathPoint, max_nodes: u3
             if better {
                 best_g.insert(nk, ng);
                 came_from.insert(nk, best_key);
-                open.push(OpenEntry { f: ng + h(nx, nz), g: ng, x: nx, z: nz, key: nk });
+                open.push(OpenEntry {
+                    f: ng + h(nx, nz),
+                    g: ng,
+                    x: nx,
+                    z: nz,
+                    key: nk,
+                });
             }
         }
     }
@@ -319,7 +348,8 @@ mod tests {
         PathPoint { x, z }
     }
     fn has(path: &[PathPoint], x: i32, z: i32) -> bool {
-        path.iter().any(|q| q.x == x as f64 + 0.5 && q.z == z as f64 + 0.5)
+        path.iter()
+            .any(|q| q.x == x as f64 + 0.5 && q.z == z as f64 + 0.5)
     }
 
     #[test]
@@ -373,7 +403,11 @@ mod tests {
     fn returns_empty_at_node_budget() {
         let mut g = MockGrid::new();
         g.set_map(&[
-            "..........", "..........", "..........", "..........", "..........",
+            "..........",
+            "..........",
+            "..........",
+            "..........",
+            "..........",
         ]);
         assert!(find_path(&g, p(0.0, 0.0), p(9.0, 4.0), 3).is_empty());
     }

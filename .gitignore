@@ -20,6 +20,7 @@
 # Dev screenshots / comparison renders (the FOREST_SHOT harness writes PNGs here, and the
 # per-biome reference shots live under shots/). Real game art lives under assets/.
 /*.png
+__pycache__/
 /shots/
 
 # Promo / marketing captures (the FOREST_CLIP harness → ffmpeg renders GIFs/MP4s here).

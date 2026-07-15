@@ -1525,7 +1525,11 @@ fn animal_drops(
                 Mesh3d(assets.mesh.clone()),
                 MeshMaterial3d(assets.mat.clone()),
                 Transform::from_xyz(x, home_y, z),
-                GroundDrop { item_id: id, home_y, spin: rng.unit() as f32 * 6.28 },
+                GroundDrop {
+                    item_id: id,
+                    home_y,
+                    spin: rng.unit() as f32 * std::f32::consts::TAU,
+                },
                 bevy::light::NotShadowCaster,
                 crate::biome::BiomeEntity,
             ));

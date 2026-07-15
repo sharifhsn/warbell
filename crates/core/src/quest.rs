@@ -118,7 +118,12 @@ pub static QUESTS: &[QuestDef] = &[
         icon: "stat:pop",
         shot: Some("quests/buy_house.png"),
         objective: Objective::BuildHouse,
-        reward: Reward { gold: 10, wood: 0.0, stone: 0.0, item: None },
+        reward: Reward {
+            gold: 10,
+            wood: 0.0,
+            stone: 0.0,
+            item: None,
+        },
     },
     QuestDef {
         id: "gather_farm",
@@ -133,7 +138,12 @@ pub static QUESTS: &[QuestDef] = &[
         icon: "stat:wood",
         shot: Some("quests/gather_farm.png"),
         objective: Objective::GatherWood(16.0),
-        reward: Reward { gold: 5, wood: 0.0, stone: 0.0, item: None },
+        reward: Reward {
+            gold: 5,
+            wood: 0.0,
+            stone: 0.0,
+            item: None,
+        },
     },
     QuestDef {
         id: "build_farm",
@@ -148,7 +158,12 @@ pub static QUESTS: &[QuestDef] = &[
         icon: "stat:food",
         shot: Some("quests/build_farm.png"),
         objective: Objective::BuildFarm,
-        reward: Reward { gold: 5, wood: 0.0, stone: 6.0, item: None },
+        reward: Reward {
+            gold: 5,
+            wood: 0.0,
+            stone: 6.0,
+            item: None,
+        },
     },
     QuestDef {
         id: "build_lumber",
@@ -163,7 +178,12 @@ pub static QUESTS: &[QuestDef] = &[
         icon: "stat:wood",
         shot: Some("quests/build_lumber.png"),
         objective: Objective::BuildLumber,
-        reward: Reward { gold: 5, wood: 12.0, stone: 0.0, item: None },
+        reward: Reward {
+            gold: 5,
+            wood: 12.0,
+            stone: 0.0,
+            item: None,
+        },
     },
     QuestDef {
         id: "build_quarry",
@@ -178,7 +198,12 @@ pub static QUESTS: &[QuestDef] = &[
         icon: "stat:stone",
         shot: Some("quests/build_quarry.png"),
         objective: Objective::BuildMine,
-        reward: Reward { gold: 15, wood: 0.0, stone: 0.0, item: None },
+        reward: Reward {
+            gold: 15,
+            wood: 0.0,
+            stone: 0.0,
+            item: None,
+        },
     },
     QuestDef {
         id: "war_table",
@@ -191,7 +216,12 @@ pub static QUESTS: &[QuestDef] = &[
         icon: "def_reinforce",
         shot: None,
         objective: Objective::OpenWarTable,
-        reward: Reward { gold: 5, wood: 0.0, stone: 6.0, item: None },
+        reward: Reward {
+            gold: 5,
+            wood: 0.0,
+            stone: 6.0,
+            item: None,
+        },
     },
     QuestDef {
         id: "survive_night",
@@ -205,7 +235,12 @@ pub static QUESTS: &[QuestDef] = &[
         icon: "buff:power",
         shot: None,
         objective: Objective::SurviveNight,
-        reward: Reward { gold: 25, wood: 0.0, stone: 0.0, item: None },
+        reward: Reward {
+            gold: 25,
+            wood: 0.0,
+            stone: 0.0,
+            item: None,
+        },
     },
 ];
 
@@ -297,7 +332,10 @@ mod tests {
     #[test]
     fn gather_accumulates_then_completes_and_advances() {
         // Walk to the gather-timber quest (index 1) and accumulate toward its 16-wood goal.
-        let mut log = QuestLog { active: 1, progress: 0.0 };
+        let mut log = QuestLog {
+            active: 1,
+            progress: 0.0,
+        };
         assert_eq!(log.current().map(|q| q.id), Some("gather_farm"));
         assert_eq!(log.record(Signal::WoodGained(6.0)), None);
         assert!((log.fraction() - 6.0 / 16.0).abs() < 1e-9);
@@ -321,7 +359,10 @@ mod tests {
 
     #[test]
     fn binary_objectives_complete_in_one_signal() {
-        let mut log = QuestLog { active: 2, progress: 0.0 }; // Build a Farm
+        let mut log = QuestLog {
+            active: 2,
+            progress: 0.0,
+        }; // Build a Farm
         assert_eq!(log.current().map(|q| q.id), Some("build_farm"));
         assert_eq!(log.record(Signal::FarmBuilt), Some(2));
         assert_eq!(log.current().map(|q| q.id), Some("build_lumber"));
@@ -330,7 +371,10 @@ mod tests {
     #[test]
     fn producer_build_signals_advance_the_right_quests() {
         // Woodcutter quest (index 3) needs a LumberBuilt; a MineBuilt must not complete it.
-        let mut log = QuestLog { active: 3, progress: 0.0 };
+        let mut log = QuestLog {
+            active: 3,
+            progress: 0.0,
+        };
         assert_eq!(log.current().map(|q| q.id), Some("build_lumber"));
         assert_eq!(log.record(Signal::MineBuilt), None); // wrong producer — ignored
         assert_eq!(log.record(Signal::LumberBuilt), Some(3));
@@ -359,7 +403,10 @@ mod tests {
 
     #[test]
     fn signals_after_completion_are_noops() {
-        let mut log = QuestLog { active: QUESTS.len(), progress: 0.0 };
+        let mut log = QuestLog {
+            active: QUESTS.len(),
+            progress: 0.0,
+        };
         assert!(log.is_complete());
         assert_eq!(log.record(Signal::WoodGained(50.0)), None);
         assert_eq!(log.record(Signal::NightSurvived), None);

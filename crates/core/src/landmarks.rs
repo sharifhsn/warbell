@@ -18,11 +18,11 @@ pub struct LandmarkSlot {
 
 // Authored in BASE coords; converted to the enlarged map via from_base + round.
 const BASE_LANDMARKS: [(i32, i32, i32); 5] = [
-    (26, 24, 2),   // FrozenSpire — snow summit
-    (122, 22, 3),  // SunkenPyramid — desert far NE
-    (118, 82, 2),  // StandingStones — SE rock frontier
-    (72, 100, 1),  // GiantDeadTree — swamp far S
-    (22, 88, 2),   // RuinedShrine — forest far SW
+    (26, 24, 2),  // FrozenSpire — snow summit
+    (122, 22, 3), // SunkenPyramid — desert far NE
+    (118, 82, 2), // StandingStones — SE rock frontier
+    (72, 100, 1), // GiantDeadTree — swamp far S
+    (22, 88, 2),  // RuinedShrine — forest far SW
 ];
 
 static LANDMARKS_CACHE: OnceLock<Vec<LandmarkSlot>> = OnceLock::new();

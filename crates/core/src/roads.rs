@@ -159,7 +159,11 @@ fn build() -> RoadData {
             z: (k / COLS as i64) as i32,
         })
         .collect();
-    RoadData { dirt, bridges, tiles }
+    RoadData {
+        dirt,
+        bridges,
+        tiles,
+    }
 }
 
 fn data() -> &'static RoadData {

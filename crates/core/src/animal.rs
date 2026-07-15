@@ -411,7 +411,7 @@ pub fn animal_config(species: Species) -> AnimalConfig {
             melee: 0.0,
             attack_damage: 0.0,
             attack_cooldown: 0.0,
-            turn_rate: 8.0, // the TS dog turns at rate 8 toward its heading
+            turn_rate: 8.0,         // the TS dog turns at rate 8 toward its heading
             collision_radius: 0.15, // DOG_RADIUS
             scale: 0.4,
             bounty_gold: 0.0,
@@ -552,12 +552,8 @@ pub fn bear_next_aggro(cfg: &AnimalConfig, was_aggro: bool, dist: f64, player_al
 /// item ids in (primary, secondary) order. A `None` slot or a failed roll yields no
 /// id for that slot. Pure so the drop table is unit-tested without the ECS layer.
 pub fn roll_drops(cfg: &AnimalConfig, roll1: f64, roll2: f64) -> [Option<&'static str>; 2] {
-    let primary = cfg
-        .drop_item
-        .filter(|_| roll1 < cfg.drop_chance);
-    let secondary = cfg
-        .drop_item2
-        .filter(|_| roll2 < cfg.drop_chance2);
+    let primary = cfg.drop_item.filter(|_| roll1 < cfg.drop_chance);
+    let secondary = cfg.drop_item2.filter(|_| roll2 < cfg.drop_chance2);
     [primary, secondary]
 }
 
@@ -696,13 +692,27 @@ mod tests {
         assert_eq!(golem.drop_item2, Some("iron_armor"));
         assert_eq!(golem.drop_chance2, 0.4);
 
-        assert_eq!(animal_config(Species::BogCroc).drop_item, Some("croc_steak"));
+        assert_eq!(
+            animal_config(Species::BogCroc).drop_item,
+            Some("croc_steak")
+        );
         assert_eq!(animal_config(Species::Elk).drop_item, Some("elk_jerky"));
         assert_eq!(animal_config(Species::Goat).drop_item, Some("goat_charm"));
 
         // Grass-belt + harmless creatures never drop an item.
-        for s in [Species::Wolf, Species::Deer, Species::Boar, Species::Rabbit, Species::Bear, Species::Dog] {
-            assert_eq!(animal_config(s).drop_item, None, "{s:?} should have no species drop");
+        for s in [
+            Species::Wolf,
+            Species::Deer,
+            Species::Boar,
+            Species::Rabbit,
+            Species::Bear,
+            Species::Dog,
+        ] {
+            assert_eq!(
+                animal_config(s).drop_item,
+                None,
+                "{s:?} should have no species drop"
+            );
             assert_eq!(animal_config(s).drop_item2, None);
         }
     }
@@ -711,7 +721,10 @@ mod tests {
     fn roll_drops_respects_each_chance_independently() {
         let pb = animal_config(Species::PolarBear); // fur 0.8, leather_armor 0.5
         // Both rolls under their chance → both drop.
-        assert_eq!(roll_drops(&pb, 0.1, 0.1), [Some("fur"), Some("leather_armor")]);
+        assert_eq!(
+            roll_drops(&pb, 0.1, 0.1),
+            [Some("fur"), Some("leather_armor")]
+        );
         // Primary under, secondary over → only the primary.
         assert_eq!(roll_drops(&pb, 0.1, 0.9), [Some("fur"), None]);
         // Primary over, secondary under → only the secondary (independent rolls).
@@ -775,7 +788,10 @@ mod tests {
         let (tx, tz) = flee_point(0.0, 0.0, px, pz);
         let (nx, nz) = step_toward(0.0, 0.0, tx, tz, cfg.speed, 1.0 / 60.0);
         let after = dist_sq(nx, nz, px, pz);
-        assert!(after > before, "flee step must increase distance ({before} -> {after})");
+        assert!(
+            after > before,
+            "flee step must increase distance ({before} -> {after})"
+        );
     }
 
     #[test]
