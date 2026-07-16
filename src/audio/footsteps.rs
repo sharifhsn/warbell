@@ -25,7 +25,9 @@ fn surface_for(b: Biome) -> Surface {
 /// Surface under a world position: the tile's biome on the world map (grass / castle
 /// ground → dirt).
 fn surface_at(p: Vec2) -> Surface {
-    worldmap::biome_at_world(p.x, p.y).map(surface_for).unwrap_or(Surface::Dirt)
+    worldmap::biome_at_world(p.x, p.y)
+        .map(surface_for)
+        .unwrap_or(Surface::Dirt)
 }
 
 pub(crate) fn hero_footsteps(
@@ -46,14 +48,20 @@ pub(crate) fn hero_footsteps(
     if landed {
         // Touchdown after a jump / fall — a single louder step, and swallow any walking step
         // that the airborne phase advance would otherwise also fire this frame.
-        cues.write(AudioCue::Footstep { surface, landing: true });
+        cues.write(AudioCue::Footstep {
+            surface,
+            landing: true,
+        });
         *last_half = half;
         return;
     }
     if hero.moving && hero.on_ground {
         if half != *last_half {
             *last_half = half;
-            cues.write(AudioCue::Footstep { surface, landing: false });
+            cues.write(AudioCue::Footstep {
+                surface,
+                landing: false,
+            });
         }
     } else {
         // Idle or airborne: keep the counter current so resuming a walk doesn't fire a stale step.

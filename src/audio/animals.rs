@@ -15,7 +15,7 @@ use bevy::audio::{PlaybackMode, Volume};
 use bevy::prelude::*;
 
 use crate::critters::Species;
-use crate::wildlife::{rng_range, Animal};
+use crate::wildlife::{Animal, rng_range};
 
 use super::AudioConfig;
 
@@ -47,20 +47,72 @@ pub(crate) struct Voices(HashMap<Species, VoiceSet>);
 pub(crate) fn load_voices(asset: Res<AssetServer>, mut commands: Commands) {
     let mut m = HashMap::new();
     let mut add = |s: Species, vol: f32, rarity: f32, files: &[&'static str]| {
-        m.insert(s, VoiceSet { clips: files.iter().map(|f| asset.load(*f)).collect(), volume: vol, rarity });
+        m.insert(
+            s,
+            VoiceSet {
+                clips: files.iter().map(|f| asset.load(*f)).collect(),
+                volume: vol,
+                rarity,
+            },
+        );
     };
     // (species, gain, rarity, clips). rarity 1.0 = base cadence; >1.0 = calls that much less often.
     add(Species::Camel, 0.5, 1.0, &["audio/camel.ogg"]);
-    add(Species::Deer, 0.9, 1.0, &["audio/deer-1.ogg", "audio/deer-2.ogg"]);
-    add(Species::Goat, 0.9, 1.0, &["audio/goat-1.ogg", "audio/goat-2.ogg"]);
+    add(
+        Species::Deer,
+        0.9,
+        1.0,
+        &["audio/deer-1.ogg", "audio/deer-2.ogg"],
+    );
+    add(
+        Species::Goat,
+        0.9,
+        1.0,
+        &["audio/goat-1.ogg", "audio/goat-2.ogg"],
+    );
     add(Species::Rabbit, 0.35, 1.0, &["audio/rabbit.ogg"]);
-    add(Species::PolarBear, 1.3, 1.0, &["audio/bear-growl.ogg", "audio/bear-roar.ogg"]);
-    add(Species::Dog, 0.4, 1.0, &["audio/dog-1.ogg", "audio/dog-2.ogg", "audio/dog-3.ogg", "audio/dog-4.ogg"]);
-    add(Species::Cat, 0.35, 1.0, &["audio/cat-1.ogg", "audio/cat-2.ogg", "audio/cat-3.ogg", "audio/cat-4.ogg"]);
+    add(
+        Species::PolarBear,
+        1.3,
+        1.0,
+        &["audio/bear-growl.ogg", "audio/bear-roar.ogg"],
+    );
+    add(
+        Species::Dog,
+        0.4,
+        1.0,
+        &[
+            "audio/dog-1.ogg",
+            "audio/dog-2.ogg",
+            "audio/dog-3.ogg",
+            "audio/dog-4.ogg",
+        ],
+    );
+    add(
+        Species::Cat,
+        0.35,
+        1.0,
+        &[
+            "audio/cat-1.ogg",
+            "audio/cat-2.ogg",
+            "audio/cat-3.ogg",
+            "audio/cat-4.ogg",
+        ],
+    );
     // Wolf: a long dramatic howl — rarity 4.0 stretches its idle gap to ~2–5 min so it lands as a
     // rare, atmospheric call rather than constant howling.
-    add(Species::Wolf, 1.0, 4.0, &["audio/wolf-1.ogg", "audio/wolf-2.ogg"]);
-    add(Species::Boar, 1.0, 1.0, &["audio/boar-1.ogg", "audio/boar-2.ogg"]);
+    add(
+        Species::Wolf,
+        1.0,
+        4.0,
+        &["audio/wolf-1.ogg", "audio/wolf-2.ogg"],
+    );
+    add(
+        Species::Boar,
+        1.0,
+        1.0,
+        &["audio/boar-1.ogg", "audio/boar-2.ogg"],
+    );
     // Elk: no recording yet → silent (no entry).
     commands.insert_resource(Voices(m));
 }
@@ -80,7 +132,9 @@ pub(crate) fn animal_voices(
     let cam_pos = cam.translation();
 
     for (e, mut a, gt) in &mut q {
-        let Some(set) = voices.0.get(&a.species) else { continue };
+        let Some(set) = voices.0.get(&a.species) else {
+            continue;
+        };
         a.voice_timer -= dt;
         a.call_cd -= dt;
         if a.voice_timer > 0.0 {
@@ -98,7 +152,8 @@ pub(crate) fn animal_voices(
             continue;
         }
         a.call_cd = MIN_GAP;
-        let i = (rng_range(&mut a.rng, 0.0, set.clips.len() as f32) as usize).min(set.clips.len() - 1);
+        let i =
+            (rng_range(&mut a.rng, 0.0, set.clips.len() as f32) as usize).min(set.clips.len() - 1);
         let clip = set.clips[i].clone();
         let volume = set.volume * WILDLIFE_GAIN;
         commands.entity(e).with_children(|p| {

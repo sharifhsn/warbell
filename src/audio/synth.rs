@@ -62,14 +62,23 @@ pub struct StingBank {
 }
 impl StingBank {
     pub fn handle(&self, s: Sting) -> Option<Handle<AudioSource>> {
-        Sting::ALL.iter().position(|&x| x == s).and_then(|i| self.handles.get(i).cloned())
+        Sting::ALL
+            .iter()
+            .position(|&x| x == s)
+            .and_then(|i| self.handles.get(i).cloned())
     }
 }
 
 /// Bake every sting into an `AudioSource` at startup.
 pub fn bake_stings(mut bank: ResMut<StingBank>, mut sources: ResMut<Assets<AudioSource>>) {
-    bank.handles =
-        Sting::ALL.iter().map(|&s| sources.add(AudioSource { bytes: wav_bytes(&synth(s)).into() })).collect();
+    bank.handles = Sting::ALL
+        .iter()
+        .map(|&s| {
+            sources.add(AudioSource {
+                bytes: wav_bytes(&synth(s)).into(),
+            })
+        })
+        .collect();
 }
 
 /// `FOREST_AUDIOTEST=1` plays every baked sting once at boot — verifies the WAV bytes actually
@@ -86,7 +95,10 @@ pub fn debug_play_stings(bank: Res<StingBank>, mut commands: Commands, mut done:
         if let Some(h) = bank.handle(s) {
             commands.spawn((
                 bevy::audio::AudioPlayer(h),
-                bevy::audio::PlaybackSettings { mode: bevy::audio::PlaybackMode::Despawn, ..default() },
+                bevy::audio::PlaybackSettings {
+                    mode: bevy::audio::PlaybackMode::Despawn,
+                    ..default()
+                },
             ));
         }
     }
@@ -131,7 +143,10 @@ struct Synth {
 
 impl Synth {
     fn new() -> Self {
-        Synth { buf: Vec::new(), rng: 0x1234_5678 }
+        Synth {
+            buf: Vec::new(),
+            rng: 0x1234_5678,
+        }
     }
     fn noise_sample(&mut self) -> f32 {
         self.rng ^= self.rng << 13;
@@ -192,7 +207,8 @@ impl Synth {
             let dt = i as f32 / SAMPLE_RATE as f32;
             let frac = if dur > 0.0 { dt / dur } else { 0.0 };
             let cutoff = f0 * (f1.max(40.0) / f0).powf(frac);
-            let a = (cutoff / (cutoff + SAMPLE_RATE as f32 / std::f32::consts::TAU)).clamp(0.0, 1.0);
+            let a =
+                (cutoff / (cutoff + SAMPLE_RATE as f32 / std::f32::consts::TAU)).clamp(0.0, 1.0);
             let n = self.noise_sample();
             lp += a * (n - lp);
             let out = match filter {
@@ -265,9 +281,8 @@ fn synth(s: Sting) -> Vec<f32> {
             for &(t0, pk) in &[(0.0_f32, 0.10_f32), (0.5, 0.12), (0.85, 0.15), (1.08, 0.19)] {
                 y.tone(Wave::Sine, 60.0, t0, 0.12, pk, Some(42.0));
             }
-        }
-        // (The old synth WarHorn sting is gone — the fortress horn is a real recording now,
-        //  `assets/audio/war-horn.ogg`, loaded by `sfx::SfxBank`.)
+        } // (The old synth WarHorn sting is gone — the fortress horn is a real recording now,
+          //  `assets/audio/war-horn.ogg`, loaded by `sfx::SfxBank`.)
     }
     y.finish()
 }

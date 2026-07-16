@@ -33,13 +33,26 @@ pub struct UiAnim {
 /// `(UiAnim, UiTransform)` bundle: the tween plus the *start* transform (so there's no first-frame
 /// flash before the system runs). Use on plain nodes that don't otherwise carry a `UiTransform`.
 pub fn anim(kind: AnimKind, delay: f32, dur: f32) -> (UiAnim, UiTransform) {
-    (UiAnim { kind, delay, dur, elapsed: 0.0 }, transform_at(kind, 0.0))
+    (
+        UiAnim {
+            kind,
+            delay,
+            dur,
+            elapsed: 0.0,
+        },
+        transform_at(kind, 0.0),
+    )
 }
 
 /// Just the [`UiAnim`] — for nodes that already have a `UiTransform` (e.g. anything built from a
 /// `*_paint()` button kit), so the bundle doesn't carry two `UiTransform`s.
 pub fn anim_btn(kind: AnimKind, delay: f32, dur: f32) -> UiAnim {
-    UiAnim { kind, delay, dur, elapsed: 0.0 }
+    UiAnim {
+        kind,
+        delay,
+        dur,
+        elapsed: 0.0,
+    }
 }
 
 fn ease_out_cubic(t: f32) -> f32 {
@@ -98,7 +111,13 @@ pub struct Hoverable {
 #[allow(clippy::type_complexity)]
 fn drive_hover(
     mut q: Query<
-        (&Interaction, &Hoverable, &mut BackgroundColor, &mut BorderColor, &mut UiTransform),
+        (
+            &Interaction,
+            &Hoverable,
+            &mut BackgroundColor,
+            &mut BorderColor,
+            &mut UiTransform,
+        ),
         Changed<Interaction>,
     >,
 ) {

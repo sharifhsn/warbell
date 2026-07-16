@@ -85,11 +85,13 @@ pub fn make_creature_material_with(
 ) -> Handle<CreatureMaterial> {
     mats.add(ExtendedMaterial {
         base: StandardMaterial {
-            base_color: Color::WHITE, // vertex colour rgb carries the hue
+            base_color: Color::WHITE,        // vertex colour rgb carries the hue
             perceptual_roughness: roughness, // per-surface response is applied in the shader
             ..default()
         },
-        extension: CreatureExt { params: CreatureParams { params } },
+        extension: CreatureExt {
+            params: CreatureParams { params },
+        },
     })
 }
 
@@ -137,7 +139,11 @@ mod tests {
         }
         codes.sort_by(|a, b| a.partial_cmp(b).unwrap());
         for w in codes.windows(2) {
-            assert!(w[1] - w[0] > 0.08, "codes {:?} too close to bucket apart", w);
+            assert!(
+                w[1] - w[0] > 0.08,
+                "codes {:?} too close to bucket apart",
+                w
+            );
         }
     }
 
@@ -165,8 +171,20 @@ mod tests {
                 Surf::Bone
             }
         }
-        for s in [Surf::Skin, Surf::Fur, Surf::Scale, Surf::Stone, Surf::Metal, Surf::Cloth, Surf::Bone] {
-            assert_eq!(classify(surf_code(s)), s, "surf_code({s:?}) decodes to the wrong shader band");
+        for s in [
+            Surf::Skin,
+            Surf::Fur,
+            Surf::Scale,
+            Surf::Stone,
+            Surf::Metal,
+            Surf::Cloth,
+            Surf::Bone,
+        ] {
+            assert_eq!(
+                classify(surf_code(s)),
+                s,
+                "surf_code({s:?}) decodes to the wrong shader band"
+            );
         }
     }
 

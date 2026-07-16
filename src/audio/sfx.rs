@@ -8,7 +8,7 @@ use bevy::audio::{PlaybackMode, Volume};
 use bevy::prelude::*;
 
 use super::synth::{Sting, StingBank};
-use super::{jitter, pick, AudioConfig, AudioCue, Surface};
+use super::{AudioConfig, AudioCue, Surface, jitter, pick};
 
 // ── Stacking guard for background combat stings ──────────────────────────────────────────
 // Each ork / guard / beast emits its OWN sting per blow, so a melee of many of them spawns
@@ -140,50 +140,92 @@ pub(crate) struct SfxBank {
 pub(crate) fn setup_sfx(asset: Res<AssetServer>, mut commands: Commands) {
     commands.insert_resource(SfxBank {
         swing: asset.load("audio/sword-swing.ogg"),
-        flesh: ["audio/sword-hit-1.ogg", "audio/sword-hit-2.ogg", "audio/sword-hit-3.ogg"]
-            .iter()
-            .map(|f| asset.load(*f))
-            .collect(),
+        flesh: [
+            "audio/sword-hit-1.ogg",
+            "audio/sword-hit-2.ogg",
+            "audio/sword-hit-3.ogg",
+        ]
+        .iter()
+        .map(|f| asset.load(*f))
+        .collect(),
         chips: ["audio/ore-chip-1.ogg", "audio/ore-chip-2.ogg"]
             .iter()
             .map(|f| asset.load(*f))
             .collect(),
-        chops: ["audio/chop-wood-1.ogg", "audio/chop-wood-2.ogg", "audio/chop-wood-3.ogg"]
-            .iter()
-            .map(|f| asset.load(*f))
-            .collect(),
+        chops: [
+            "audio/chop-wood-1.ogg",
+            "audio/chop-wood-2.ogg",
+            "audio/chop-wood-3.ogg",
+        ]
+        .iter()
+        .map(|f| asset.load(*f))
+        .collect(),
         tree_fall: asset.load("audio/tree-fall.ogg"),
         wood_crack: asset.load("audio/wood-crack.ogg"),
         crit: asset.load("audio/crit-hit.ogg"),
         bow: asset.load("audio/bow-shot.ogg"),
-        blocks: ["audio/block-1.ogg", "audio/block-2.ogg"].iter().map(|f| asset.load(*f)).collect(),
+        blocks: ["audio/block-1.ogg", "audio/block-2.ogg"]
+            .iter()
+            .map(|f| asset.load(*f))
+            .collect(),
         dash: asset.load("audio/sand-dash.ogg"),
         roll: asset.load("audio/dodge-roll.ogg"),
         sweep: asset.load("audio/bramble-sweep.ogg"),
-        slams: ["audio/ground-slam-1.ogg", "audio/ground-slam-2.ogg"].iter().map(|f| asset.load(*f)).collect(),
+        slams: ["audio/ground-slam-1.ogg", "audio/ground-slam-2.ogg"]
+            .iter()
+            .map(|f| asset.load(*f))
+            .collect(),
         ui: asset.load("audio/menu-select.ogg"),
         forage: asset.load("audio/forage.ogg"),
         war_bell: asset.load("audio/war-bell.ogg"),
         level_up: asset.load("audio/level-up-orchestra.ogg"),
-        foot_dirt: ["audio/footstep-dirt-1.ogg", "audio/footstep-dirt-2.ogg", "audio/footstep-dirt-3.ogg"]
-            .iter()
-            .map(|f| asset.load(*f))
-            .collect(),
+        foot_dirt: [
+            "audio/footstep-dirt-1.ogg",
+            "audio/footstep-dirt-2.ogg",
+            "audio/footstep-dirt-3.ogg",
+        ]
+        .iter()
+        .map(|f| asset.load(*f))
+        .collect(),
         foot_snow: asset.load("audio/footstep-snow.ogg"),
         foot_stone: asset.load("audio/footstep-stone.ogg"),
-        ork_grunts: ["audio/ork-grunt-1.ogg", "audio/ork-grunt-2.ogg", "audio/ork-grunt-3.ogg", "audio/monster-snarl.ogg", "audio/monster-growl.ogg"]
+        ork_grunts: [
+            "audio/ork-grunt-1.ogg",
+            "audio/ork-grunt-2.ogg",
+            "audio/ork-grunt-3.ogg",
+            "audio/monster-snarl.ogg",
+            "audio/monster-growl.ogg",
+        ]
+        .iter()
+        .map(|f| asset.load(*f))
+        .collect(),
+        ork_roars: ["audio/ork-roar.ogg", "audio/wave-start-roar.ogg"]
             .iter()
             .map(|f| asset.load(*f))
             .collect(),
-        ork_roars: ["audio/ork-roar.ogg", "audio/wave-start-roar.ogg"].iter().map(|f| asset.load(*f)).collect(),
-        boss_roars: ["audio/boss-roar-1.ogg", "audio/boss-roar-2.ogg"].iter().map(|f| asset.load(*f)).collect(),
+        boss_roars: ["audio/boss-roar-1.ogg", "audio/boss-roar-2.ogg"]
+            .iter()
+            .map(|f| asset.load(*f))
+            .collect(),
         boss_windup: asset.load("audio/ability-cast.ogg"),
         war_horn: asset.load("audio/war-horn.ogg"),
         warp_cast: asset.load("audio/warp-cast.ogg"),
-        beast_snarls: ["audio/wolf-bite.ogg"].iter().map(|f| asset.load(*f)).collect(),
-        beast_roars: ["audio/bear-bite-1.ogg", "audio/bear-bite-2.ogg"].iter().map(|f| asset.load(*f)).collect(),
-        snowman: ["audio/snowman-1.ogg", "audio/snowman-2.ogg"].iter().map(|f| asset.load(*f)).collect(),
-        snowman_wake: ["audio/snowman-wake-1.ogg", "audio/snowman-wake-2.ogg"].iter().map(|f| asset.load(*f)).collect(),
+        beast_snarls: ["audio/wolf-bite.ogg"]
+            .iter()
+            .map(|f| asset.load(*f))
+            .collect(),
+        beast_roars: ["audio/bear-bite-1.ogg", "audio/bear-bite-2.ogg"]
+            .iter()
+            .map(|f| asset.load(*f))
+            .collect(),
+        snowman: ["audio/snowman-1.ogg", "audio/snowman-2.ogg"]
+            .iter()
+            .map(|f| asset.load(*f))
+            .collect(),
+        snowman_wake: ["audio/snowman-wake-1.ogg", "audio/snowman-wake-2.ogg"]
+            .iter()
+            .map(|f| asset.load(*f))
+            .collect(),
     });
 }
 
@@ -202,7 +244,13 @@ fn one_shot(commands: &mut Commands, clip: Handle<AudioSource>, vol: f32, speed:
 }
 
 /// Spawn a one-shot positioned in the world (panned + attenuated by the camera listener).
-fn spatial_shot(commands: &mut Commands, clip: Handle<AudioSource>, vol: f32, speed: f32, pos: Vec3) {
+fn spatial_shot(
+    commands: &mut Commands,
+    clip: Handle<AudioSource>,
+    vol: f32,
+    speed: f32,
+    pos: Vec3,
+) {
     commands.spawn((
         AudioPlayer(clip),
         PlaybackSettings {
@@ -234,48 +282,100 @@ pub(crate) fn play_cues(
     let voice = cfg.voice_vol;
     for cue in cues.read() {
         match *cue {
-            AudioCue::Swing => one_shot(&mut commands, bank.swing.clone(), 0.30 * sfx, jitter(&mut seed, 0.12)),
+            AudioCue::Swing => one_shot(
+                &mut commands,
+                bank.swing.clone(),
+                0.30 * sfx,
+                jitter(&mut seed, 0.12),
+            ),
             AudioCue::Impact { kill, crit } => {
                 if crit {
                     // The dedicated crit take replaces the flesh pool — louder than any normal
                     // hit, tiny jitter (the clip is the signature; only keep back-to-back crits
                     // from sounding stamped), a crit KILL still drops the pitch heavier.
-                    let p = if kill { jitter(&mut seed, 0.04) * 0.9 } else { jitter(&mut seed, 0.05) };
+                    let p = if kill {
+                        jitter(&mut seed, 0.04) * 0.9
+                    } else {
+                        jitter(&mut seed, 0.05)
+                    };
                     one_shot(&mut commands, bank.crit.clone(), 0.72 * sfx, p);
                 } else {
                     // Random flesh take + pitch jitter; a kill plays it louder + a touch lower (heavier).
                     let v = if kill { 0.62 } else { 0.50 } * sfx;
-                    let p = if kill { jitter(&mut seed, 0.06) * 0.85 } else { jitter(&mut seed, 0.08) };
+                    let p = if kill {
+                        jitter(&mut seed, 0.06) * 0.85
+                    } else {
+                        jitter(&mut seed, 0.08)
+                    };
                     one_shot(&mut commands, pick(&bank.flesh, &mut seed), v, p);
                 }
             }
             // Metallic chip per ore pick-swing — random clang + wide pitch jitter so a long mine
             // never repeats the same note (old game's `playPick`).
             AudioCue::OreChip => {
-                one_shot(&mut commands, pick(&bank.chips, &mut seed), 0.5 * sfx, jitter(&mut seed, 0.10));
+                one_shot(
+                    &mut commands,
+                    pick(&bank.chips, &mut seed),
+                    0.5 * sfx,
+                    jitter(&mut seed, 0.10),
+                );
             }
             // A wood-axe chop per swing that bites a tree — random take + pitch jitter so a
             // long chop varies.
             AudioCue::WoodChop => {
-                one_shot(&mut commands, pick(&bank.chops, &mut seed), 0.6 * sfx, jitter(&mut seed, 0.12));
+                one_shot(
+                    &mut commands,
+                    pick(&bank.chops, &mut seed),
+                    0.6 * sfx,
+                    jitter(&mut seed, 0.12),
+                );
             }
             // A tree coming down on the felling blow: woody trees get the full crack+crash, a
             // cactus just the dry crack. Louder than a chop swing (rarer, the kill-stroke) and
             // pitch-jittered lightly so back-to-back fells don't sound identical.
             AudioCue::TreeFall { cactus } => {
-                let clip = if cactus { bank.wood_crack.clone() } else { bank.tree_fall.clone() };
+                let clip = if cactus {
+                    bank.wood_crack.clone()
+                } else {
+                    bank.tree_fall.clone()
+                };
                 let vol = if cactus { 0.6 } else { 0.85 } * sfx;
                 one_shot(&mut commands, clip, vol, jitter(&mut seed, 0.08));
             }
-            AudioCue::Block => one_shot(&mut commands, pick(&bank.blocks, &mut seed), 0.45 * sfx, jitter(&mut seed, 0.1)),
+            AudioCue::Block => one_shot(
+                &mut commands,
+                pick(&bank.blocks, &mut seed),
+                0.45 * sfx,
+                jitter(&mut seed, 0.1),
+            ),
             // Sand-Dash whoosh — punchy, tiny pitch jitter so repeat dashes don't sound stamped.
-            AudioCue::Dash => one_shot(&mut commands, bank.dash.clone(), 0.6 * sfx, jitter(&mut seed, 0.06)),
+            AudioCue::Dash => one_shot(
+                &mut commands,
+                bank.dash.clone(),
+                0.6 * sfx,
+                jitter(&mut seed, 0.06),
+            ),
             // Dodge-roll tumble grunt — wide-ish pitch jitter so a flurry of rolls varies.
-            AudioCue::Roll => one_shot(&mut commands, bank.roll.clone(), 0.7 * sfx, jitter(&mut seed, 0.10)),
+            AudioCue::Roll => one_shot(
+                &mut commands,
+                bank.roll.clone(),
+                0.7 * sfx,
+                jitter(&mut seed, 0.10),
+            ),
             // Bramble-Sweep — the expanding energy-wave burst.
-            AudioCue::Sweep => one_shot(&mut commands, bank.sweep.clone(), 0.6 * sfx, jitter(&mut seed, 0.05)),
+            AudioCue::Sweep => one_shot(
+                &mut commands,
+                bank.sweep.clone(),
+                0.6 * sfx,
+                jitter(&mut seed, 0.05),
+            ),
             // Ground-Slam — random of the two heavy impacts, wide pitch jitter so repeats vary.
-            AudioCue::Slam => one_shot(&mut commands, pick(&bank.slams, &mut seed), 0.7 * sfx, jitter(&mut seed, 0.08)),
+            AudioCue::Slam => one_shot(
+                &mut commands,
+                pick(&bank.slams, &mut seed),
+                0.7 * sfx,
+                jitter(&mut seed, 0.08),
+            ),
             AudioCue::Footstep { surface, landing } => {
                 let clip = match surface {
                     Surface::Dirt => pick(&bank.foot_dirt, &mut seed),
@@ -286,38 +386,78 @@ pub(crate) fn play_cues(
                 let v = if landing { 0.144 * 1.2 } else { 0.144 } * sfx;
                 one_shot(&mut commands, clip, v, jitter(&mut seed, 0.12));
             }
-            AudioCue::UiSelect => one_shot(&mut commands, bank.ui.clone(), 0.22 * sfx, jitter(&mut seed, 0.06)),
+            AudioCue::UiSelect => one_shot(
+                &mut commands,
+                bank.ui.clone(),
+                0.22 * sfx,
+                jitter(&mut seed, 0.06),
+            ),
             // Triumph fanfare — old game's sampled orchestral level-up sting (`playLevelUpFanfare`,
             // vol 0.38). Replaces the synth arpeggio for the hero level-up + landmark/shrine rewards.
-            AudioCue::LevelUp => one_shot(&mut commands, bank.level_up.clone(), 0.38 * sfx, jitter(&mut seed, 0.04)),
+            AudioCue::LevelUp => one_shot(
+                &mut commands,
+                bank.level_up.clone(),
+                0.38 * sfx,
+                jitter(&mut seed, 0.04),
+            ),
             AudioCue::OrkGrunt(pos) => {
                 if !throttle.allow(T_GRUNT, now) {
                     continue;
                 }
                 let clip = pick(&bank.ork_grunts, &mut seed);
-                spatial_shot(&mut commands, clip, 0.55 * voice, jitter(&mut seed, 0.14), pos);
+                spatial_shot(
+                    &mut commands,
+                    clip,
+                    0.55 * voice,
+                    jitter(&mut seed, 0.14),
+                    pos,
+                );
             }
             AudioCue::OrkRoar(pos) => {
                 if !throttle.allow(T_ROAR, now) {
                     continue;
                 }
                 let clip = pick(&bank.ork_roars, &mut seed);
-                spatial_shot(&mut commands, clip, 0.50 * voice, jitter(&mut seed, 0.08), pos);
+                spatial_shot(
+                    &mut commands,
+                    clip,
+                    0.50 * voice,
+                    jitter(&mut seed, 0.08),
+                    pos,
+                );
             }
             // A warden waking / winding up — louder than an ork roar and pitched a touch lower for
             // weight. Not throttled: it's already rare (aggro + crit telegraph only).
             AudioCue::BossRoar(pos) => {
                 let clip = pick(&bank.boss_roars, &mut seed);
-                spatial_shot(&mut commands, clip, 0.85 * voice, jitter(&mut seed, 0.08) * 0.92, pos);
+                spatial_shot(
+                    &mut commands,
+                    clip,
+                    0.85 * voice,
+                    jitter(&mut seed, 0.08) * 0.92,
+                    pos,
+                );
             }
             // The crit-windup charge whine — pitched a touch DOWN (heavier, ominous) and loud so it
             // cuts through the roar; the player's cue to raise the shield / dodge clear.
             AudioCue::BossWindup(pos) => {
-                spatial_shot(&mut commands, bank.boss_windup.clone(), 0.8 * sfx, jitter(&mut seed, 0.05) * 0.85, pos);
+                spatial_shot(
+                    &mut commands,
+                    bank.boss_windup.clone(),
+                    0.8 * sfx,
+                    jitter(&mut seed, 0.05) * 0.85,
+                    pos,
+                );
                 // Layer the rising dread ramp under the charge whine — a synth crescendo that
                 // crests as the crit lands (~1.2 s). Spatial so distance attenuates it.
                 if let Some(h) = stings.handle(Sting::BossTension) {
-                    spatial_shot(&mut commands, h, Sting::BossTension.volume() * sfx, 1.0, pos);
+                    spatial_shot(
+                        &mut commands,
+                        h,
+                        Sting::BossTension.volume() * sfx,
+                        1.0,
+                        pos,
+                    );
                 }
             }
             // A predator's bite snarl — wide pitch jitter so a flurry of bites never repeats. A
@@ -340,7 +480,13 @@ pub(crate) fn play_cues(
                 if !throttle.allow(T_ROAR, now) {
                     continue;
                 }
-                spatial_shot(&mut commands, pick(&bank.beast_snarls, &mut seed), 0.55 * voice, jitter(&mut seed, 0.08) * 0.72, at);
+                spatial_shot(
+                    &mut commands,
+                    pick(&bank.beast_snarls, &mut seed),
+                    0.55 * voice,
+                    jitter(&mut seed, 0.08) * 0.72,
+                    at,
+                );
             }
             // A town-guard's blow lands on an invader — a quick spatial swing+flesh thud, kept
             // well under the hero's own hit (≈⅓) so nearby militia skirmishes are heard as
@@ -349,8 +495,20 @@ pub(crate) fn play_cues(
                 if !throttle.allow(T_GUARD, now) {
                     continue;
                 }
-                spatial_shot(&mut commands, bank.swing.clone(), 0.16 * sfx, jitter(&mut seed, 0.14), at);
-                spatial_shot(&mut commands, pick(&bank.flesh, &mut seed), 0.26 * sfx, jitter(&mut seed, 0.10), at);
+                spatial_shot(
+                    &mut commands,
+                    bank.swing.clone(),
+                    0.16 * sfx,
+                    jitter(&mut seed, 0.14),
+                    at,
+                );
+                spatial_shot(
+                    &mut commands,
+                    pick(&bank.flesh, &mut seed),
+                    0.26 * sfx,
+                    jitter(&mut seed, 0.10),
+                    at,
+                );
             }
             // An archer's loose — the real sampled bowstring snap + shaft whip (`bow-shot.ogg`;
             // replaced the old pitched-up sword-swing stand-in). Shares the guard-skirmish
@@ -359,16 +517,32 @@ pub(crate) fn play_cues(
                 if !throttle.allow(T_GUARD, now) {
                     continue;
                 }
-                spatial_shot(&mut commands, bank.bow.clone(), 0.45 * sfx, jitter(&mut seed, 0.08), at);
+                spatial_shot(
+                    &mut commands,
+                    bank.bow.clone(),
+                    0.45 * sfx,
+                    jitter(&mut seed, 0.08),
+                    at,
+                );
             }
             // Sampled herb-pick rustle — same 0.35 gain the synth blip used.
             AudioCue::Forage => {
-                one_shot(&mut commands, bank.forage.clone(), 0.35 * sfx, jitter(&mut seed, 0.08));
+                one_shot(
+                    &mut commands,
+                    bank.forage.clone(),
+                    0.35 * sfx,
+                    jitter(&mut seed, 0.08),
+                );
             }
             // The war bell's single hard toll — pitch jitter kept tiny: a bell is one fixed
             // pitch, the jitter only keeps back-to-back rings from sounding stamped.
             AudioCue::WarBell => {
-                one_shot(&mut commands, bank.war_bell.clone(), 0.55 * sfx, jitter(&mut seed, 0.02));
+                one_shot(
+                    &mut commands,
+                    bank.war_bell.clone(),
+                    0.55 * sfx,
+                    jitter(&mut seed, 0.02),
+                );
             }
             // Procedural synth stings (no clip on disk — baked by `synth.rs`).
             AudioCue::OreShatter
@@ -386,30 +560,58 @@ pub(crate) fn play_cues(
                     _ => Sting::LowHp,
                 };
                 if let Some(h) = stings.handle(sting) {
-                    one_shot(&mut commands, h, sting.volume() * sfx, jitter(&mut seed, 0.05));
+                    one_shot(
+                        &mut commands,
+                        h,
+                        sting.volume() * sfx,
+                        jitter(&mut seed, 0.05),
+                    );
                 }
             }
             // The fortress war-horn — spatial (it blares from the hold's gate, not the
             // hero's ear), pitch jitter tiny so a horn stays a horn.
             AudioCue::FortressHorn(pos) => {
-                spatial_shot(&mut commands, bank.war_horn.clone(), 0.70 * sfx, jitter(&mut seed, 0.03), pos);
+                spatial_shot(
+                    &mut commands,
+                    bank.war_horn.clone(),
+                    0.70 * sfx,
+                    jitter(&mut seed, 0.03),
+                    pos,
+                );
             }
             // A warp bolt leaving a shaman staff / fortress tower — short magical release.
             AudioCue::WarpCast(pos) => {
-                spatial_shot(&mut commands, bank.warp_cast.clone(), 0.55 * sfx, jitter(&mut seed, 0.12), pos);
+                spatial_shot(
+                    &mut commands,
+                    bank.warp_cast.clone(),
+                    0.55 * sfx,
+                    jitter(&mut seed, 0.12),
+                    pos,
+                );
             }
             // Distant siege thunder — the synth rumble, head-locked (it's the whole sky, not a
             // point), wide-ish pitch jitter so repeated rolls vary.
             AudioCue::Thunder => {
                 if let Some(h) = stings.handle(Sting::Thunder) {
-                    one_shot(&mut commands, h, Sting::Thunder.volume() * sfx, jitter(&mut seed, 0.12));
+                    one_shot(
+                        &mut commands,
+                        h,
+                        Sting::Thunder.volume() * sfx,
+                        jitter(&mut seed, 0.12),
+                    );
                 }
             }
             // A dormant snowman lurching to life — a dedicated "evil snowman waking from a frozen
             // sleep" groan, a touch louder so the "it was a prop a second ago" scare lands. Spatial
             // at the snowman. Not throttled: waking is a rare per-snowman event.
             AudioCue::SnowmanWake(pos) => {
-                spatial_shot(&mut commands, pick(&bank.snowman_wake, &mut seed), 0.75 * voice, jitter(&mut seed, 0.06), pos);
+                spatial_shot(
+                    &mut commands,
+                    pick(&bank.snowman_wake, &mut seed),
+                    0.75 * voice,
+                    jitter(&mut seed, 0.06),
+                    pos,
+                );
             }
             // A snowman's slam landing on the hero — random of the two attack grunts, wide pitch
             // jitter so a flurry never repeats. Shares the bite throttle so a clump of snowmen
@@ -418,7 +620,13 @@ pub(crate) fn play_cues(
                 if !throttle.allow(T_BITE, now) {
                     continue;
                 }
-                spatial_shot(&mut commands, pick(&bank.snowman, &mut seed), 0.6 * voice, jitter(&mut seed, 0.14), pos);
+                spatial_shot(
+                    &mut commands,
+                    pick(&bank.snowman, &mut seed),
+                    0.6 * voice,
+                    jitter(&mut seed, 0.14),
+                    pos,
+                );
             }
             // Hero-mouth cues (grunts / jump / hurt / death / lines) are handled by `voice.rs`.
             _ => {}

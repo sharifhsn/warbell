@@ -16,7 +16,7 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use std::collections::HashMap;
 
-use tileworld_core::inventory::{IconRgb, IconShape, IconSpec, ITEM_DEFS};
+use tileworld_core::inventory::{ITEM_DEFS, IconRgb, IconShape, IconSpec};
 use tileworld_core::upgrade_store::UPGRADE_NODES;
 
 /// id → its icon texture + whether it is a tintable white monochrome (game-icons source).
@@ -83,7 +83,8 @@ pub struct IconsPlugin;
 
 impl Plugin for IconsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<IconAtlas>().add_systems(Startup, build_icons);
+        app.init_resource::<IconAtlas>()
+            .add_systems(Startup, build_icons);
     }
 }
 
@@ -109,22 +110,27 @@ fn build_icons(
     // Items: game-icons → Twemoji → procedural shape.
     for def in ITEM_DEFS {
         let entry = gameicon(def.id).map(|h| (h, true)).unwrap_or_else(|| {
-            (twemoji(def.icon).unwrap_or_else(|| images.add(rasterise(def.icon_spec()))), false)
+            (
+                twemoji(def.icon).unwrap_or_else(|| images.add(rasterise(def.icon_spec()))),
+                false,
+            )
         });
         atlas.0.insert(def.id.to_string(), entry);
     }
     // Upgrade-tree nodes carry their own emoji as the fallback.
     for node in UPGRADE_NODES {
-        if let Some(entry) =
-            gameicon(node.id).map(|h| (h, true)).or_else(|| twemoji(node.icon).map(|h| (h, false)))
+        if let Some(entry) = gameicon(node.id)
+            .map(|h| (h, true))
+            .or_else(|| twemoji(node.icon).map(|h| (h, false)))
         {
             atlas.0.insert(node.id.to_string(), entry);
         }
     }
     // Named symbols.
     for (key, emoji) in SYMBOLS {
-        if let Some(entry) =
-            gameicon(key).map(|h| (h, true)).or_else(|| twemoji(emoji).map(|h| (h, false)))
+        if let Some(entry) = gameicon(key)
+            .map(|h| (h, true))
+            .or_else(|| twemoji(emoji).map(|h| (h, false)))
         {
             atlas.0.insert((*key).to_string(), entry);
         }
@@ -228,7 +234,11 @@ fn rasterise(spec: IconSpec) -> Image {
         }
     }
     Image::new(
-        Extent3d { width: N as u32, height: N as u32, depth_or_array_layers: 1 },
+        Extent3d {
+            width: N as u32,
+            height: N as u32,
+            depth_or_array_layers: 1,
+        },
         TextureDimension::D2,
         buf,
         TextureFormat::Rgba8UnormSrgb,

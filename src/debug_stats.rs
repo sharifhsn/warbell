@@ -14,7 +14,7 @@ use bevy::diagnostic::{
 use bevy::prelude::*;
 use bevy::render::diagnostic::RenderDiagnosticsPlugin;
 use bevy::text::FontAtlasSet;
-use bevy_egui::{egui, EguiContexts, EguiPrimaryContextPass};
+use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
 use crate::economy::Bank;
 use crate::game_state::{AppState, Modal};
@@ -85,7 +85,14 @@ fn stats_ui(
     player: Option<Res<PlayerRes>>,
     bank: Option<Res<Bank>>,
     hero_q: Query<&Hero>,
-    orks_q: Query<(), (With<Ork>, Without<WaveInvader>, Without<crate::dying::Dying>)>,
+    orks_q: Query<
+        (),
+        (
+            With<Ork>,
+            Without<WaveInvader>,
+            Without<crate::dying::Dying>,
+        ),
+    >,
     invaders_q: Query<(), (With<WaveInvader>, Without<crate::dying::Dying>)>,
     animals_q: Query<(), (With<Animal>, Without<crate::dying::Dying>)>,
     // Grouped into one tuple param — the system is already near Bevy's 16-param ceiling.
@@ -146,20 +153,23 @@ fn stats_ui(
                 .get(&EntityCountDiagnosticsPlugin::ENTITY_COUNT)
                 .and_then(|d| d.value())
                 .unwrap_or(0.0);
-            egui::Grid::new("counts").num_columns(2).striped(true).show(ui, |ui| {
-                ui.label("entities");
-                ui.label(format!("{entities:.0}"));
-                ui.end_row();
-                ui.label("camp orks");
-                ui.label(format!("{}", orks_q.iter().count()));
-                ui.end_row();
-                ui.label("invaders");
-                ui.label(format!("{}", invaders_q.iter().count()));
-                ui.end_row();
-                ui.label("wildlife");
-                ui.label(format!("{}", animals_q.iter().count()));
-                ui.end_row();
-            });
+            egui::Grid::new("counts")
+                .num_columns(2)
+                .striped(true)
+                .show(ui, |ui| {
+                    ui.label("entities");
+                    ui.label(format!("{entities:.0}"));
+                    ui.end_row();
+                    ui.label("camp orks");
+                    ui.label(format!("{}", orks_q.iter().count()));
+                    ui.end_row();
+                    ui.label("invaders");
+                    ui.label(format!("{}", invaders_q.iter().count()));
+                    ui.end_row();
+                    ui.label("wildlife");
+                    ui.label(format!("{}", animals_q.iter().count()));
+                    ui.end_row();
+                });
 
             ui.separator();
 
@@ -170,33 +180,36 @@ fn stats_ui(
             // slowdown is GPU/driver/thermal, not a leak. (Verified flat over long combat/roam/panel
             // stress via the `FOREST_PERFTEST` harness — see `perftest.rs`.)
             let (meshes, materials, images, font_atlas) = &assets;
-            egui::Grid::new("mem").num_columns(2).striped(true).show(ui, |ui| {
-                let rss = diags
-                    .get(&SystemInformationDiagnosticsPlugin::PROCESS_MEM_USAGE)
-                    .and_then(|d| d.value());
-                ui.label("RSS");
-                match rss {
-                    Some(v) => ui.label(format!("{v:.2} GiB")),
-                    // The diagnostic is only loaded under the leak-watch path (see DebugStatsPlugin).
-                    None => ui.label("— set FOREST_LEAKWATCH"),
-                };
-                ui.end_row();
-                ui.label("meshes");
-                ui.label(format!("{}", meshes.len()));
-                ui.end_row();
-                ui.label("materials");
-                ui.label(format!("{}", materials.len()));
-                ui.end_row();
-                ui.label("images");
-                ui.label(format!("{}", images.len()));
-                ui.end_row();
-                ui.label("font atlases");
-                let (keys, pages) = font_atlas
-                    .as_ref()
-                    .map_or((0, 0), |fa| (fa.len(), fa.values().map(|v| v.len()).sum::<usize>()));
-                ui.label(format!("{keys} sizes / {pages} pages"));
-                ui.end_row();
-            });
+            egui::Grid::new("mem")
+                .num_columns(2)
+                .striped(true)
+                .show(ui, |ui| {
+                    let rss = diags
+                        .get(&SystemInformationDiagnosticsPlugin::PROCESS_MEM_USAGE)
+                        .and_then(|d| d.value());
+                    ui.label("RSS");
+                    match rss {
+                        Some(v) => ui.label(format!("{v:.2} GiB")),
+                        // The diagnostic is only loaded under the leak-watch path (see DebugStatsPlugin).
+                        None => ui.label("— set FOREST_LEAKWATCH"),
+                    };
+                    ui.end_row();
+                    ui.label("meshes");
+                    ui.label(format!("{}", meshes.len()));
+                    ui.end_row();
+                    ui.label("materials");
+                    ui.label(format!("{}", materials.len()));
+                    ui.end_row();
+                    ui.label("images");
+                    ui.label(format!("{}", images.len()));
+                    ui.end_row();
+                    ui.label("font atlases");
+                    let (keys, pages) = font_atlas.as_ref().map_or((0, 0), |fa| {
+                        (fa.len(), fa.values().map(|v| v.len()).sum::<usize>())
+                    });
+                    ui.label(format!("{keys} sizes / {pages} pages"));
+                    ui.end_row();
+                });
 
             ui.separator();
 
@@ -204,73 +217,86 @@ fn stats_ui(
             // The bottleneck-finder: which render pass actually eats the frame. Reads the
             // `render/<pass>/elapsed_gpu` diagnostics (ms). On a GPU without TIMESTAMP_QUERY
             // these are empty and we fall back to the CPU span times.
-            egui::CollapsingHeader::new("GPU passes (ms)").default_open(true).show(ui, |ui| {
-                gpu_passes(ui, &diags);
-            });
+            egui::CollapsingHeader::new("GPU passes (ms)")
+                .default_open(true)
+                .show(ui, |ui| {
+                    gpu_passes(ui, &diags);
+                });
 
             ui.separator();
 
             // ── State machine ────────────────────────────────────────────────────────
-            egui::Grid::new("state").num_columns(2).striped(true).show(ui, |ui| {
-                ui.label("app");
-                ui.label(format!("{:?}", app_state.get()));
-                ui.end_row();
-                ui.label("modal");
-                ui.label(modal.map_or("—".to_string(), |m| format!("{:?}", m.get())));
-                ui.end_row();
-                if let Some(q) = quality.as_ref() {
-                    ui.label("graphics");
-                    ui.label(q.label());
+            egui::Grid::new("state")
+                .num_columns(2)
+                .striped(true)
+                .show(ui, |ui| {
+                    ui.label("app");
+                    ui.label(format!("{:?}", app_state.get()));
                     ui.end_row();
-                }
-                if let Some(s) = siege.as_ref() {
-                    ui.label("phase");
-                    let phase_txt = match s.phase {
-                        GamePhase::Prep => format!("Prep ({:.0}s left)", s.prep_seconds_left),
-                        GamePhase::Wave => format!("Wave {} ", s.wave_index + 1),
-                        other => format!("{other:?}"),
-                    };
-                    ui.label(phase_txt);
+                    ui.label("modal");
+                    ui.label(modal.map_or("—".to_string(), |m| format!("{:?}", m.get())));
                     ui.end_row();
-                    ui.label("difficulty");
-                    ui.label(format!("{:?}", s.difficulty));
-                    ui.end_row();
-                }
-                if let Some(k) = keep.as_ref() {
-                    ui.label("keep hp");
-                    ui.label(format!("{:.0} / {:.0}", k.hp.max(0.0), k.max));
-                    ui.end_row();
-                }
-            });
+                    if let Some(q) = quality.as_ref() {
+                        ui.label("graphics");
+                        ui.label(q.label());
+                        ui.end_row();
+                    }
+                    if let Some(s) = siege.as_ref() {
+                        ui.label("phase");
+                        let phase_txt = match s.phase {
+                            GamePhase::Prep => format!("Prep ({:.0}s left)", s.prep_seconds_left),
+                            GamePhase::Wave => format!("Wave {} ", s.wave_index + 1),
+                            other => format!("{other:?}"),
+                        };
+                        ui.label(phase_txt);
+                        ui.end_row();
+                        ui.label("difficulty");
+                        ui.label(format!("{:?}", s.difficulty));
+                        ui.end_row();
+                    }
+                    if let Some(k) = keep.as_ref() {
+                        ui.label("keep hp");
+                        ui.label(format!("{:.0} / {:.0}", k.hp.max(0.0), k.max));
+                        ui.end_row();
+                    }
+                });
 
             ui.separator();
 
             // ── Hero ─────────────────────────────────────────────────────────────────
-            egui::CollapsingHeader::new("Hero").default_open(true).show(ui, |ui| {
-                egui::Grid::new("hero").num_columns(2).striped(true).show(ui, |ui| {
-                    if let Some(p) = player.as_ref() {
-                        ui.label("hp");
-                        ui.label(format!("{:.0} / {:.0}", p.0.hp.max(0.0), p.0.max_hp));
-                        ui.end_row();
-                        ui.label("level");
-                        ui.label(format!("{}  ({} / {} xp)", p.0.level, p.0.xp, p.0.xp_to_next));
-                        ui.end_row();
-                        ui.label("gold");
-                        ui.label(format!("{}", p.0.gold));
-                        ui.end_row();
-                    }
-                    if let Some(b) = bank.as_ref() {
-                        ui.label("stone");
-                        ui.label(format!("{:.0}", b.0.stone));
-                        ui.end_row();
-                    }
-                    if let Ok(h) = hero_q.single() {
-                        ui.label("pos");
-                        ui.label(format!("({:.1}, {:.1})", h.pos.x, h.pos.y));
-                        ui.end_row();
-                    }
+            egui::CollapsingHeader::new("Hero")
+                .default_open(true)
+                .show(ui, |ui| {
+                    egui::Grid::new("hero")
+                        .num_columns(2)
+                        .striped(true)
+                        .show(ui, |ui| {
+                            if let Some(p) = player.as_ref() {
+                                ui.label("hp");
+                                ui.label(format!("{:.0} / {:.0}", p.0.hp.max(0.0), p.0.max_hp));
+                                ui.end_row();
+                                ui.label("level");
+                                ui.label(format!(
+                                    "{}  ({} / {} xp)",
+                                    p.0.level, p.0.xp, p.0.xp_to_next
+                                ));
+                                ui.end_row();
+                                ui.label("gold");
+                                ui.label(format!("{}", p.0.gold));
+                                ui.end_row();
+                            }
+                            if let Some(b) = bank.as_ref() {
+                                ui.label("stone");
+                                ui.label(format!("{:.0}", b.0.stone));
+                                ui.end_row();
+                            }
+                            if let Ok(h) = hero_q.single() {
+                                ui.label("pos");
+                                ui.label(format!("({:.1}, {:.1})", h.pos.x, h.pos.y));
+                                ui.end_row();
+                            }
+                        });
                 });
-            });
         });
 
     Ok(())
@@ -367,5 +393,8 @@ fn frame_graph(ui: &mut egui::Ui, history: &[f32]) {
             egui::pos2(x, y_at(ms))
         })
         .collect();
-    painter.line(pts, egui::Stroke::new(1.5, egui::Color32::from_rgb(120, 200, 240)));
+    painter.line(
+        pts,
+        egui::Stroke::new(1.5, egui::Color32::from_rgb(120, 200, 240)),
+    );
 }

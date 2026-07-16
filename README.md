@@ -8,7 +8,7 @@
 A knight holds a central castle through wave after wave of night assaults across a
 five-biome island — real-time combat, an economy and upgrade tree, a town you build and
 defend, inventory and consumables, villagers, wildlife, and a bloodline succession loop.
-Built in Rust on [**Bevy 0.18**](https://bevyengine.org).
+Built in Rust on [**Bevy 0.19**](https://bevyengine.org).
 
 [**▶ Website**](https://miskibin.github.io/warbell/) · [**⬇ Download for Windows**](https://github.com/miskibin/warbell/releases/latest/download/Warbell-Setup.msi) · [**Changelog**](https://miskibin.github.io/warbell/changelog.html)
 
@@ -19,14 +19,15 @@ Built in Rust on [**Bevy 0.18**](https://bevyengine.org).
 
 ## Switch development
 
-The Switch build uses the sibling `bevy-deko3d-019` and `wgpu-deko3d-29`
-checkouts. Bootstrap the devkitPro toolchain with the Switch harness, then build
-and send the NRO:
+The Switch build uses the owned Bevy and wgpu forks at `vendor/bevy` and
+`vendor/wgpu`. Bootstrap those checkouts, then bootstrap the devkitPro toolchain
+with the external Switch harness before building and sending the NRO:
 
 ```sh
+tools/bootstrap-switch-deps.sh
 ../switch/experiments/switch1-deko3d-wgpu/tools/bootstrap-devkitpro-switch.sh
 tools/build-switch-nro.sh
-tools/run-switch-nro.sh <switch-ip>
+tools/run-switch-nro.sh game <switch-ip>
 ```
 
 The build packages `assets/` at `romfs:/assets`, disables desktop audio and
@@ -34,6 +35,8 @@ windowing, and uses the Horizon runner and Deko3D surface path.
 
 See [the Switch port handoff](docs/switch-port-handoff.md) for the current
 milestone, repository ownership, hardware acceptance gate, and roadmap.
+See [the Switch workspace](docs/switch-workspace.md) for the repository layout
+and the Codex project root.
 
 ## Play
 

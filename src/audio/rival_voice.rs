@@ -35,7 +35,10 @@ pub(crate) struct RivalVoiceTrigger {
 
 impl Default for RivalVoiceTrigger {
     fn default() -> Self {
-        Self { next_bark: 8.0, rng: 0x2f6e_1d77 }
+        Self {
+            next_bark: 8.0,
+            rng: 0x2f6e_1d77,
+        }
     }
 }
 
@@ -67,7 +70,10 @@ pub(crate) fn detect_rival_voices(
     // A newly-fallen rival's death cry (only sometimes, so battle cries get a turn too).
     if let Some(gt) = dying.iter().next() {
         if frand(&mut t.rng) < DEATH_CHANCE {
-            speak.write(crate::audio::Speak::at(super::Concept::RivalDeath, gt.translation()));
+            speak.write(crate::audio::Speak::at(
+                super::Concept::RivalDeath,
+                gt.translation(),
+            ));
             t.next_bark = now + BARK_GAP + frand(&mut t.rng) * BARK_GAP_JITTER;
             return;
         }
@@ -84,7 +90,11 @@ pub(crate) fn detect_rival_voices(
         }
     }
     let Some((pos, _)) = best else { return };
-    let concept = if threat.in_danger { super::Concept::RivalSpot } else { super::Concept::RivalIdle };
+    let concept = if threat.in_danger {
+        super::Concept::RivalSpot
+    } else {
+        super::Concept::RivalIdle
+    };
     speak.write(crate::audio::Speak::at(concept, pos));
     t.next_bark = now + BARK_GAP + frand(&mut t.rng) * BARK_GAP_JITTER;
 }

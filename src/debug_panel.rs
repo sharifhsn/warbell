@@ -21,7 +21,7 @@ use bevy::post_process::effect_stack::Vignette;
 use crate::dof::Dof;
 use bevy::prelude::*;
 use bevy::render::view::ColorGrading;
-use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
+use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
 use crate::audio::AudioConfig;
 use crate::outline::Outline;
@@ -38,8 +38,7 @@ struct DebugPanel {
 /// over the panel or dragging a widget. The camera controllers read this and skip their
 /// cursor-grab / mouse-look so dragging a slider never rotates the world. Updated one frame
 /// behind the camera systems, which is fine: you've hovered the panel before you click it.
-#[derive(Resource, Default)]
-pub struct EguiWantsPointer(pub bool);
+use crate::input_focus::UiWantsPointer;
 
 /// When `enabled`, the panel's sun/ambient sliders override the day-night cycle's computed
 /// values (applied after `advance_sky`). When off, the cycle drives them as normal.
@@ -52,7 +51,11 @@ struct LightOverride {
 
 impl Default for LightOverride {
     fn default() -> Self {
-        Self { enabled: false, illuminance: 10_000.0, ambient: 120.0 }
+        Self {
+            enabled: false,
+            illuminance: 10_000.0,
+            ambient: 120.0,
+        }
     }
 }
 
@@ -76,9 +79,11 @@ impl Plugin for DebugPanelPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin::default())
             // Opens on launch if `FOREST_PANEL` is set (handy for screenshots); else F1.
-            .insert_resource(DebugPanel { open: std::env::var("FOREST_PANEL").is_ok() })
+            .insert_resource(DebugPanel {
+                open: std::env::var("FOREST_PANEL").is_ok(),
+            })
             .init_resource::<LightOverride>()
-            .init_resource::<EguiWantsPointer>()
+            .init_resource::<UiWantsPointer>()
             // `FOREST_HIDEHUD` boots with the HUD already hidden (clean stills/clips).
             .insert_resource(HudHidden(std::env::var("FOREST_HIDEHUD").is_ok()))
             .add_systems(Update, (toggle_panel, apply_hud_hidden))
@@ -161,7 +166,7 @@ fn panel_ui(
     mut sun: Query<&mut DirectionalLight, With<Sun>>,
     mut fog_volume: Query<&mut FogVolume>,
     mut ambient: ResMut<GlobalAmbientLight>,
-    mut egui_wants: ResMut<EguiWantsPointer>,
+    mut egui_wants: ResMut<UiWantsPointer>,
     mut director: ResMut<crate::cinematic::DirectorState>,
     mut scene: ResMut<crate::scenes::SceneState>,
     mut hud_hidden: ResMut<HudHidden>,
@@ -218,24 +223,44 @@ fn panel_ui(
                 ui.separator();
                 ui.label("Hero gesture (stand still, then pick):");
                 ui.horizontal(|ui| {
-                    if ui.button("None").clicked() { director.gesture = None; }
-                    if ui.button("Wave").clicked() { director.gesture = Some(G::Wave); }
-                    if ui.button("Salute").clicked() { director.gesture = Some(G::Salute); }
+                    if ui.button("None").clicked() {
+                        director.gesture = None;
+                    }
+                    if ui.button("Wave").clicked() {
+                        director.gesture = Some(G::Wave);
+                    }
+                    if ui.button("Salute").clicked() {
+                        director.gesture = Some(G::Salute);
+                    }
                 });
                 ui.horizontal(|ui| {
-                    if ui.button("Point").clicked() { director.gesture = Some(G::Point); }
-                    if ui.button("Arms-cross").clicked() { director.gesture = Some(G::ArmsCrossed); }
+                    if ui.button("Point").clicked() {
+                        director.gesture = Some(G::Point);
+                    }
+                    if ui.button("Arms-cross").clicked() {
+                        director.gesture = Some(G::ArmsCrossed);
+                    }
                 });
                 ui.horizontal(|ui| {
-                    if ui.button("Cheer").clicked() { director.gesture = Some(G::Cheer); }
-                    if ui.button("Work").clicked() { director.gesture = Some(G::Work); }
+                    if ui.button("Cheer").clicked() {
+                        director.gesture = Some(G::Cheer);
+                    }
+                    if ui.button("Work").clicked() {
+                        director.gesture = Some(G::Work);
+                    }
                 });
                 ui.checkbox(&mut director.hide_weapon, "Hide hero weapon");
                 ui.separator();
-                if ui.button("Build stronghold (timelapse)").clicked() { director.build_run = true; }
+                if ui.button("Build stronghold (timelapse)").clicked() {
+                    director.build_run = true;
+                }
                 ui.horizontal(|ui| {
-                    if ui.button("March orks from fortress").clicked() { director.march = true; }
-                    if ui.button("Clear marchers").clicked() { director.clear_marchers = true; }
+                    if ui.button("March orks from fortress").clicked() {
+                        director.march = true;
+                    }
+                    if ui.button("Clear marchers").clicked() {
+                        director.clear_marchers = true;
+                    }
                 });
                 ui.checkbox(&mut director.gate_open, "Fortress gate open");
                 ui.separator();
@@ -245,9 +270,18 @@ fn panel_ui(
                 let want = scene.want;
                 let mut next = want;
                 for row in [
-                    [("Work site", SceneId::WorkSite), ("Wall patrol", SceneId::WallPatrol)],
-                    [("Orks flee", SceneId::OrksFlee), ("Night siege", SceneId::NightSiege)],
-                    [("Barrel peek", SceneId::BarrelPeek), ("Mason gag", SceneId::Mason)],
+                    [
+                        ("Work site", SceneId::WorkSite),
+                        ("Wall patrol", SceneId::WallPatrol),
+                    ],
+                    [
+                        ("Orks flee", SceneId::OrksFlee),
+                        ("Night siege", SceneId::NightSiege),
+                    ],
+                    [
+                        ("Barrel peek", SceneId::BarrelPeek),
+                        ("Mason gag", SceneId::Mason),
+                    ],
                 ] {
                     ui.horizontal(|ui| {
                         for (label, id) in row {
@@ -257,7 +291,9 @@ fn panel_ui(
                         }
                     });
                 }
-                if ui.button("Clear scene").clicked() { next = None; }
+                if ui.button("Clear scene").clicked() {
+                    next = None;
+                }
                 scene.want = next;
             });
 
@@ -273,71 +309,127 @@ fn panel_ui(
                 mut atmo,
             )) = cam.single_mut()
             {
-                egui::CollapsingHeader::new("Fog").default_open(true).show(ui, |ui| {
-                    // Fog uses a Linear falloff (clear within `start`, full by `end`).
-                    let (mut start, mut end) = match fog.falloff {
-                        FogFalloff::Linear { start, end } => (start, end),
-                        _ => (70.0, 160.0),
-                    };
-                    let mut changed = ui.add(egui::Slider::new(&mut start, 0.0..=300.0).text("clear")).changed();
-                    changed |= ui.add(egui::Slider::new(&mut end, 10.0..=600.0).text("full")).changed();
-                    if changed {
-                        fog.falloff = FogFalloff::Linear { start, end: end.max(start + 1.0) };
-                    }
-                    // ── God-rays (volumetric light shafts) ──
-                    // `step_count` is the GPU cost; the FogVolume knobs below are what make the
-                    // shafts actually VISIBLE: density = how much fog there is to scatter, scatter
-                    // = how much light bends toward the eye, forward = concentrate it into beams
-                    // aimed at the sun, brightness = nonphysical pop.
-                    ui.separator();
-                    ui.label("God-rays (volumetric)");
-                    if let Some(volfog) = volfog.as_mut() {
-                        let mut steps = volfog.step_count;
-                        if ui
-                            .add(egui::Slider::new(&mut steps, 1..=64).text("steps (GPU cost)"))
-                            .changed()
-                        {
-                            volfog.step_count = steps;
+                egui::CollapsingHeader::new("Fog")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        // Fog uses a Linear falloff (clear within `start`, full by `end`).
+                        let (mut start, mut end) = match fog.falloff {
+                            FogFalloff::Linear { start, end } => (start, end),
+                            _ => (70.0, 160.0),
+                        };
+                        let mut changed = ui
+                            .add(egui::Slider::new(&mut start, 0.0..=300.0).text("clear"))
+                            .changed();
+                        changed |= ui
+                            .add(egui::Slider::new(&mut end, 10.0..=600.0).text("full"))
+                            .changed();
+                        if changed {
+                            fog.falloff = FogFalloff::Linear {
+                                start,
+                                end: end.max(start + 1.0),
+                            };
                         }
-                    } else {
-                        ui.weak("pass off (Low graphics preset)");
-                    }
-                    if let Ok(mut fv) = fog_volume.single_mut() {
-                        ui.add(egui::Slider::new(&mut fv.density_factor, 0.0..=0.5).text("density (amount)"));
-                        ui.add(egui::Slider::new(&mut fv.scattering, 0.0..=1.0).text("scattering (toward eye)"));
-                        ui.add(egui::Slider::new(&mut fv.scattering_asymmetry, 0.0..=0.99).text("forward (toward sun)"));
-                        ui.add(egui::Slider::new(&mut fv.light_intensity, 0.0..=4.0).text("brightness"));
-                        ui.add(egui::Slider::new(&mut fv.absorption, 0.0..=1.0).text("absorption (darkening)"));
-                    }
+                        // ── God-rays (volumetric light shafts) ──
+                        // `step_count` is the GPU cost; the FogVolume knobs below are what make the
+                        // shafts actually VISIBLE: density = how much fog there is to scatter, scatter
+                        // = how much light bends toward the eye, forward = concentrate it into beams
+                        // aimed at the sun, brightness = nonphysical pop.
+                        ui.separator();
+                        ui.label("God-rays (volumetric)");
+                        if let Some(volfog) = volfog.as_mut() {
+                            let mut steps = volfog.step_count;
+                            if ui
+                                .add(egui::Slider::new(&mut steps, 1..=64).text("steps (GPU cost)"))
+                                .changed()
+                            {
+                                volfog.step_count = steps;
+                            }
+                        } else {
+                            ui.weak("pass off (Low graphics preset)");
+                        }
+                        if let Ok(mut fv) = fog_volume.single_mut() {
+                            ui.add(
+                                egui::Slider::new(&mut fv.density_factor, 0.0..=0.5)
+                                    .text("density (amount)"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut fv.scattering, 0.0..=1.0)
+                                    .text("scattering (toward eye)"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut fv.scattering_asymmetry, 0.0..=0.99)
+                                    .text("forward (toward sun)"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut fv.light_intensity, 0.0..=4.0)
+                                    .text("brightness"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut fv.absorption, 0.0..=1.0)
+                                    .text("absorption (darkening)"),
+                            );
+                        }
 
-                    // ── Cinematic haze (the atmospherics post pass: height fog + cloud light
-                    // patches). Off automatically while build mode is active; the master toggle
-                    // here is the manual kill-switch. `fade` itself is driven per-frame, so we
-                    // edit only the authored look fields (which the driver leaves alone).
-                    ui.separator();
-                    ui.label("Cinematic haze (post pass)");
-                    ui.checkbox(&mut cheats.atmo_enabled.0, "enabled (off during build mode)");
-                    if let Some(atmo) = atmo.as_mut() {
-                        ui.add(egui::Slider::new(&mut atmo.density, 0.0..=0.05).text("density"));
-                        ui.add(egui::Slider::new(&mut atmo.height_falloff, 0.0..=0.3).text("height falloff"));
-                        ui.add(egui::Slider::new(&mut atmo.fog_start, 0.0..=120.0).text("fog-free radius"));
-                        ui.add(egui::Slider::new(&mut atmo.fog_max, 0.0..=1.0).text("max opacity"));
-                        ui.add(egui::Slider::new(&mut atmo.inscatter_exp, 1.0..=20.0).text("sun-glow tightness"));
-                        ui.add(egui::Slider::new(&mut atmo.noise_strength, 0.0..=1.0).text("density noise"));
-                        ui.add(egui::Slider::new(&mut atmo.cloud_strength, 0.0..=0.4).text("cloud-patch depth"));
-                        ui.add(egui::Slider::new(&mut atmo.cloud_scale, 0.001..=0.05).text("cloud-patch scale"));
-                    } else {
-                        ui.weak("pass off (Low graphics preset)");
-                    }
-                });
+                        // ── Cinematic haze (the atmospherics post pass: height fog + cloud light
+                        // patches). Off automatically while build mode is active; the master toggle
+                        // here is the manual kill-switch. `fade` itself is driven per-frame, so we
+                        // edit only the authored look fields (which the driver leaves alone).
+                        ui.separator();
+                        ui.label("Cinematic haze (post pass)");
+                        ui.checkbox(
+                            &mut cheats.atmo_enabled.0,
+                            "enabled (off during build mode)",
+                        );
+                        if let Some(atmo) = atmo.as_mut() {
+                            ui.add(
+                                egui::Slider::new(&mut atmo.density, 0.0..=0.05).text("density"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut atmo.height_falloff, 0.0..=0.3)
+                                    .text("height falloff"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut atmo.fog_start, 0.0..=120.0)
+                                    .text("fog-free radius"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut atmo.fog_max, 0.0..=1.0).text("max opacity"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut atmo.inscatter_exp, 1.0..=20.0)
+                                    .text("sun-glow tightness"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut atmo.noise_strength, 0.0..=1.0)
+                                    .text("density noise"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut atmo.cloud_strength, 0.0..=0.4)
+                                    .text("cloud-patch depth"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut atmo.cloud_scale, 0.001..=0.05)
+                                    .text("cloud-patch scale"),
+                            );
+                        } else {
+                            ui.weak("pass off (Low graphics preset)");
+                        }
+                    });
 
                 egui::CollapsingHeader::new("Bokeh DoF + Bloom").show(ui, |ui| {
                     // Focus distance is auto-driven onto the player (drive_dof_focus); these
                     // tune the blur. Smaller sharp band + bigger radius = more bokeh.
                     ui.label(format!("focal: {:.1} tiles (auto, on player)", dof.focal));
-                    ui.add(egui::Slider::new(&mut dof.range, 0.0..=80.0).text("sharp band (tiles)"));
-                    ui.add(egui::Slider::new(&mut dof.far_ramp, 10.0..=250.0).text("far falloff (big=gradual)"));
-                    ui.add(egui::Slider::new(&mut dof.max_radius, 0.0..=60.0).text("blur radius px"));
+                    ui.add(
+                        egui::Slider::new(&mut dof.range, 0.0..=80.0).text("sharp band (tiles)"),
+                    );
+                    ui.add(
+                        egui::Slider::new(&mut dof.far_ramp, 10.0..=250.0)
+                            .text("far falloff (big=gradual)"),
+                    );
+                    ui.add(
+                        egui::Slider::new(&mut dof.max_radius, 0.0..=60.0).text("blur radius px"),
+                    );
                     let mut coc_debug = dof.debug_view > 0.5;
                     ui.checkbox(&mut coc_debug, "show CoC (white=blurred, black=sharp)");
                     dof.debug_view = if coc_debug { 1.0 } else { 0.0 };
@@ -348,58 +440,104 @@ fn panel_ui(
                     ui.label(format!("→ live intensity: {:.2}", bloom.intensity));
                 });
 
-                egui::CollapsingHeader::new("Render").default_open(true).show(ui, |ui| {
-                    ui.label("Exposure / colour grade");
-                    ui.add(egui::Slider::new(&mut exposure.ev100, 7.0..=13.0).text("exposure ev100"));
-                    // Saturation is routed through `LookSettings` (read by grade.rs) so it STICKS —
-                    // editing `grading.post_saturation` directly was overwritten every frame. The
-                    // main washed-out lever; push past 1.2 to richen the AgX look.
-                    ui.add(egui::Slider::new(&mut cheats.look.saturation, 0.5..=2.5).text("saturation ⭐"));
-                    ui.add(egui::Slider::new(&mut grading.shadows.contrast, 0.5..=1.5).text("shadow contrast"));
-                    ui.add(egui::Slider::new(&mut grading.midtones.contrast, 0.5..=1.5).text("mid contrast"));
-                    ui.add(egui::Slider::new(&mut grading.highlights.contrast, 0.5..=1.5).text("high contrast"));
+                egui::CollapsingHeader::new("Render")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        ui.label("Exposure / colour grade");
+                        ui.add(
+                            egui::Slider::new(&mut exposure.ev100, 7.0..=13.0)
+                                .text("exposure ev100"),
+                        );
+                        // Saturation is routed through `LookSettings` (read by grade.rs) so it STICKS —
+                        // editing `grading.post_saturation` directly was overwritten every frame. The
+                        // main washed-out lever; push past 1.2 to richen the AgX look.
+                        ui.add(
+                            egui::Slider::new(&mut cheats.look.saturation, 0.5..=2.5)
+                                .text("saturation ⭐"),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut grading.shadows.contrast, 0.5..=1.5)
+                                .text("shadow contrast"),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut grading.midtones.contrast, 0.5..=1.5)
+                                .text("mid contrast"),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut grading.highlights.contrast, 0.5..=1.5)
+                                .text("high contrast"),
+                        );
 
-                    ui.separator();
-                    ui.label("Cinematic lens (post FX)");
-                    ui.add(egui::Slider::new(&mut cheats.look.chromatic, 0.0..=0.03).text("chromatic aberration"));
-                    if let Some(vig) = vignette.as_mut() {
-                        ui.add(egui::Slider::new(&mut vig.intensity, 0.0..=0.6).text("vignette"));
-                    } else {
-                        ui.weak("vignette off (Low graphics preset)");
-                    }
+                        ui.separator();
+                        ui.label("Cinematic lens (post FX)");
+                        ui.add(
+                            egui::Slider::new(&mut cheats.look.chromatic, 0.0..=0.03)
+                                .text("chromatic aberration"),
+                        );
+                        if let Some(vig) = vignette.as_mut() {
+                            ui.add(
+                                egui::Slider::new(&mut vig.intensity, 0.0..=0.6).text("vignette"),
+                            );
+                        } else {
+                            ui.weak("vignette off (Low graphics preset)");
+                        }
 
-                    ui.separator();
-                    ui.label("Outline (crisp edges)");
-                    if let Some(outline) = outline.as_mut() {
-                        ui.add(egui::Slider::new(&mut outline.strength, 0.0..=1.0).text("outline strength"));
-                        ui.add(egui::Slider::new(&mut outline.thickness, 1.0..=4.0).text("outline thickness"));
-                        ui.add(egui::Slider::new(&mut outline.depth_threshold, 0.005..=0.2).text("silhouette sens"));
-                        ui.add(egui::Slider::new(&mut outline.normal_threshold, 0.1..=1.2).text("crease sens"));
-                    } else {
-                        ui.weak("pass off (Low graphics preset)");
-                    }
+                        ui.separator();
+                        ui.label("Outline (crisp edges)");
+                        if let Some(outline) = outline.as_mut() {
+                            ui.add(
+                                egui::Slider::new(&mut outline.strength, 0.0..=1.0)
+                                    .text("outline strength"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut outline.thickness, 1.0..=4.0)
+                                    .text("outline thickness"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut outline.depth_threshold, 0.005..=0.2)
+                                    .text("silhouette sens"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut outline.normal_threshold, 0.1..=1.2)
+                                    .text("crease sens"),
+                            );
+                        } else {
+                            ui.weak("pass off (Low graphics preset)");
+                        }
 
-                    ui.separator();
-                    ui.label("Pollen + prop specular");
-                    // Temp-then-write so the resource is only marked changed on an actual edit
-                    // (the apply system iterates materials, so we don't want per-frame churn).
-                    let mut glow = visual.pollen_glow;
-                    if ui.add(egui::Slider::new(&mut glow, 0.0..=8.0).text("pollen glow")).changed() {
-                        visual.pollen_glow = glow;
-                    }
-                    let mut pspeed = visual.pollen_speed;
-                    if ui.add(egui::Slider::new(&mut pspeed, 0.0..=3.0).text("pollen speed")).changed() {
-                        visual.pollen_speed = pspeed;
-                    }
-                    let mut rough = visual.prop_roughness;
-                    if ui.add(egui::Slider::new(&mut rough, 0.0..=1.0).text("prop roughness")).changed() {
-                        visual.prop_roughness = rough;
-                    }
-                    let mut refl = visual.prop_reflectance;
-                    if ui.add(egui::Slider::new(&mut refl, 0.0..=1.0).text("prop reflectance")).changed() {
-                        visual.prop_reflectance = refl;
-                    }
-                });
+                        ui.separator();
+                        ui.label("Pollen + prop specular");
+                        // Temp-then-write so the resource is only marked changed on an actual edit
+                        // (the apply system iterates materials, so we don't want per-frame churn).
+                        let mut glow = visual.pollen_glow;
+                        if ui
+                            .add(egui::Slider::new(&mut glow, 0.0..=8.0).text("pollen glow"))
+                            .changed()
+                        {
+                            visual.pollen_glow = glow;
+                        }
+                        let mut pspeed = visual.pollen_speed;
+                        if ui
+                            .add(egui::Slider::new(&mut pspeed, 0.0..=3.0).text("pollen speed"))
+                            .changed()
+                        {
+                            visual.pollen_speed = pspeed;
+                        }
+                        let mut rough = visual.prop_roughness;
+                        if ui
+                            .add(egui::Slider::new(&mut rough, 0.0..=1.0).text("prop roughness"))
+                            .changed()
+                        {
+                            visual.prop_roughness = rough;
+                        }
+                        let mut refl = visual.prop_reflectance;
+                        if ui
+                            .add(egui::Slider::new(&mut refl, 0.0..=1.0).text("prop reflectance"))
+                            .changed()
+                        {
+                            visual.prop_reflectance = refl;
+                        }
+                    });
             }
 
             egui::CollapsingHeader::new("Time / Sun").show(ui, |ui| {
@@ -409,26 +547,44 @@ fn panel_ui(
                 ui.separator();
                 ui.checkbox(&mut light_override.enabled, "override lighting");
                 if light_override.enabled {
-                    ui.add(egui::Slider::new(&mut light_override.illuminance, 0.0..=20_000.0).text("sun lux"));
-                    ui.add(egui::Slider::new(&mut light_override.ambient, 0.0..=400.0).text("ambient"));
+                    ui.add(
+                        egui::Slider::new(&mut light_override.illuminance, 0.0..=20_000.0)
+                            .text("sun lux"),
+                    );
+                    ui.add(
+                        egui::Slider::new(&mut light_override.ambient, 0.0..=400.0).text("ambient"),
+                    );
                 }
             });
 
             egui::CollapsingHeader::new("Audio").show(ui, |ui| {
-                let mut master = if let Volume::Linear(l) = global_vol.volume { l } else { 1.0 };
-                if ui.add(egui::Slider::new(&mut master, 0.0..=2.0).text("master")).changed() {
+                let mut master = if let Volume::Linear(l) = global_vol.volume {
+                    l
+                } else {
+                    1.0
+                };
+                if ui
+                    .add(egui::Slider::new(&mut master, 0.0..=2.0).text("master"))
+                    .changed()
+                {
                     global_vol.volume = Volume::Linear(master);
                 }
                 ui.add(egui::Slider::new(&mut audio_cfg.ambience_vol, 0.0..=1.0).text("ambience"));
-                ui.add(egui::Slider::new(&mut audio_cfg.audible_range, 5.0..=80.0).text("call range"));
+                ui.add(
+                    egui::Slider::new(&mut audio_cfg.audible_range, 5.0..=80.0).text("call range"),
+                );
                 ui.add(egui::Slider::new(&mut audio_cfg.call_min, 2.0..=120.0).text("call min s"));
                 ui.add(egui::Slider::new(&mut audio_cfg.call_max, 5.0..=200.0).text("call max s"));
                 ui.separator();
                 ui.add(egui::Slider::new(&mut audio_cfg.sfx_vol, 0.0..=1.5).text("sfx"));
                 ui.add(egui::Slider::new(&mut audio_cfg.voice_vol, 0.0..=1.5).text("voice"));
                 ui.add(egui::Slider::new(&mut audio_cfg.music_vol, 0.0..=1.0).text("music"));
-                ui.add(egui::Slider::new(&mut audio_cfg.narration_vol, 0.0..=1.5).text("narration"));
-                ui.add(egui::Slider::new(&mut audio_cfg.combat_music, 0.0..=2.0).text("combat music"));
+                ui.add(
+                    egui::Slider::new(&mut audio_cfg.narration_vol, 0.0..=1.5).text("narration"),
+                );
+                ui.add(
+                    egui::Slider::new(&mut audio_cfg.combat_music, 0.0..=2.0).text("combat music"),
+                );
             });
         });
 

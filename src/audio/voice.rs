@@ -16,7 +16,7 @@
 use bevy::audio::{PlaybackMode, Volume};
 use bevy::prelude::*;
 
-use super::{frand, pick, AudioConfig, AudioCue, HeroLineCooldown, HeroMouthTag, HERO_LINE_CD};
+use super::{AudioConfig, AudioCue, HERO_LINE_CD, HeroLineCooldown, HeroMouthTag, frand, pick};
 
 /// Seconds between any two exertion grunts, so combat doesn't spam the hero's voice.
 const GRUNT_MIN_GAP: f32 = 1.6;
@@ -53,10 +53,23 @@ impl Default for HeroMouth {
 
 pub(crate) fn setup_voice(asset: Res<AssetServer>, mut commands: Commands) {
     commands.insert_resource(VoiceBank {
-        swings: ["audio/player-swing-1.ogg", "audio/player-swing-2.ogg"].iter().map(|f| asset.load(*f)).collect(),
+        swings: ["audio/player-swing-1.ogg", "audio/player-swing-2.ogg"]
+            .iter()
+            .map(|f| asset.load(*f))
+            .collect(),
         jump: asset.load("audio/player-jump-1.ogg"),
-        hurts: ["audio/player-hurt-1.ogg", "audio/player-hurt-2.ogg", "audio/player-hurt-3.ogg"].iter().map(|f| asset.load(*f)).collect(),
-        deaths: ["audio/player-death-1.ogg", "audio/player-death-2.ogg"].iter().map(|f| asset.load(*f)).collect(),
+        hurts: [
+            "audio/player-hurt-1.ogg",
+            "audio/player-hurt-2.ogg",
+            "audio/player-hurt-3.ogg",
+        ]
+        .iter()
+        .map(|f| asset.load(*f))
+        .collect(),
+        deaths: ["audio/player-death-1.ogg", "audio/player-death-2.ogg"]
+            .iter()
+            .map(|f| asset.load(*f))
+            .collect(),
     });
     commands.init_resource::<HeroMouth>();
 }

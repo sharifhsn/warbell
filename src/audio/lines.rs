@@ -36,14 +36,50 @@ pub struct SpeakerVoice {
 
 /// The voice registry: one entry per [`Speaker`]. Linear-scanned (3 entries).
 pub const SPEAKERS: &[(Speaker, SpeakerVoice)] = &[
-    (Speaker::Hero,     SpeakerVoice { spatial: false, gain: 1.0,  name: None,              pitch: (1.0,  1.0)  }),
-    (Speaker::Villager, SpeakerVoice { spatial: true,  gain: 1.4,  name: Some("Townsfolk"), pitch: (1.0,  1.0)  }),
-    (Speaker::Ork,      SpeakerVoice { spatial: true,  gain: 0.85, name: None,              pitch: (0.82, 1.18) }),
-    (Speaker::Rival,    SpeakerVoice { spatial: true,  gain: 0.9,  name: Some("Rival"),     pitch: (0.88, 1.12) }),
+    (
+        Speaker::Hero,
+        SpeakerVoice {
+            spatial: false,
+            gain: 1.0,
+            name: None,
+            pitch: (1.0, 1.0),
+        },
+    ),
+    (
+        Speaker::Villager,
+        SpeakerVoice {
+            spatial: true,
+            gain: 1.4,
+            name: Some("Townsfolk"),
+            pitch: (1.0, 1.0),
+        },
+    ),
+    (
+        Speaker::Ork,
+        SpeakerVoice {
+            spatial: true,
+            gain: 0.85,
+            name: None,
+            pitch: (0.82, 1.18),
+        },
+    ),
+    (
+        Speaker::Rival,
+        SpeakerVoice {
+            spatial: true,
+            gain: 0.9,
+            name: Some("Rival"),
+            pitch: (0.88, 1.12),
+        },
+    ),
 ];
 
 pub fn speaker_voice(s: Speaker) -> SpeakerVoice {
-    SPEAKERS.iter().find(|(k, _)| *k == s).map(|(_, v)| *v).expect("every Speaker is registered")
+    SPEAKERS
+        .iter()
+        .find(|(k, _)| *k == s)
+        .map(|(_, v)| *v)
+        .expect("every Speaker is registered")
 }
 
 /// A situation that asks for a line. Triggers (`detect_*` systems) emit one of these; the
@@ -206,14 +242,20 @@ pub struct Chain {
 /// A villager's at-the-hero jab → the hero MAY fire back: offered to the player (`manual`), not
 /// auto-played. Used as the `then` on the `pa_*` jab lines; resolved against the hero's
 /// `ReplyToVillagerJab` reply pool when the player takes it.
-const REPLY_TO_JAB: Chain =
-    Chain { concept: Concept::ReplyToVillagerJab, target: Speaker::Hero, manual: true };
+const REPLY_TO_JAB: Chain = Chain {
+    concept: Concept::ReplyToVillagerJab,
+    target: Speaker::Hero,
+    manual: true,
+};
 
 /// Second link: some hero comebacks hand the exchange BACK to the villager for a parting shot
 /// (jab → comeback → last word, then the chain ends — no `then` on the last-word pool). The NPC
 /// answers on his own, so this one stays automatic.
-const LAST_WORD: Chain =
-    Chain { concept: Concept::VillagerLastWord, target: Speaker::Villager, manual: false };
+const LAST_WORD: Chain = Chain {
+    concept: Concept::VillagerLastWord,
+    target: Speaker::Villager,
+    manual: false,
+};
 
 /// One voice line — the whole record.
 #[derive(Clone, Copy)]
@@ -241,43 +283,221 @@ pub struct Line {
 /// Convenience constructor for the common case (no reply_to / no then, interruptible, prio 10).
 const fn line(id: &'static str, speaker: Speaker, concept: Concept, text: &'static str) -> Line {
     Line {
-        id, speaker, concept, text,
-        interruptible: true, priority: 10, floor: 0.0, once: false,
-        reply_to: None, then: None,
+        id,
+        speaker,
+        concept,
+        text,
+        interruptible: true,
+        priority: 10,
+        floor: 0.0,
+        once: false,
+        reply_to: None,
+        then: None,
     }
 }
 
 /// THE catalog. Filled in across the migration tasks (Phase C).
 pub const LINES: &[Line] = &[
     // ── Hero event reactions ──
-    Line { once: true,  priority: 20, ..line("stone",         Speaker::Hero, Concept::FirstStone,   "Huh, stone. I could shore up the castle walls with this.") },
-    Line { floor: 300.0,              ..line("chest",         Speaker::Hero, Concept::ChestOpen,    "Ooh, a chest.") },
-    Line { once: true,  priority: 20, ..line("rescue",        Speaker::Hero, Concept::FirstRescue,  "There, you're free. Get to the castle. You'll fight at my side now.") },
-    Line { priority: 30,              ..line("night",         Speaker::Hero, Concept::NightWarning, "Getting dark. Night soon. Maybe I wandered too far.") },
-    Line { floor: 300.0, priority: 15, ..line("hurt",         Speaker::Hero, Concept::LowHp,        "I'm hurt. Could use some herbs.") },
-    Line { once: true,  priority: 15, ..line("home",          Speaker::Hero, Concept::Home,         "Home. Finally. Safe here. Guess I ring the bell when I'm ready. Then they come.") },
+    Line {
+        once: true,
+        priority: 20,
+        ..line(
+            "stone",
+            Speaker::Hero,
+            Concept::FirstStone,
+            "Huh, stone. I could shore up the castle walls with this.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        ..line("chest", Speaker::Hero, Concept::ChestOpen, "Ooh, a chest.")
+    },
+    Line {
+        once: true,
+        priority: 20,
+        ..line(
+            "rescue",
+            Speaker::Hero,
+            Concept::FirstRescue,
+            "There, you're free. Get to the castle. You'll fight at my side now.",
+        )
+    },
+    Line {
+        priority: 30,
+        ..line(
+            "night",
+            Speaker::Hero,
+            Concept::NightWarning,
+            "Getting dark. Night soon. Maybe I wandered too far.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 15,
+        ..line(
+            "hurt",
+            Speaker::Hero,
+            Concept::LowHp,
+            "I'm hurt. Could use some herbs.",
+        )
+    },
+    Line {
+        once: true,
+        priority: 15,
+        ..line(
+            "home",
+            Speaker::Hero,
+            Concept::Home,
+            "Home. Finally. Safe here. Guess I ring the bell when I'm ready. Then they come.",
+        )
+    },
     // Fires once per run the first time GEAR — armour OR a weapon — lands in the bag (see
     // `detect_gear_found`); the one armour-flavoured clip covers either find. Text == the `equip.ogg`
     // transcript (don't reword without re-recording, or the subtitle desyncs from the audio).
-    Line { once: true,  priority: 15, ..line("equip",         Speaker::Hero, Concept::Equip,        "Mm, new armor. I should look it over in my satchel.") },
-    Line { floor: 300.0,               ..line("levelup",      Speaker::Hero, Concept::LevelUp,      "Stronger. The blade feels lighter than it did.") },
-    Line { floor: 300.0, priority: 12, ..line("wave_survived", Speaker::Hero, Concept::WaveSurvived, "Dawn. We held. ...this time.") },
-    Line { once: true,  priority: 15, ..line("first_kill",    Speaker::Hero, Concept::FirstKill,    "Down it goes. Plenty more where that came from.") },
-    Line { once: true,                ..line("gold_rich",     Speaker::Hero, Concept::GoldRich,     "Coin enough to make the merchant smile. Good.") },
-    Line { floor: 300.0,              ..line("broke",         Speaker::Hero, Concept::Broke,        "Pockets empty. Steel will have to do the talking.") },
-    Line { floor: 300.0, priority: 25, ..line("keep_hurt",    Speaker::Hero, Concept::KeepHurt,     "The keep's taking a beating. Get to the walls.") },
-    Line { floor: 300.0,              ..line("shrine_heal",   Speaker::Hero, Concept::ShrineHeal,   "The old stones still have mercy in them.") },
+    Line {
+        once: true,
+        priority: 15,
+        ..line(
+            "equip",
+            Speaker::Hero,
+            Concept::Equip,
+            "Mm, new armor. I should look it over in my satchel.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        ..line(
+            "levelup",
+            Speaker::Hero,
+            Concept::LevelUp,
+            "Stronger. The blade feels lighter than it did.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 12,
+        ..line(
+            "wave_survived",
+            Speaker::Hero,
+            Concept::WaveSurvived,
+            "Dawn. We held. ...this time.",
+        )
+    },
+    Line {
+        once: true,
+        priority: 15,
+        ..line(
+            "first_kill",
+            Speaker::Hero,
+            Concept::FirstKill,
+            "Down it goes. Plenty more where that came from.",
+        )
+    },
+    Line {
+        once: true,
+        ..line(
+            "gold_rich",
+            Speaker::Hero,
+            Concept::GoldRich,
+            "Coin enough to make the merchant smile. Good.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        ..line(
+            "broke",
+            Speaker::Hero,
+            Concept::Broke,
+            "Pockets empty. Steel will have to do the talking.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 25,
+        ..line(
+            "keep_hurt",
+            Speaker::Hero,
+            Concept::KeepHurt,
+            "The keep's taking a beating. Get to the walls.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        ..line(
+            "shrine_heal",
+            Speaker::Hero,
+            Concept::ShrineHeal,
+            "The old stones still have mercy in them.",
+        )
+    },
     // ── Hero commands — the muster (K). One rally variant rolls when the war party forms up, one
     //    stand-down variant when it disbands (emitted from `villagers::muster_keys`). priority 25 so
     //    a deliberate order plays over idle musings; transcripts == the recorded `.ogg` (don't reword
     //    without re-recording, or the subtitle desyncs from the clip). ──
-    Line { priority: 25, ..line("muster_to_me",     Speaker::Hero, Concept::MusterCall,      "To me! Form up!") },
-    Line { priority: 25, ..line("muster_on_me",     Speaker::Hero, Concept::MusterCall,      "On me, all of you. We move.") },
-    Line { priority: 25, ..line("muster_take_arms", Speaker::Hero, Concept::MusterCall,      "Take up arms — fall in behind me!") },
-    Line { priority: 25, ..line("muster_with_me",   Speaker::Hero, Concept::MusterCall,      "With me, lads. Stay close now.") },
-    Line { priority: 25, ..line("standdown_work",   Speaker::Hero, Concept::MusterStandDown, "Stand down. Back to your work.") },
-    Line { priority: 25, ..line("standdown_ease",   Speaker::Hero, Concept::MusterStandDown, "That'll do. Ease off.") },
-    Line { priority: 25, ..line("standdown_hold",   Speaker::Hero, Concept::MusterStandDown, "Hold here. Rest while you can.") },
+    Line {
+        priority: 25,
+        ..line(
+            "muster_to_me",
+            Speaker::Hero,
+            Concept::MusterCall,
+            "To me! Form up!",
+        )
+    },
+    Line {
+        priority: 25,
+        ..line(
+            "muster_on_me",
+            Speaker::Hero,
+            Concept::MusterCall,
+            "On me, all of you. We move.",
+        )
+    },
+    Line {
+        priority: 25,
+        ..line(
+            "muster_take_arms",
+            Speaker::Hero,
+            Concept::MusterCall,
+            "Take up arms — fall in behind me!",
+        )
+    },
+    Line {
+        priority: 25,
+        ..line(
+            "muster_with_me",
+            Speaker::Hero,
+            Concept::MusterCall,
+            "With me, lads. Stay close now.",
+        )
+    },
+    Line {
+        priority: 25,
+        ..line(
+            "standdown_work",
+            Speaker::Hero,
+            Concept::MusterStandDown,
+            "Stand down. Back to your work.",
+        )
+    },
+    Line {
+        priority: 25,
+        ..line(
+            "standdown_ease",
+            Speaker::Hero,
+            Concept::MusterStandDown,
+            "That'll do. Ease off.",
+        )
+    },
+    Line {
+        priority: 25,
+        ..line(
+            "standdown_hold",
+            Speaker::Hero,
+            Concept::MusterStandDown,
+            "Hold here. Rest while you can.",
+        )
+    },
     // ── Hero biome musings (once per biome per run via `once`) ──
     // REWORKED 2026-07 (was stale): the old versions all presumed a prisoner cage sat in every
     // biome ("Huh, prisoners", "someone's locked in that cage", "are those captives?") — but cages
@@ -286,236 +506,1621 @@ pub const LINES: &[Line] = &[
     // nods the rival stronghold that lives there. NB: the .ogg clips must be RE-RECORDED to match —
     // until then the old audio plays under the new subtitle (desync). Re-cut ids: forest/snow/rock/
     // desert/swamp.
-    Line { once: true, ..line("forest", Speaker::Hero, Concept::BiomeEntered(Biome::Forest), "A forest. Good hunting here — apples too, if the birds left me any.") },
-    Line { once: true, ..line("snow",   Speaker::Hero, Concept::BiomeEntered(Biome::Snow),   "Freezing up here. Beasts to hunt, and there's loot buried in the ice — if the cold don't take me first.") },
-    Line { once: true, ..line("rock",   Speaker::Hero, Concept::BiomeEntered(Biome::Rocky),  "All this rock. A lot of ore in it. The keep walls could drink every ton I dig.") },
-    Line { once: true, ..line("desert", Speaker::Hero, Concept::BiomeEntered(Biome::Desert), "Desert. Hot as a forge. And that's the rival's banner on the dunes — I'm not welcome out here.") },
-    Line { once: true, ..line("swamp",  Speaker::Hero, Concept::BiomeEntered(Biome::Swamp),  "Ugh, the marsh. Slow going — but the healing herbs grow thick here. Worth the stink.") },
+    Line {
+        once: true,
+        ..line(
+            "forest",
+            Speaker::Hero,
+            Concept::BiomeEntered(Biome::Forest),
+            "A forest. Good hunting here — apples too, if the birds left me any.",
+        )
+    },
+    Line {
+        once: true,
+        ..line(
+            "snow",
+            Speaker::Hero,
+            Concept::BiomeEntered(Biome::Snow),
+            "Freezing up here. Beasts to hunt, and there's loot buried in the ice — if the cold don't take me first.",
+        )
+    },
+    Line {
+        once: true,
+        ..line(
+            "rock",
+            Speaker::Hero,
+            Concept::BiomeEntered(Biome::Rocky),
+            "All this rock. A lot of ore in it. The keep walls could drink every ton I dig.",
+        )
+    },
+    Line {
+        once: true,
+        ..line(
+            "desert",
+            Speaker::Hero,
+            Concept::BiomeEntered(Biome::Desert),
+            "Desert. Hot as a forge. And that's the rival's banner on the dunes — I'm not welcome out here.",
+        )
+    },
+    Line {
+        once: true,
+        ..line(
+            "swamp",
+            Speaker::Hero,
+            Concept::BiomeEntered(Biome::Swamp),
+            "Ugh, the marsh. Slow going — but the healing herbs grow thick here. Worth the stink.",
+        )
+    },
     // ── Hero observational remarks ──
     // Trigger: NearTown — hero near townsfolk (folded from people/name/well/townday/laugh/market/woodpile/grumble lines)
-    Line { floor: 300.0, priority: 5, ..line("people_a",   Speaker::Hero, Concept::NearTown, "These people. Loud, stubborn, alive. That's the whole point of all this, isn't it.") },
-    Line { floor: 300.0, priority: 5, ..line("people_b",   Speaker::Hero, Concept::NearTown, "Look at them — bickering, trading, breathing. That's what the wall is for.") },
-    Line { floor: 300.0, priority: 5, ..line("name_a",     Speaker::Hero, Concept::NearTown, "Half of them don't know my name. Good. Means they're free to forget the war.") },
-    Line { floor: 300.0, priority: 5, ..line("name_b",     Speaker::Hero, Concept::NearTown, "They nod and move on. Better that than knowing what's out past the gate.") },
-    Line { floor: 300.0, priority: 5, ..line("well_a",     Speaker::Hero, Concept::NearTown, "Fresh water, idle talk, small quarrels. The things we're actually fighting for.") },
-    Line { floor: 300.0, priority: 5, ..line("well_b",     Speaker::Hero, Concept::NearTown, "Gossip at the well. Sounds like nothing. Sounds like peace, is what it is.") },
-    Line { floor: 300.0, priority: 5, ..line("townday_a",  Speaker::Hero, Concept::NearTown, "A town that still argues over fences and taxes. Means there's still a town.") },
-    Line { floor: 300.0, priority: 5, ..line("townday_b",  Speaker::Hero, Concept::NearTown, "Still squabbling over hens and rent. The day that stops, we've lost.") },
-    Line { floor: 300.0, priority: 5, ..line("laugh_a",    Speaker::Hero, Concept::NearTown, "They laugh like there was never a siege. ...Maybe that's the victory.") },
-    Line { floor: 300.0, priority: 5, ..line("laugh_b",    Speaker::Hero, Concept::NearTown, "Laughter in the square, after all this. ...Maybe that's the whole point.") },
-    Line { floor: 300.0, priority: 5, ..line("market_a",   Speaker::Hero, Concept::NearTown, "Coin changes hands, bread gets baked, the world turns. I just keep the wolves off it.") },
-    Line { floor: 300.0, priority: 5, ..line("market_b",   Speaker::Hero, Concept::NearTown, "Buy, sell, haggle — honest work. I'd take it over mine most days.") },
-    Line { floor: 300.0, priority: 5, ..line("woodpile_a", Speaker::Hero, Concept::NearTown, "Stack it high. The nights are only getting longer.") },
-    Line { floor: 300.0, priority: 5, ..line("woodpile_b", Speaker::Hero, Concept::NearTown, "More wood. Good. Cold kills slower than orks — but it still kills.") },
-    Line { floor: 300.0, priority: 5, ..line("grumble_a",  Speaker::Hero, Concept::NearTown, "The taxes, aye. Tell it to the orks — they're wonderful listeners.") },
-    Line { floor: 300.0, priority: 5, ..line("grumble_b",  Speaker::Hero, Concept::NearTown, "Complain to me about rent. I'll forward it to the horde — they decide who pays.") },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "people_a",
+            Speaker::Hero,
+            Concept::NearTown,
+            "These people. Loud, stubborn, alive. That's the whole point of all this, isn't it.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "people_b",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Look at them — bickering, trading, breathing. That's what the wall is for.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "name_a",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Half of them don't know my name. Good. Means they're free to forget the war.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "name_b",
+            Speaker::Hero,
+            Concept::NearTown,
+            "They nod and move on. Better that than knowing what's out past the gate.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "well_a",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Fresh water, idle talk, small quarrels. The things we're actually fighting for.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "well_b",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Gossip at the well. Sounds like nothing. Sounds like peace, is what it is.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "townday_a",
+            Speaker::Hero,
+            Concept::NearTown,
+            "A town that still argues over fences and taxes. Means there's still a town.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "townday_b",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Still squabbling over hens and rent. The day that stops, we've lost.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "laugh_a",
+            Speaker::Hero,
+            Concept::NearTown,
+            "They laugh like there was never a siege. ...Maybe that's the victory.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "laugh_b",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Laughter in the square, after all this. ...Maybe that's the whole point.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "market_a",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Coin changes hands, bread gets baked, the world turns. I just keep the wolves off it.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "market_b",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Buy, sell, haggle — honest work. I'd take it over mine most days.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "woodpile_a",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Stack it high. The nights are only getting longer.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "woodpile_b",
+            Speaker::Hero,
+            Concept::NearTown,
+            "More wood. Good. Cold kills slower than orks — but it still kills.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "grumble_a",
+            Speaker::Hero,
+            Concept::NearTown,
+            "The taxes, aye. Tell it to the orks — they're wonderful listeners.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "grumble_b",
+            Speaker::Hero,
+            Concept::NearTown,
+            "Complain to me about rent. I'll forward it to the horde — they decide who pays.",
+        )
+    },
     // Trigger: NearKids — hero near child villagers
-    Line { floor: 300.0, priority: 5, ..line("kids_a",     Speaker::Hero, Concept::NearKids, "Mind those sticks, little ones. ...Gods, let them stay little ones a while longer.") },
-    Line { floor: 300.0, priority: 5, ..line("kids_b",     Speaker::Hero, Concept::NearKids, "Run while you can, little ones. Wish I still had the knees for it.") },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "kids_a",
+            Speaker::Hero,
+            Concept::NearKids,
+            "Mind those sticks, little ones. ...Gods, let them stay little ones a while longer.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "kids_b",
+            Speaker::Hero,
+            Concept::NearKids,
+            "Run while you can, little ones. Wish I still had the knees for it.",
+        )
+    },
     // Trigger: NearPet — hero near a dog or cat
-    Line { floor: 300.0, priority: 5, ..line("pet_a",      Speaker::Hero, Concept::NearPet, "At least the hound's got the right idea. Rest while the light holds.") },
-    Line { floor: 300.0, priority: 5, ..line("pet_b",      Speaker::Hero, Concept::NearPet, "The cat fears nothing. Must be nice, being a cat.") },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "pet_a",
+            Speaker::Hero,
+            Concept::NearPet,
+            "At least the hound's got the right idea. Rest while the light holds.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "pet_b",
+            Speaker::Hero,
+            Concept::NearPet,
+            "The cat fears nothing. Must be nice, being a cat.",
+        )
+    },
     // Trigger: NearGuard — hero near a guard / militia
-    Line { floor: 300.0, priority: 5, ..line("guard_a",    Speaker::Hero, Concept::NearGuard, "Stand tall. The wall holds because you do.") },
-    Line { floor: 300.0, priority: 5, ..line("guard_b",    Speaker::Hero, Concept::NearGuard, "Eyes on the dark, soldier. I'll be right beside you when it comes.") },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "guard_a",
+            Speaker::Hero,
+            Concept::NearGuard,
+            "Stand tall. The wall holds because you do.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "guard_b",
+            Speaker::Hero,
+            Concept::NearGuard,
+            "Eyes on the dark, soldier. I'll be right beside you when it comes.",
+        )
+    },
     // Trigger: InKeep — hero inside the keep footprint
-    Line { floor: 300.0, priority: 5, ..line("keep_a",     Speaker::Hero, Concept::InKeep, "Old stones. They've outlived better men than me. They'll outlive me too.") },
-    Line { floor: 300.0, priority: 5, ..line("keep_b",     Speaker::Hero, Concept::InKeep, "This keep's swallowed a hundred sieges. One more won't choke it.") },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "keep_a",
+            Speaker::Hero,
+            Concept::InKeep,
+            "Old stones. They've outlived better men than me. They'll outlive me too.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "keep_b",
+            Speaker::Hero,
+            Concept::InKeep,
+            "This keep's swallowed a hundred sieges. One more won't choke it.",
+        )
+    },
     // Trigger: NearFortress — hero within sight range of Gnashfang Hold (south swamp)
-    Line { floor: 600.0, priority: 8, ..line("fortress_sight", Speaker::Hero, Concept::NearFortress, "There it is. Gnashfang Hold. Every roar on this island starts there.") },
-    Line { floor: 600.0, priority: 8, ..line("fortress_near",  Speaker::Hero, Concept::NearFortress, "Walk soft. Their archers don't ask questions.") },
-    Line { floor: 600.0, priority: 8, ..line("fortress_drums", Speaker::Hero, Concept::NearFortress, "Hear the drums? They're not celebrating. They're counting.") },
+    Line {
+        floor: 600.0,
+        priority: 8,
+        ..line(
+            "fortress_sight",
+            Speaker::Hero,
+            Concept::NearFortress,
+            "There it is. Gnashfang Hold. Every roar on this island starts there.",
+        )
+    },
+    Line {
+        floor: 600.0,
+        priority: 8,
+        ..line(
+            "fortress_near",
+            Speaker::Hero,
+            Concept::NearFortress,
+            "Walk soft. Their archers don't ask questions.",
+        )
+    },
+    Line {
+        floor: 600.0,
+        priority: 8,
+        ..line(
+            "fortress_drums",
+            Speaker::Hero,
+            Concept::NearFortress,
+            "Hear the drums? They're not celebrating. They're counting.",
+        )
+    },
     // Trigger: NightMusing — during a wave
-    Line { floor: 300.0, priority: 5, ..line("night_a",    Speaker::Hero, Concept::NightMusing, "Stars are out. Somewhere up there someone's keeping a tally. Hope I'm ahead.") },
-    Line { floor: 300.0, priority: 5, ..line("night_b",    Speaker::Hero, Concept::NightMusing, "Clear night. Pretty — if you forget what comes with the dark.") },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "night_a",
+            Speaker::Hero,
+            Concept::NightMusing,
+            "Stars are out. Somewhere up there someone's keeping a tally. Hope I'm ahead.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "night_b",
+            Speaker::Hero,
+            Concept::NightMusing,
+            "Clear night. Pretty — if you forget what comes with the dark.",
+        )
+    },
     // Trigger: QuietMusing — prep phase, no orks nearby
-    Line { floor: 300.0, priority: 5, ..line("quiet_a",    Speaker::Hero, Concept::QuietMusing, "Quiet day. I've learned not to trust quiet days.") },
-    Line { floor: 300.0, priority: 5, ..line("quiet_b",    Speaker::Hero, Concept::QuietMusing, "Too calm. The quiet always sends a bill, sooner or later.") },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "quiet_a",
+            Speaker::Hero,
+            Concept::QuietMusing,
+            "Quiet day. I've learned not to trust quiet days.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "quiet_b",
+            Speaker::Hero,
+            Concept::QuietMusing,
+            "Too calm. The quiet always sends a bill, sooner or later.",
+        )
+    },
     // Trigger: KillMusing — after a kill, but only on a small chance roll (`KILL_REMARK_CHANCE`)
     // so the hero doesn't comment on every felled ork/animal during a wave ("mouth never closes").
-    Line { floor: 300.0, priority: 5, ..line("kill_a",     Speaker::Hero, Concept::KillMusing, "One more for the pile. I stopped counting around the second winter.") },
-    Line { floor: 300.0, priority: 5, ..line("kill_b",     Speaker::Hero, Concept::KillMusing, "Down. There's always another behind it. Always is.") },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "kill_a",
+            Speaker::Hero,
+            Concept::KillMusing,
+            "One more for the pile. I stopped counting around the second winter.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "kill_b",
+            Speaker::Hero,
+            Concept::KillMusing,
+            "Down. There's always another behind it. Always is.",
+        )
+    },
     // ── Hero intro lines (once per run — the tutorial in the hero's own voice) ──
     // TIGHTENED 2026-07: the old versions ran ~14–17s but read_secs clamps mouth-busy at 8s, so the
     // back half was silently dropped mid-sentence. These are cut to land inside ~8s. RE-RECORD the
     // intro_a/intro_b clips to match (else new subtitle over old, longer audio).
-    Line { once: true, priority: 3, ..line("intro_a", Speaker::Hero, Concept::Intro, "Daylight's short. Loot the chests, gather coin and stone, arm up. When dark falls, the orks come for the keep — and we hold it.") },
-    Line { once: true, priority: 3, ..line("intro_b", Speaker::Hero, Concept::Intro, "By day you scavenge and arm at the War Table. By night the horde hits these walls. Keep the keep standing.") },
+    Line {
+        once: true,
+        priority: 3,
+        ..line(
+            "intro_a",
+            Speaker::Hero,
+            Concept::Intro,
+            "Daylight's short. Loot the chests, gather coin and stone, arm up. When dark falls, the orks come for the keep — and we hold it.",
+        )
+    },
+    Line {
+        once: true,
+        priority: 3,
+        ..line(
+            "intro_b",
+            Speaker::Hero,
+            Concept::Intro,
+            "By day you scavenge and arm at the War Table. By night the horde hits these walls. Keep the keep standing.",
+        )
+    },
     // ── Villager ambient chatter (nearest working townsperson, when the hero lingers) ──
     // One villager voice globally at a time (director enforces this); accepted simplification vs. the
     // old one-per-cluster model. floor:360 keeps the ~7-min rotation cycling without going silent.
     // Speakers: Ed (greet … screaming) and Professor (day_dream … screaming). Text is the clip transcript.
-    Line { floor: 360.0, ..line("greet",        Speaker::Villager, Concept::Greeting,         "Oh, hello there, m'lord. Mind the mud.") },
-    Line { floor: 360.0, ..line("greet_2",      Speaker::Villager, Concept::Greeting,         "Bless your night. We sleep easier when you're about.") },
-    Line { floor: 360.0, ..line("idle_hens",    Speaker::Villager, Concept::Greeting,         "I told the hens about the orks. They were not impressed.") },
-    Line { floor: 360.0, ..line("idle_cousin",  Speaker::Villager, Concept::Greeting,         "Me cousin says he killed an ork once. Me cousin says a lotta things.") },
-    Line { floor: 360.0, ..line("merchant",     Speaker::Villager, Concept::Greeting,         "Finest wares this side of the swamp. Only wares this side of the swamp, but still.") },
+    Line {
+        floor: 360.0,
+        ..line(
+            "greet",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Oh, hello there, m'lord. Mind the mud.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "greet_2",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Bless your night. We sleep easier when you're about.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "idle_hens",
+            Speaker::Villager,
+            Concept::Greeting,
+            "I told the hens about the orks. They were not impressed.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "idle_cousin",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Me cousin says he killed an ork once. Me cousin says a lotta things.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "merchant",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Finest wares this side of the swamp. Only wares this side of the swamp, but still.",
+        )
+    },
     // Worker ambient lines — lumberjack, miner, farmer. Pooled into Greeting so they
     // rotate naturally with the other ambient chatter; spatial villager routing applies.
-    Line { floor: 360.0, ..line("timber",          Speaker::Villager, Concept::Greeting, "Timber!") },
-    Line { floor: 360.0, ..line("lumber_opinions", Speaker::Villager, Concept::Greeting, "This one's got opinions.") },
-    Line { floor: 360.0, ..line("lumber_trees",    Speaker::Villager, Concept::Greeting, "Trees don't fight back. That's why I like trees.") },
-    Line { floor: 360.0, ..line("lumber_dream",    Speaker::Villager, Concept::Greeting, "Chop, haul, stack. Living the dream.") },
-    Line { floor: 360.0, ..line("miner_growback",  Speaker::Villager, Concept::Greeting, "Stone doesn't grow back. Wish someone tell the keep that.") },
-    Line { floor: 360.0, ..line("miner_heavy",     Speaker::Villager, Concept::Greeting, "Heavy? No, no. I walk like this for fun.") },
-    Line { floor: 360.0, ..line("miner_ore",       Speaker::Villager, Concept::Greeting, "Found ore! Somebody else carry it.") },
-    Line { floor: 360.0, ..line("miner_pa",        Speaker::Villager, Concept::Greeting, "Pick, rock, repeat. My paw did this. His paw did this. None of us learned.") },
-    Line { floor: 360.0, ..line("farmer_grow",     Speaker::Villager, Concept::Greeting, "Grow, you little green liars.") },
-    Line { floor: 360.0, ..line("farmer_turnips",  Speaker::Villager, Concept::Greeting, "Orcs trampled the turnips again. The turnips.") },
-    Line { floor: 360.0, ..line("farmer_always",   Speaker::Villager, Concept::Greeting, "Rain or orcs. Always something.") },
-    Line { floor: 360.0, ..line("farmer_feeds",    Speaker::Villager, Concept::Greeting, "Feed the whole island, they said. Nobody feeds the farmer.") },
+    Line {
+        floor: 360.0,
+        ..line("timber", Speaker::Villager, Concept::Greeting, "Timber!")
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "lumber_opinions",
+            Speaker::Villager,
+            Concept::Greeting,
+            "This one's got opinions.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "lumber_trees",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Trees don't fight back. That's why I like trees.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "lumber_dream",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Chop, haul, stack. Living the dream.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "miner_growback",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Stone doesn't grow back. Wish someone tell the keep that.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "miner_heavy",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Heavy? No, no. I walk like this for fun.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "miner_ore",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Found ore! Somebody else carry it.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "miner_pa",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Pick, rock, repeat. My paw did this. His paw did this. None of us learned.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "farmer_grow",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Grow, you little green liars.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "farmer_turnips",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Orcs trampled the turnips again. The turnips.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "farmer_always",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Rain or orcs. Always something.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "farmer_feeds",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Feed the whole island, they said. Nobody feeds the farmer.",
+        )
+    },
     // These jabs are aimed AT the hero, so each opens a call-and-response chain: when the
     // line finishes it dispatches `ReplyToVillagerJab` to the hero, who picks a comeback from his
     // reply pool below (the Valve "then" dispatch — `tick_chains` resolves it against current facts,
     // so if the hero has wandered out of earshot / is mid-line, the comeback simply doesn't land).
-    Line { floor: 360.0, then: Some(REPLY_TO_JAB), ..line("pa_hero",   Speaker::Villager, Concept::Greeting, "Off to be a hero again, are we? Must be nice having the time.") },
-    Line { floor: 360.0, then: Some(REPLY_TO_JAB), ..line("pa_chosen", Speaker::Villager, Concept::Greeting, "Oh, the chosen one graces us. Mind you don't trip on all that destiny.") },
-    Line { floor: 360.0, then: Some(REPLY_TO_JAB), ..line("pa_slept",  Speaker::Villager, Concept::Greeting, "Saved us all last night, did you? Funny, I slept fine without you.") },
+    Line {
+        floor: 360.0,
+        then: Some(REPLY_TO_JAB),
+        ..line(
+            "pa_hero",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Off to be a hero again, are we? Must be nice having the time.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        then: Some(REPLY_TO_JAB),
+        ..line(
+            "pa_chosen",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Oh, the chosen one graces us. Mind you don't trip on all that destiny.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        then: Some(REPLY_TO_JAB),
+        ..line(
+            "pa_slept",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Saved us all last night, did you? Funny, I slept fine without you.",
+        )
+    },
     // pa_armor and everything after it in this file were batch-generated with ElevenLabs
     // ("Victor — deep" voice, single take split on silences), so they share one voice.
-    Line { floor: 360.0, then: Some(REPLY_TO_JAB), ..line("pa_armor",  Speaker::Villager, Concept::Greeting, "Lovely armor, that. Shame about the taxes what paid for it.") },
-    Line { floor: 360.0, then: Some(REPLY_TO_JAB), ..line("pa_late",   Speaker::Villager, Concept::Greeting, "Oh, look who turns up once the screaming's done. Impeccable timing, as ever.") },
-    Line { floor: 360.0, ..line("pa_fence",     Speaker::Villager, Concept::Greeting,         "Big strong knight. Can't fix a fence, but big strong knight.") },
-    Line { floor: 360.0, ..line("story_barn",   Speaker::Villager, Concept::Greeting,         "See ol' Marek's barn? Burned clean down. He says lightning. Was the ale.") },
-    Line { floor: 360.0, ..line("story_miller", Speaker::Villager, Concept::Greeting,         "The miller's daughter married a soldier. He left, she kept the goat. Smart girl.") },
-    Line { floor: 360.0, ..line("story_witch",  Speaker::Villager, Concept::Greeting,         "They say the swamp witch grants wishes. They also say she eats fingers. I'll keep my fingers.") },
-    Line { floor: 360.0, ..line("story_gran",   Speaker::Villager, Concept::Greeting,         "We don't talk about grandfather.") },
-    Line { floor: 360.0, ..line("story_baker",  Speaker::Villager, Concept::Greeting,         "Heard the baker's getting rich. Heard it from the baker. So.") },
-    Line { floor: 360.0, ..line("day_dream",    Speaker::Villager, Concept::Greeting,         "Another glorious day of standing exactly here. Living the dream.") },
-    Line { floor: 360.0, ..line("chicken",      Speaker::Villager, Concept::Greeting,         "If one more chicken gets into the chapel, I'm converting.") },
-    Line { floor: 360.0, ..line("taxes",        Speaker::Villager, Concept::Greeting,         "Taxes up, walls down, orks at the door. But sure, ring the bell. That'll help.") },
-    Line { floor: 360.0, ..line("trade",        Speaker::Villager, Concept::Greeting,         "I had a trade once, then the war. Now I... do this.") },
-    Line { floor: 360.0, ..line("grateful",     Speaker::Villager, Concept::Greeting,         "We're ever so grateful. Truly. Now could you grateful your boots off my step.") },
-    Line { floor: 360.0, ..line("screaming",    Speaker::Villager, Concept::Greeting,         "Bless you for the protection. The screaming at night is a lovely touch.") },
-    Line { floor: 360.0, ..line("statue",       Speaker::Villager, Concept::Greeting,         "They'll raise you a statue one day, m'lord. The pigeons are very excited.") },
-    Line { floor: 360.0, ..line("favorite",     Speaker::Villager, Concept::Greeting,         "You're my favorite knight. You're the only knight. Still counts.") },
-    Line { floor: 360.0, ..line("moat",         Speaker::Villager, Concept::Greeting,         "I said dig a moat. 'Too dear,' they said. But swords for everyone, sure.") },
-    Line { floor: 360.0, ..line("optimist",     Speaker::Villager, Concept::Greeting,         "Mum always said look on the bright side. So: at least the orks are punctual.") },
-    Line { floor: 360.0, ..line("roof",         Speaker::Villager, Concept::Greeting,         "There's a hole in my roof shaped just like a catapult stone. Decorative, I'm told.") },
+    Line {
+        floor: 360.0,
+        then: Some(REPLY_TO_JAB),
+        ..line(
+            "pa_armor",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Lovely armor, that. Shame about the taxes what paid for it.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        then: Some(REPLY_TO_JAB),
+        ..line(
+            "pa_late",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Oh, look who turns up once the screaming's done. Impeccable timing, as ever.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "pa_fence",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Big strong knight. Can't fix a fence, but big strong knight.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "story_barn",
+            Speaker::Villager,
+            Concept::Greeting,
+            "See ol' Marek's barn? Burned clean down. He says lightning. Was the ale.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "story_miller",
+            Speaker::Villager,
+            Concept::Greeting,
+            "The miller's daughter married a soldier. He left, she kept the goat. Smart girl.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "story_witch",
+            Speaker::Villager,
+            Concept::Greeting,
+            "They say the swamp witch grants wishes. They also say she eats fingers. I'll keep my fingers.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "story_gran",
+            Speaker::Villager,
+            Concept::Greeting,
+            "We don't talk about grandfather.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "story_baker",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Heard the baker's getting rich. Heard it from the baker. So.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "day_dream",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Another glorious day of standing exactly here. Living the dream.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "chicken",
+            Speaker::Villager,
+            Concept::Greeting,
+            "If one more chicken gets into the chapel, I'm converting.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "taxes",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Taxes up, walls down, orks at the door. But sure, ring the bell. That'll help.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "trade",
+            Speaker::Villager,
+            Concept::Greeting,
+            "I had a trade once, then the war. Now I... do this.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "grateful",
+            Speaker::Villager,
+            Concept::Greeting,
+            "We're ever so grateful. Truly. Now could you grateful your boots off my step.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "screaming",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Bless you for the protection. The screaming at night is a lovely touch.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "statue",
+            Speaker::Villager,
+            Concept::Greeting,
+            "They'll raise you a statue one day, m'lord. The pigeons are very excited.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "favorite",
+            Speaker::Villager,
+            Concept::Greeting,
+            "You're my favorite knight. You're the only knight. Still counts.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "moat",
+            Speaker::Villager,
+            Concept::Greeting,
+            "I said dig a moat. 'Too dear,' they said. But swords for everyone, sure.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "optimist",
+            Speaker::Villager,
+            Concept::Greeting,
+            "Mum always said look on the bright side. So: at least the orks are punctual.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "roof",
+            Speaker::Villager,
+            Concept::Greeting,
+            "There's a hole in my roof shaped just like a catapult stone. Decorative, I'm told.",
+        )
+    },
     // pa_sword is weapon-gated → its own concept so the trigger can conditionally emit it only when armed
-    Line { floor: 360.0, ..line("pa_sword",     Speaker::Villager, Concept::VillagerArmedJab, "Look at the size of that sword. My uncle's is smaller, and he's twice the man.") },
-    Line { floor: 360.0, ..line("pa_shiny",     Speaker::Villager, Concept::VillagerArmedJab, "Ooh, shiny. Did the merchant see you coming, or did you queue up special?") },
+    Line {
+        floor: 360.0,
+        ..line(
+            "pa_sword",
+            Speaker::Villager,
+            Concept::VillagerArmedJab,
+            "Look at the size of that sword. My uncle's is smaller, and he's twice the man.",
+        )
+    },
+    Line {
+        floor: 360.0,
+        ..line(
+            "pa_shiny",
+            Speaker::Villager,
+            Concept::VillagerArmedJab,
+            "Ooh, shiny. Did the merchant see you coming, or did you queue up special?",
+        )
+    },
     // ── Villager event reactions (must finish; outrank ambient chatter) ──
     // interruptible:false + priority:15 so these aren't cut off by ambient. floor:600 = 10-min floor.
-    Line { interruptible: false, priority: 15, floor: 600.0, ..line("siege_fear",  Speaker::Villager, Concept::SiegeFalls, "They're coming. Inside, inside. Lock the door.") },
-    Line { interruptible: false, priority: 15, floor: 600.0, ..line("dawn_relief", Speaker::Villager, Concept::Dawn,       "Made it to morning. Knew you'd see us through.") },
-    Line { interruptible: false, priority: 15, floor: 600.0, ..line("rescued",     Speaker::Villager, Concept::Rescued,    "You came for me? Gods bless you. I'll take up a spear, I swear it.") },
+    Line {
+        interruptible: false,
+        priority: 15,
+        floor: 600.0,
+        ..line(
+            "siege_fear",
+            Speaker::Villager,
+            Concept::SiegeFalls,
+            "They're coming. Inside, inside. Lock the door.",
+        )
+    },
+    Line {
+        interruptible: false,
+        priority: 15,
+        floor: 600.0,
+        ..line(
+            "dawn_relief",
+            Speaker::Villager,
+            Concept::Dawn,
+            "Made it to morning. Knew you'd see us through.",
+        )
+    },
+    Line {
+        interruptible: false,
+        priority: 15,
+        floor: 600.0,
+        ..line(
+            "rescued",
+            Speaker::Villager,
+            Concept::Rescued,
+            "You came for me? Gods bless you. I'll take up a spear, I swear it.",
+        )
+    },
     // Dry-wit variants of the same events — same must-finish gating, so the pool just gets wider.
-    Line { interruptible: false, priority: 15, floor: 600.0, ..line("siege_dry",   Speaker::Villager, Concept::SiegeFalls, "Orks again. Right on schedule. Everyone act surprised.") },
-    Line { interruptible: false, priority: 15, floor: 600.0, ..line("dawn_dry",    Speaker::Villager, Concept::Dawn,       "Still alive, then. The betting pool will be devastated.") },
-    Line { interruptible: false, priority: 15, floor: 600.0, ..line("rescued_dry", Speaker::Villager, Concept::Rescued,    "My hero. Only took you, what, a fortnight? Bless.") },
+    Line {
+        interruptible: false,
+        priority: 15,
+        floor: 600.0,
+        ..line(
+            "siege_dry",
+            Speaker::Villager,
+            Concept::SiegeFalls,
+            "Orks again. Right on schedule. Everyone act surprised.",
+        )
+    },
+    Line {
+        interruptible: false,
+        priority: 15,
+        floor: 600.0,
+        ..line(
+            "dawn_dry",
+            Speaker::Villager,
+            Concept::Dawn,
+            "Still alive, then. The betting pool will be devastated.",
+        )
+    },
+    Line {
+        interruptible: false,
+        priority: 15,
+        floor: 600.0,
+        ..line(
+            "rescued_dry",
+            Speaker::Villager,
+            Concept::Rescued,
+            "My hero. Only took you, what, a fortnight? Bless.",
+        )
+    },
     // ── "You just HIT me?!" — harmless bonk reactions (the hero can clip a townsperson with a
     // swing; it does no damage but earns a sarcastic earful). These REUSE existing villager clips
     // whose lines best fit getting smacked by your own knight — no new audio, same affronted tone.
     // priority 13 so a bonk barges over idle chatter (prio 10) but yields to event lines (15);
     // floor 5 throttles machine-gun swinging without making a clip feel unresponsive.
-    Line { priority: 13, floor: 5.0, ..line("last_word_c", Speaker::Villager, Concept::HitByHero, "Touchy, touchy. And after everything we do for you.") },
-    Line { priority: 13, floor: 5.0, ..line("last_word_a", Speaker::Villager, Concept::HitByHero, "Ooh, sharp. Practice that one on the cows, did we?") },
-    Line { priority: 13, floor: 5.0, ..line("last_word_b", Speaker::Villager, Concept::HitByHero, "Noted, m'lord. I'll scream quieter tonight, just for you.") },
-    Line { priority: 13, floor: 5.0, ..line("grateful",    Speaker::Villager, Concept::HitByHero, "We're ever so grateful. Truly. Now could you grateful your boots off my step.") },
-    Line { priority: 13, floor: 5.0, ..line("screaming",   Speaker::Villager, Concept::HitByHero, "Bless you for the protection. The screaming at night is a lovely touch.") },
+    Line {
+        priority: 13,
+        floor: 5.0,
+        ..line(
+            "last_word_c",
+            Speaker::Villager,
+            Concept::HitByHero,
+            "Touchy, touchy. And after everything we do for you.",
+        )
+    },
+    Line {
+        priority: 13,
+        floor: 5.0,
+        ..line(
+            "last_word_a",
+            Speaker::Villager,
+            Concept::HitByHero,
+            "Ooh, sharp. Practice that one on the cows, did we?",
+        )
+    },
+    Line {
+        priority: 13,
+        floor: 5.0,
+        ..line(
+            "last_word_b",
+            Speaker::Villager,
+            Concept::HitByHero,
+            "Noted, m'lord. I'll scream quieter tonight, just for you.",
+        )
+    },
+    Line {
+        priority: 13,
+        floor: 5.0,
+        ..line(
+            "grateful",
+            Speaker::Villager,
+            Concept::HitByHero,
+            "We're ever so grateful. Truly. Now could you grateful your boots off my step.",
+        )
+    },
+    Line {
+        priority: 13,
+        floor: 5.0,
+        ..line(
+            "screaming",
+            Speaker::Villager,
+            Concept::HitByHero,
+            "Bless you for the protection. The screaming at night is a lovely touch.",
+        )
+    },
     // ── Ork battle barks (nearest ork in earshot; pitch-shifted per utterance) ──
-    Line { ..line("spot",   Speaker::Ork, Concept::OrkSpot,  "Little knight. Little bones.") },
-    Line { ..line("charge", Speaker::Ork, Concept::OrkSpot,  "Smash the stone. Burn the nest.") },
-    Line { ..line("blood",  Speaker::Ork, Concept::OrkSpot,  "Blood. Blood.") },
-    Line { ..line("taunt",  Speaker::Ork, Concept::OrkSpot,  "Run, runt. We eat slow ones first.") },
-    Line { ..line("where",  Speaker::Ork, Concept::OrkSpot,  "Where? Where you hide, worm?") },
-    Line { ..line("feast",  Speaker::Ork, Concept::OrkSpot,  "Tonight we feast.") },
-    Line { ..line("shaman", Speaker::Ork, Concept::OrkSpot,  "Spirits take him. Saka.") },
-    Line { ..line("gate",   Speaker::Ork, Concept::OrkSpot,  "Break the gate. Break the man.") },
-    Line { ..line("meat",   Speaker::Ork, Concept::OrkSpot,  "Fresh meat for the war pot.") },
+    Line {
+        ..line(
+            "spot",
+            Speaker::Ork,
+            Concept::OrkSpot,
+            "Little knight. Little bones.",
+        )
+    },
+    Line {
+        ..line(
+            "charge",
+            Speaker::Ork,
+            Concept::OrkSpot,
+            "Smash the stone. Burn the nest.",
+        )
+    },
+    Line {
+        ..line("blood", Speaker::Ork, Concept::OrkSpot, "Blood. Blood.")
+    },
+    Line {
+        ..line(
+            "taunt",
+            Speaker::Ork,
+            Concept::OrkSpot,
+            "Run, runt. We eat slow ones first.",
+        )
+    },
+    Line {
+        ..line(
+            "where",
+            Speaker::Ork,
+            Concept::OrkSpot,
+            "Where? Where you hide, worm?",
+        )
+    },
+    Line {
+        ..line("feast", Speaker::Ork, Concept::OrkSpot, "Tonight we feast.")
+    },
+    Line {
+        ..line(
+            "shaman",
+            Speaker::Ork,
+            Concept::OrkSpot,
+            "Spirits take him. Saka.",
+        )
+    },
+    Line {
+        ..line(
+            "gate",
+            Speaker::Ork,
+            Concept::OrkSpot,
+            "Break the gate. Break the man.",
+        )
+    },
+    Line {
+        ..line(
+            "meat",
+            Speaker::Ork,
+            Concept::OrkSpot,
+            "Fresh meat for the war pot.",
+        )
+    },
     // ── Ork death snarl (on a kill) ──
-    Line { ..line("death",  Speaker::Ork, Concept::OrkDeath, "Not done.") },
-    Line { ..line("death_2", Speaker::Ork, Concept::OrkDeath, "Cold... why cold...") },
-    Line { ..line("death_3", Speaker::Ork, Concept::OrkDeath, "Good fight. Good... fight.") },
+    Line {
+        ..line("death", Speaker::Ork, Concept::OrkDeath, "Not done.")
+    },
+    Line {
+        ..line(
+            "death_2",
+            Speaker::Ork,
+            Concept::OrkDeath,
+            "Cold... why cold...",
+        )
+    },
+    Line {
+        ..line(
+            "death_3",
+            Speaker::Ork,
+            Concept::OrkDeath,
+            "Good fight. Good... fight.",
+        )
+    },
     // ── Rival garrison (desert mercenaries) — clips at `audio/vo/rival/<id>.ogg`, transcripts are
     //    the actual recorded lines (ElevenLabs, per the chop). RivalSpot is the catch-all combat
     //    bark pool (aggro + attack cries + gloating + pain + exertion grunts); the detector
     //    (`rival_voice.rs`) rolls one when the hero fights near a rival. Default prio 10 like the
     //    orks; the spatial routing + pitch jitter live on the `Rival` SpeakerVoice. ──
-    Line { ..line("spot_dog",    Speaker::Rival, Concept::RivalSpot, "Northern dog! You are far from your little walls.") },
-    Line { ..line("spot_beggar", Speaker::Rival, Concept::RivalSpot, "Another beggar-knight. The sand will drink you.") },
-    Line { ..line("spot_mine",   Speaker::Rival, Concept::RivalSpot, "Hut! He is mine — fan out!") },
-    Line { ..line("spot_dunes",  Speaker::Rival, Concept::RivalSpot, "You should not have crossed the dunes, stranger.") },
-    Line { ..line("spot_toy",    Speaker::Rival, Concept::RivalSpot, "Look at his shining toy sword. Pretty. Useless.") },
-    Line { ..line("spot_pasha",  Speaker::Rival, Concept::RivalSpot, "For the Pasha! Yaaah!") },
-    Line { ..line("atk_bleed",   Speaker::Rival, Concept::RivalSpot, "Hah! Bleed!") },
-    Line { ..line("atk_strike",  Speaker::Rival, Concept::RivalSpot, "Strike — down, dog!") },
-    Line { ..line("atk_head",    Speaker::Rival, Concept::RivalSpot, "Take his head!") },
-    Line { ..line("atk_still",   Speaker::Rival, Concept::RivalSpot, "Stand still!") },
-    Line { ..line("atk_ribbons", Speaker::Rival, Concept::RivalSpot, "Cut him to ribbons!") },
-    Line { ..line("taunt_army",  Speaker::Rival, Concept::RivalSpot, "Is this your army? Peasants with sticks.") },
-    Line { ..line("taunt_down",  Speaker::Rival, Concept::RivalSpot, "Down he goes. Sweep them aside.") },
-    Line { ..line("taunt_farmers", Speaker::Rival, Concept::RivalSpot, "Run home, farmers!") },
-    Line { ..line("hurt_pay",    Speaker::Rival, Concept::RivalSpot, "You will pay for that.") },
-    Line { ..line("hurt_all",    Speaker::Rival, Concept::RivalSpot, "Is that all, runt?") },
-    Line { ..line("hurt_coward", Speaker::Rival, Concept::RivalSpot, "Coward's blow!") },
-    Line { ..line("hurt_angry",  Speaker::Rival, Concept::RivalSpot, "You only make me angry.") },
-    Line { ..line("grunt_1",     Speaker::Rival, Concept::RivalSpot, "Ugh!") },
-    Line { ..line("grunt_2",     Speaker::Rival, Concept::RivalSpot, "Hah!") },
+    Line {
+        ..line(
+            "spot_dog",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Northern dog! You are far from your little walls.",
+        )
+    },
+    Line {
+        ..line(
+            "spot_beggar",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Another beggar-knight. The sand will drink you.",
+        )
+    },
+    Line {
+        ..line(
+            "spot_mine",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Hut! He is mine — fan out!",
+        )
+    },
+    Line {
+        ..line(
+            "spot_dunes",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "You should not have crossed the dunes, stranger.",
+        )
+    },
+    Line {
+        ..line(
+            "spot_toy",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Look at his shining toy sword. Pretty. Useless.",
+        )
+    },
+    Line {
+        ..line(
+            "spot_pasha",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "For the Pasha! Yaaah!",
+        )
+    },
+    Line {
+        ..line(
+            "atk_bleed",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Hah! Bleed!",
+        )
+    },
+    Line {
+        ..line(
+            "atk_strike",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Strike — down, dog!",
+        )
+    },
+    Line {
+        ..line(
+            "atk_head",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Take his head!",
+        )
+    },
+    Line {
+        ..line(
+            "atk_still",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Stand still!",
+        )
+    },
+    Line {
+        ..line(
+            "atk_ribbons",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Cut him to ribbons!",
+        )
+    },
+    Line {
+        ..line(
+            "taunt_army",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Is this your army? Peasants with sticks.",
+        )
+    },
+    Line {
+        ..line(
+            "taunt_down",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Down he goes. Sweep them aside.",
+        )
+    },
+    Line {
+        ..line(
+            "taunt_farmers",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Run home, farmers!",
+        )
+    },
+    Line {
+        ..line(
+            "hurt_pay",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "You will pay for that.",
+        )
+    },
+    Line {
+        ..line(
+            "hurt_all",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Is that all, runt?",
+        )
+    },
+    Line {
+        ..line(
+            "hurt_coward",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "Coward's blow!",
+        )
+    },
+    Line {
+        ..line(
+            "hurt_angry",
+            Speaker::Rival,
+            Concept::RivalSpot,
+            "You only make me angry.",
+        )
+    },
+    Line {
+        ..line("grunt_1", Speaker::Rival, Concept::RivalSpot, "Ugh!")
+    },
+    Line {
+        ..line("grunt_2", Speaker::Rival, Concept::RivalSpot, "Hah!")
+    },
     // Death cry (on a rival's fall).
-    Line { ..line("death_sands",   Speaker::Rival, Concept::RivalDeath, "The sands... take me...") },
-    Line { ..line("death_held",    Speaker::Rival, Concept::RivalDeath, "Tell the Pasha... I held...") },
-    Line { ..line("death_cold",    Speaker::Rival, Concept::RivalDeath, "Cold... northern... cold...") },
-    Line { ..line("death_nothing", Speaker::Rival, Concept::RivalDeath, "You... win nothing... dog...") },
+    Line {
+        ..line(
+            "death_sands",
+            Speaker::Rival,
+            Concept::RivalDeath,
+            "The sands... take me...",
+        )
+    },
+    Line {
+        ..line(
+            "death_held",
+            Speaker::Rival,
+            Concept::RivalDeath,
+            "Tell the Pasha... I held...",
+        )
+    },
+    Line {
+        ..line(
+            "death_cold",
+            Speaker::Rival,
+            Concept::RivalDeath,
+            "Cold... northern... cold...",
+        )
+    },
+    Line {
+        ..line(
+            "death_nothing",
+            Speaker::Rival,
+            Concept::RivalDeath,
+            "You... win nothing... dog...",
+        )
+    },
     // Raid-march cue — fired when the daytime raid sets out (`rival.rs`). Slightly louder so it
     // carries across the field as the warning it is.
-    Line { priority: 12, floor: 30.0, ..line("raid_forward",  Speaker::Rival, Concept::RivalRaidMarch, "Forward! Burn their keep!") },
-    Line { priority: 12, floor: 30.0, ..line("raid_chant",    Speaker::Rival, Concept::RivalRaidMarch, "Sand and steel! Sand and steel!") },
-    Line { priority: 12, floor: 30.0, ..line("raid_drums",    Speaker::Rival, Concept::RivalRaidMarch, "Beat the drums — we march!") },
-    Line { priority: 12, floor: 30.0, ..line("raid_kindling", Speaker::Rival, Concept::RivalRaidMarch, "Your walls are kindling, little lord.") },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "raid_forward",
+            Speaker::Rival,
+            Concept::RivalRaidMarch,
+            "Forward! Burn their keep!",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "raid_chant",
+            Speaker::Rival,
+            Concept::RivalRaidMarch,
+            "Sand and steel! Sand and steel!",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "raid_drums",
+            Speaker::Rival,
+            Concept::RivalRaidMarch,
+            "Beat the drums — we march!",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "raid_kindling",
+            Speaker::Rival,
+            Concept::RivalRaidMarch,
+            "Your walls are kindling, little lord.",
+        )
+    },
     // Idle patrol murmur (peaceful — `is_peaceful`, muted once the hero is fighting). Floored so a
     // sentry doesn't mutter constantly.
-    Line { floor: 25.0, ..line("idle_wind",  Speaker::Rival, Concept::RivalIdle, "Hot wind today... bad omen.") },
-    Line { floor: 25.0, ..line("idle_quiet", Speaker::Rival, Concept::RivalIdle, "Quiet on the eastern wall. Too quiet.") },
-    Line { floor: 25.0, ..line("idle_gold",  Speaker::Rival, Concept::RivalIdle, "The Pasha promised us gold. I see only sand.") },
+    Line {
+        floor: 25.0,
+        ..line(
+            "idle_wind",
+            Speaker::Rival,
+            Concept::RivalIdle,
+            "Hot wind today... bad omen.",
+        )
+    },
+    Line {
+        floor: 25.0,
+        ..line(
+            "idle_quiet",
+            Speaker::Rival,
+            Concept::RivalIdle,
+            "Quiet on the eastern wall. Too quiet.",
+        )
+    },
+    Line {
+        floor: 25.0,
+        ..line(
+            "idle_gold",
+            Speaker::Rival,
+            Concept::RivalIdle,
+            "The Pasha promised us gold. I see only sand.",
+        )
+    },
     // ── Hero comebacks to a villager's jab (chain replies — `reply_to`, never emitted directly) ──
     // Dispatched by `tick_chains` when a `pa_*` jab finishes; `pick`-of-pool gives variety. Priority
     // 12 so the retort lands over idle chatter; floored so the same comeback doesn't repeat soon.
-    Line { priority: 12, floor: 90.0, reply_to: Some(Concept::ReplyToVillagerJab), ..line("reply_jab_a", Speaker::Hero, Concept::ReplyToVillagerJab, "Mm. And yet here you still stand, breathing. Funny how that works.") },
-    Line { priority: 12, floor: 90.0, reply_to: Some(Concept::ReplyToVillagerJab), ..line("reply_jab_b", Speaker::Hero, Concept::ReplyToVillagerJab, "Destiny's heavy. Someone has to carry it. Might as well be the fool with the sword.") },
+    Line {
+        priority: 12,
+        floor: 90.0,
+        reply_to: Some(Concept::ReplyToVillagerJab),
+        ..line(
+            "reply_jab_a",
+            Speaker::Hero,
+            Concept::ReplyToVillagerJab,
+            "Mm. And yet here you still stand, breathing. Funny how that works.",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 90.0,
+        reply_to: Some(Concept::ReplyToVillagerJab),
+        ..line(
+            "reply_jab_b",
+            Speaker::Hero,
+            Concept::ReplyToVillagerJab,
+            "Destiny's heavy. Someone has to carry it. Might as well be the fool with the sword.",
+        )
+    },
     // These two comebacks chain a SECOND link: the villager gets the last word (jab → comeback →
     // parting shot, three speaker turns through the same `then` machinery — no special casing).
-    Line { priority: 12, floor: 90.0, reply_to: Some(Concept::ReplyToVillagerJab), then: Some(LAST_WORD), ..line("reply_jab_c", Speaker::Hero, Concept::ReplyToVillagerJab, "Keep talking. The orks find the loud ones first.") },
-    Line { priority: 12, floor: 90.0, reply_to: Some(Concept::ReplyToVillagerJab), then: Some(LAST_WORD), ..line("reply_jab_d", Speaker::Hero, Concept::ReplyToVillagerJab, "One day I'll sleep in. Just the once. See how the jokes hold up.") },
-    Line { priority: 12, floor: 90.0, reply_to: Some(Concept::ReplyToVillagerJab), ..line("reply_jab_e", Speaker::Hero, Concept::ReplyToVillagerJab, "Wit like that, the orks would die laughing. Saves me the swinging.") },
+    Line {
+        priority: 12,
+        floor: 90.0,
+        reply_to: Some(Concept::ReplyToVillagerJab),
+        then: Some(LAST_WORD),
+        ..line(
+            "reply_jab_c",
+            Speaker::Hero,
+            Concept::ReplyToVillagerJab,
+            "Keep talking. The orks find the loud ones first.",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 90.0,
+        reply_to: Some(Concept::ReplyToVillagerJab),
+        then: Some(LAST_WORD),
+        ..line(
+            "reply_jab_d",
+            Speaker::Hero,
+            Concept::ReplyToVillagerJab,
+            "One day I'll sleep in. Just the once. See how the jokes hold up.",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 90.0,
+        reply_to: Some(Concept::ReplyToVillagerJab),
+        ..line(
+            "reply_jab_e",
+            Speaker::Hero,
+            Concept::ReplyToVillagerJab,
+            "Wit like that, the orks would die laughing. Saves me the swinging.",
+        )
+    },
     // ── Villager last words (chain replies to a hero comeback — never emitted directly) ──
     // End of the exchange: no `then` here, so the chain terminates.
-    Line { priority: 12, floor: 120.0, reply_to: Some(Concept::VillagerLastWord), ..line("last_word_a", Speaker::Villager, Concept::VillagerLastWord, "Ooh, sharp. Practice that one on the cows, did we?") },
-    Line { priority: 12, floor: 120.0, reply_to: Some(Concept::VillagerLastWord), ..line("last_word_b", Speaker::Villager, Concept::VillagerLastWord, "Noted, m'lord. I'll scream quieter tonight, just for you.") },
-    Line { priority: 12, floor: 120.0, reply_to: Some(Concept::VillagerLastWord), ..line("last_word_c", Speaker::Villager, Concept::VillagerLastWord, "Touchy, touchy. And after everything we do for you.") },
+    Line {
+        priority: 12,
+        floor: 120.0,
+        reply_to: Some(Concept::VillagerLastWord),
+        ..line(
+            "last_word_a",
+            Speaker::Villager,
+            Concept::VillagerLastWord,
+            "Ooh, sharp. Practice that one on the cows, did we?",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 120.0,
+        reply_to: Some(Concept::VillagerLastWord),
+        ..line(
+            "last_word_b",
+            Speaker::Villager,
+            Concept::VillagerLastWord,
+            "Noted, m'lord. I'll scream quieter tonight, just for you.",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 120.0,
+        reply_to: Some(Concept::VillagerLastWord),
+        ..line(
+            "last_word_c",
+            Speaker::Villager,
+            Concept::VillagerLastWord,
+            "Touchy, touchy. And after everything we do for you.",
+        )
+    },
     // ── Guidance: HERO hints (priority 5 musing tier — wait out the hero window; rarely barge) ──
-    Line { floor: 300.0, priority: 5, ..line("hint_houses", Speaker::Hero, Concept::AdviseHouses, "Folk are packed in tight down there. I should raise more houses — give them room to grow.") },
-    Line { floor: 300.0, priority: 5, ..line("hint_farm",   Speaker::Hero, Concept::AdviseFarm,   "Stomachs are growling louder than the orks. We need a farm before someone faints on the wall.") },
-    Line { floor: 300.0, priority: 5, ..line("hint_wood",   Speaker::Hero, Concept::AdviseWood,   "Walls eat timber, and we're nearly dry. Best put someone on the trees.") },
-    Line { floor: 300.0, priority: 5, ..line("hint_stone",  Speaker::Hero, Concept::AdviseStone,  "Stone's thin. The hills are full of it — time someone started digging.") },
-    Line { floor: 300.0, priority: 5, ..line("hint_upgrade", Speaker::Hero, Concept::AdviseUpgrade, "Coin's piling up. I should spend it at the War Table before I get sentimental about it.") },
-    Line { floor: 240.0, priority: 5, ..line("hint_bell",   Speaker::Hero, Concept::AdviseBell,   "Daylight won't hold. When I'm set, the bell calls the night.") },
-    Line { floor: 300.0, priority: 5, ..line("hint_walls",  Speaker::Hero, Concept::AdviseWalls,  "These walls won't stop a stiff breeze. I should shore them up while there's light.") },
-    Line { floor: 240.0, priority: 5, ..line("hint_prep",   Speaker::Hero, Concept::PrepNudge,    "Quiet now. Doesn't last. Use the hours — loot, build, arm.") },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "hint_houses",
+            Speaker::Hero,
+            Concept::AdviseHouses,
+            "Folk are packed in tight down there. I should raise more houses — give them room to grow.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "hint_farm",
+            Speaker::Hero,
+            Concept::AdviseFarm,
+            "Stomachs are growling louder than the orks. We need a farm before someone faints on the wall.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "hint_wood",
+            Speaker::Hero,
+            Concept::AdviseWood,
+            "Walls eat timber, and we're nearly dry. Best put someone on the trees.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "hint_stone",
+            Speaker::Hero,
+            Concept::AdviseStone,
+            "Stone's thin. The hills are full of it — time someone started digging.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "hint_upgrade",
+            Speaker::Hero,
+            Concept::AdviseUpgrade,
+            "Coin's piling up. I should spend it at the War Table before I get sentimental about it.",
+        )
+    },
+    Line {
+        floor: 240.0,
+        priority: 5,
+        ..line(
+            "hint_bell",
+            Speaker::Hero,
+            Concept::AdviseBell,
+            "Daylight won't hold. When I'm set, the bell calls the night.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 5,
+        ..line(
+            "hint_walls",
+            Speaker::Hero,
+            Concept::AdviseWalls,
+            "These walls won't stop a stiff breeze. I should shore them up while there's light.",
+        )
+    },
+    Line {
+        floor: 240.0,
+        priority: 5,
+        ..line(
+            "hint_prep",
+            Speaker::Hero,
+            Concept::PrepNudge,
+            "Quiet now. Doesn't last. Use the hours — loot, build, arm.",
+        )
+    },
     // ── Guidance: TOWNSFOLK gripes (Ed) — priority 11 so advice outranks idle chatter (10) but
     //    still yields to event lines (15); spatial, positioned on the nearest peasant. ──
-    Line { floor: 300.0, priority: 11, ..line("need_farm_a",  Speaker::Villager, Concept::AdviseFarm,   "We're down to boiled belt-leather, m'lord. Build us a farm. I'm far too pretty to starve.") },
-    Line { floor: 300.0, priority: 11, ..line("need_farm_b",  Speaker::Villager, Concept::AdviseFarm,   "The little ones are gnawing the fenceposts. Maybe — just a thought — a farm?") },
-    Line { floor: 300.0, priority: 11, ..line("need_house_a", Speaker::Villager, Concept::AdviseHouses, "Eight of us to one cot, m'lord. I know every snore by name. Build a house, I beg you.") },
-    Line { floor: 300.0, priority: 11, ..line("need_house_b", Speaker::Villager, Concept::AdviseHouses, "Give us room and we'd breed like rabbits. Houses, m'lord. It's romance, really.") },
-    Line { floor: 300.0, priority: 11, ..line("need_wood",    Speaker::Villager, Concept::AdviseWood,   "Can't shore a wall with good wishes. We need wood — put someone on the trees.") },
-    Line { floor: 300.0, priority: 11, ..line("need_stone",   Speaker::Villager, Concept::AdviseStone,  "Walls want stone, and we've none. Hills are lousy with it. Send a miner, eh?") },
-    Line { floor: 300.0, priority: 11, ..line("spend_gold",   Speaker::Villager, Concept::AdviseUpgrade, "Rich as a bishop, and still swinging that rusty thing. Spend it, m'lord — the War Table.") },
-    Line { floor: 300.0, priority: 11, ..line("weak_walls",   Speaker::Villager, Concept::AdviseWalls,  "These walls are a fence and a prayer. The orks point. They laugh. I've seen them.") },
-    Line { floor: 240.0, priority: 11, ..line("ring_bell",    Speaker::Villager, Concept::AdviseBell,   "Whenever you're ready for the screaming, the bell's right there. No rush. Some rush.") },
-    Line { floor: 300.0, priority: 11, ..line("pop_lost",     Speaker::Villager, Concept::PopLost,      "Buried another last night. Fewer of us to complain at you now. Small mercies.") },
-    Line { floor: 600.0, priority: 11, ..line("thriving",     Speaker::Villager, Concept::TownThriving, "Food in the pot, roof overhead — careful, m'lord, you'll spoil us. We'll want chairs next.") },
-    Line { floor: 600.0, priority: 11, ..line("strong_walls", Speaker::Villager, Concept::TownThriving, "Lovely strong walls these days. Almost a shame the orks keep knocking.") },
+    Line {
+        floor: 300.0,
+        priority: 11,
+        ..line(
+            "need_farm_a",
+            Speaker::Villager,
+            Concept::AdviseFarm,
+            "We're down to boiled belt-leather, m'lord. Build us a farm. I'm far too pretty to starve.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 11,
+        ..line(
+            "need_farm_b",
+            Speaker::Villager,
+            Concept::AdviseFarm,
+            "The little ones are gnawing the fenceposts. Maybe — just a thought — a farm?",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 11,
+        ..line(
+            "need_house_a",
+            Speaker::Villager,
+            Concept::AdviseHouses,
+            "Eight of us to one cot, m'lord. I know every snore by name. Build a house, I beg you.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 11,
+        ..line(
+            "need_house_b",
+            Speaker::Villager,
+            Concept::AdviseHouses,
+            "Give us room and we'd breed like rabbits. Houses, m'lord. It's romance, really.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 11,
+        ..line(
+            "need_wood",
+            Speaker::Villager,
+            Concept::AdviseWood,
+            "Can't shore a wall with good wishes. We need wood — put someone on the trees.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 11,
+        ..line(
+            "need_stone",
+            Speaker::Villager,
+            Concept::AdviseStone,
+            "Walls want stone, and we've none. Hills are lousy with it. Send a miner, eh?",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 11,
+        ..line(
+            "spend_gold",
+            Speaker::Villager,
+            Concept::AdviseUpgrade,
+            "Rich as a bishop, and still swinging that rusty thing. Spend it, m'lord — the War Table.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 11,
+        ..line(
+            "weak_walls",
+            Speaker::Villager,
+            Concept::AdviseWalls,
+            "These walls are a fence and a prayer. The orks point. They laugh. I've seen them.",
+        )
+    },
+    Line {
+        floor: 240.0,
+        priority: 11,
+        ..line(
+            "ring_bell",
+            Speaker::Villager,
+            Concept::AdviseBell,
+            "Whenever you're ready for the screaming, the bell's right there. No rush. Some rush.",
+        )
+    },
+    Line {
+        floor: 300.0,
+        priority: 11,
+        ..line(
+            "pop_lost",
+            Speaker::Villager,
+            Concept::PopLost,
+            "Buried another last night. Fewer of us to complain at you now. Small mercies.",
+        )
+    },
+    Line {
+        floor: 600.0,
+        priority: 11,
+        ..line(
+            "thriving",
+            Speaker::Villager,
+            Concept::TownThriving,
+            "Food in the pot, roof overhead — careful, m'lord, you'll spoil us. We'll want chairs next.",
+        )
+    },
+    Line {
+        floor: 600.0,
+        priority: 11,
+        ..line(
+            "strong_walls",
+            Speaker::Villager,
+            Concept::TownThriving,
+            "Lovely strong walls these days. Almost a shame the orks keep knocking.",
+        )
+    },
     // ── Warden approach (hero) — priority 15 (urgent tier): approaching a world boss is a rare,
     //    significant beat, so it must cut through the hero-line window (anything < 15 is held while
     //    the window is open, which would silently drop this once-per-warden line). ──
-    Line { once: true, ..line("warden_near",   Speaker::Hero, Concept::WardenSighted,          "Something vast sleeps out here. I feel it in my bones — put that beast down, and I'd walk away the stronger for it.") },
-    Line { floor: 600.0, ..line("warden_forest", Speaker::Hero, Concept::NearWarden(Biome::Forest), "That old wooden thing among the trees… beat it, and I think my blade would learn a new sweep. I can almost feel it.") },
-    Line { floor: 600.0, ..line("warden_snow",   Speaker::Hero, Concept::NearWarden(Biome::Snow),   "Whatever stirs in the ice up here — kill it, and I swear the cold itself would start fighting on my side.") },
-    Line { floor: 600.0, ..line("warden_rock",   Speaker::Hero, Concept::NearWarden(Biome::Rocky),  "A mountain that walks. Break it, and maybe I'd learn to bring the mountain down myself.") },
-    Line { floor: 600.0, ..line("warden_desert", Speaker::Hero, Concept::NearWarden(Biome::Desert), "That dead thing moves like the wind off the dunes. Put it down, and perhaps I would too.") },
-    Line { floor: 600.0, ..line("warden_swamp",  Speaker::Hero, Concept::NearWarden(Biome::Swamp),  "The bog-hag's brewed every poison there is. Best her, and I'd turn that venom loose on the horde.") },
+    Line {
+        once: true,
+        ..line(
+            "warden_near",
+            Speaker::Hero,
+            Concept::WardenSighted,
+            "Something vast sleeps out here. I feel it in my bones — put that beast down, and I'd walk away the stronger for it.",
+        )
+    },
+    Line {
+        floor: 600.0,
+        ..line(
+            "warden_forest",
+            Speaker::Hero,
+            Concept::NearWarden(Biome::Forest),
+            "That old wooden thing among the trees… beat it, and I think my blade would learn a new sweep. I can almost feel it.",
+        )
+    },
+    Line {
+        floor: 600.0,
+        ..line(
+            "warden_snow",
+            Speaker::Hero,
+            Concept::NearWarden(Biome::Snow),
+            "Whatever stirs in the ice up here — kill it, and I swear the cold itself would start fighting on my side.",
+        )
+    },
+    Line {
+        floor: 600.0,
+        ..line(
+            "warden_rock",
+            Speaker::Hero,
+            Concept::NearWarden(Biome::Rocky),
+            "A mountain that walks. Break it, and maybe I'd learn to bring the mountain down myself.",
+        )
+    },
+    Line {
+        floor: 600.0,
+        ..line(
+            "warden_desert",
+            Speaker::Hero,
+            Concept::NearWarden(Biome::Desert),
+            "That dead thing moves like the wind off the dunes. Put it down, and perhaps I would too.",
+        )
+    },
+    Line {
+        floor: 600.0,
+        ..line(
+            "warden_swamp",
+            Speaker::Hero,
+            Concept::NearWarden(Biome::Swamp),
+            "The bog-hag's brewed every poison there is. Best her, and I'd turn that venom loose on the horde.",
+        )
+    },
     // ── New-mechanic / new-place beats (2026-07). Clips at `audio/vo/<dir>/<id>.ogg` still need
     //    RECORDING — until the .ogg exists the director no-ops the line (no audio AND no subtitle,
     //    since `play_line` gates the caption on the loaded asset). Transcripts here are the record to
@@ -523,57 +2128,384 @@ pub const LINES: &[Line] = &[
     //    villager = dry). Priorities put the marquee wins/alarms in the urgent tier so they cut the
     //    hero window; the quiet economy beats sit low and wait it out. ──
     // Warlord slain — THE win. Priority 30 (nightfall tier) so nothing buries it; once per run.
-    Line { once: true, priority: 30, ..line("warlord_slain_a", Speaker::Hero, Concept::WarlordSlain, "The Warlord's down. Gnashfang Hold is broken. ...It's over. It's finally over.") },
-    Line { once: true, priority: 30, ..line("warlord_slain_b", Speaker::Hero, Concept::WarlordSlain, "Their great beast lies still. No more horns. No more nights. We're done.") },
+    Line {
+        once: true,
+        priority: 30,
+        ..line(
+            "warlord_slain_a",
+            Speaker::Hero,
+            Concept::WarlordSlain,
+            "The Warlord's down. Gnashfang Hold is broken. ...It's over. It's finally over.",
+        )
+    },
+    Line {
+        once: true,
+        priority: 30,
+        ..line(
+            "warlord_slain_b",
+            Speaker::Hero,
+            Concept::WarlordSlain,
+            "Their great beast lies still. No more horns. No more nights. We're done.",
+        )
+    },
     // The dying horde despairs (ork, spatial — emit at the Warlord's position).
-    Line { priority: 15, ..line("ork_warlord_a", Speaker::Ork, Concept::OrkRout, "Warlord... falls. The horde... scatters.") },
-    Line { priority: 15, ..line("ork_warlord_b", Speaker::Ork, Concept::OrkRout, "No. No! Who leads us now...") },
+    Line {
+        priority: 15,
+        ..line(
+            "ork_warlord_a",
+            Speaker::Ork,
+            Concept::OrkRout,
+            "Warlord... falls. The horde... scatters.",
+        )
+    },
+    Line {
+        priority: 15,
+        ..line(
+            "ork_warlord_b",
+            Speaker::Ork,
+            Concept::OrkRout,
+            "No. No! Who leads us now...",
+        )
+    },
     // Hold gate breached. Priority 25 (keep-hurt tier), once per run.
-    Line { once: true, priority: 25, ..line("breach_hero_a", Speaker::Hero, Concept::GateBreached, "The gate's down. Nothing between me and the Warlord now. Good.") },
-    Line { once: true, priority: 25, ..line("breach_hero_b", Speaker::Hero, Concept::GateBreached, "Gnashfang's open. Whatever's in there, it's mine to end.") },
-    Line { priority: 15, ..line("breach_ork_a",  Speaker::Ork, Concept::OrkBreachAlarm, "Man inside the walls! Wake! Wake!") },
-    Line { priority: 15, ..line("breach_ork_b",  Speaker::Ork, Concept::OrkBreachAlarm, "Gate broke! Kill it — kill it now!") },
+    Line {
+        once: true,
+        priority: 25,
+        ..line(
+            "breach_hero_a",
+            Speaker::Hero,
+            Concept::GateBreached,
+            "The gate's down. Nothing between me and the Warlord now. Good.",
+        )
+    },
+    Line {
+        once: true,
+        priority: 25,
+        ..line(
+            "breach_hero_b",
+            Speaker::Hero,
+            Concept::GateBreached,
+            "Gnashfang's open. Whatever's in there, it's mine to end.",
+        )
+    },
+    Line {
+        priority: 15,
+        ..line(
+            "breach_ork_a",
+            Speaker::Ork,
+            Concept::OrkBreachAlarm,
+            "Man inside the walls! Wake! Wake!",
+        )
+    },
+    Line {
+        priority: 15,
+        ..line(
+            "breach_ork_b",
+            Speaker::Ork,
+            Concept::OrkBreachAlarm,
+            "Gate broke! Kill it — kill it now!",
+        )
+    },
     // Fortress musters for the night assault (ork, spatial — the gate/horn). Floored like raid-march.
-    Line { priority: 12, floor: 30.0, ..line("fort_muster_a", Speaker::Ork, Concept::FortressMuster, "Open the gate! To the keep, to the keep!") },
-    Line { priority: 12, floor: 30.0, ..line("fort_muster_b", Speaker::Ork, Concept::FortressMuster, "Gnashfang marches! Blood tonight!") },
-    Line { priority: 12, floor: 30.0, ..line("fort_muster_c", Speaker::Ork, Concept::FortressMuster, "Horns up! The knight's walls fall tonight!") },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "fort_muster_a",
+            Speaker::Ork,
+            Concept::FortressMuster,
+            "Open the gate! To the keep, to the keep!",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "fort_muster_b",
+            Speaker::Ork,
+            Concept::FortressMuster,
+            "Gnashfang marches! Blood tonight!",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "fort_muster_c",
+            Speaker::Ork,
+            Concept::FortressMuster,
+            "Horns up! The knight's walls fall tonight!",
+        )
+    },
     // World-boss slain + boon (hero). Not once — up to five wardens; floor 600 spaces them.
-    Line { priority: 20, floor: 600.0, ..line("warden_slain_a", Speaker::Hero, Concept::WardenSlain, "The beast is dead. I can feel its strength settling into my arm. Worth the scars.") },
-    Line { priority: 20, floor: 600.0, ..line("warden_slain_b", Speaker::Hero, Concept::WardenSlain, "Down. Whatever it was guarding, it's mine now — and I'm the stronger for it.") },
+    Line {
+        priority: 20,
+        floor: 600.0,
+        ..line(
+            "warden_slain_a",
+            Speaker::Hero,
+            Concept::WardenSlain,
+            "The beast is dead. I can feel its strength settling into my arm. Worth the scars.",
+        )
+    },
+    Line {
+        priority: 20,
+        floor: 600.0,
+        ..line(
+            "warden_slain_b",
+            Speaker::Hero,
+            Concept::WardenSlain,
+            "Down. Whatever it was guarding, it's mine now — and I'm the stronger for it.",
+        )
+    },
     // Rival stronghold destroyed (hero win + rival lament, spatial for the rival).
-    Line { once: true, priority: 20, ..line("rival_fell_hero_a", Speaker::Hero, Concept::RivalFell, "The rival's keep is ash. No more raids from the dunes. One less war to fight.") },
-    Line { once: true, priority: 20, ..line("rival_fell_hero_b", Speaker::Hero, Concept::RivalFell, "The Pasha's men won't trouble us again. Their sand-castle's rubble.") },
-    Line { priority: 15, ..line("rival_fell_a", Speaker::Rival, Concept::RivalLament, "The stronghold... falls. The Pasha will not forgive this.") },
-    Line { priority: 15, ..line("rival_fell_b", Speaker::Rival, Concept::RivalLament, "Our walls, our gold — all sand now. Curse you, northerner.") },
+    Line {
+        once: true,
+        priority: 20,
+        ..line(
+            "rival_fell_hero_a",
+            Speaker::Hero,
+            Concept::RivalFell,
+            "The rival's keep is ash. No more raids from the dunes. One less war to fight.",
+        )
+    },
+    Line {
+        once: true,
+        priority: 20,
+        ..line(
+            "rival_fell_hero_b",
+            Speaker::Hero,
+            Concept::RivalFell,
+            "The Pasha's men won't trouble us again. Their sand-castle's rubble.",
+        )
+    },
+    Line {
+        priority: 15,
+        ..line(
+            "rival_fell_a",
+            Speaker::Rival,
+            Concept::RivalLament,
+            "The stronghold... falls. The Pasha will not forgive this.",
+        )
+    },
+    Line {
+        priority: 15,
+        ..line(
+            "rival_fell_b",
+            Speaker::Rival,
+            Concept::RivalLament,
+            "Our walls, our gold — all sand now. Curse you, northerner.",
+        )
+    },
     // Rune-trial begun (hero). Priority 15 (urgent tier) so the "here we go" lands; floored.
-    Line { priority: 15, floor: 120.0, ..line("trial_start_a", Speaker::Hero, Concept::RuneTrialStart, "The rune wakes. Hold it, the old stories say, and it yields its gift. Let's see.") },
-    Line { priority: 15, floor: 120.0, ..line("trial_start_b", Speaker::Hero, Concept::RuneTrialStart, "Guardians of the stone. Beat them, keep the rune. Simple enough.") },
+    Line {
+        priority: 15,
+        floor: 120.0,
+        ..line(
+            "trial_start_a",
+            Speaker::Hero,
+            Concept::RuneTrialStart,
+            "The rune wakes. Hold it, the old stories say, and it yields its gift. Let's see.",
+        )
+    },
+    Line {
+        priority: 15,
+        floor: 120.0,
+        ..line(
+            "trial_start_b",
+            Speaker::Hero,
+            Concept::RuneTrialStart,
+            "Guardians of the stone. Beat them, keep the rune. Simple enough.",
+        )
+    },
     // Rune-trial won — sealed gear (hero).
-    Line { priority: 20, floor: 120.0, ..line("trial_won_a", Speaker::Hero, Concept::RuneTrialWon, "The rune's mine. Sealed gear, forged for no living hand. It'll do.") },
-    Line { priority: 20, floor: 120.0, ..line("trial_won_b", Speaker::Hero, Concept::RuneTrialWon, "Trial's done. This is no smith's work — it hums in my grip.") },
+    Line {
+        priority: 20,
+        floor: 120.0,
+        ..line(
+            "trial_won_a",
+            Speaker::Hero,
+            Concept::RuneTrialWon,
+            "The rune's mine. Sealed gear, forged for no living hand. It'll do.",
+        )
+    },
+    Line {
+        priority: 20,
+        floor: 120.0,
+        ..line(
+            "trial_won_b",
+            Speaker::Hero,
+            Concept::RuneTrialWon,
+            "Trial's done. This is no smith's work — it hums in my grip.",
+        )
+    },
     // Landmark discovered (hero). Priority 12 so it clears idle chatter; floor 30 across the five.
-    Line { priority: 12, floor: 30.0, ..line("landmark_a", Speaker::Hero, Concept::LandmarkFound, "Now there's a thing. Someone raised this long before me.") },
-    Line { priority: 12, floor: 30.0, ..line("landmark_b", Speaker::Hero, Concept::LandmarkFound, "Old stones, old bones. This island keeps its secrets close.") },
-    Line { priority: 12, floor: 30.0, ..line("landmark_c", Speaker::Hero, Concept::LandmarkFound, "I'll mark this on the map. Might matter later.") },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "landmark_a",
+            Speaker::Hero,
+            Concept::LandmarkFound,
+            "Now there's a thing. Someone raised this long before me.",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "landmark_b",
+            Speaker::Hero,
+            Concept::LandmarkFound,
+            "Old stones, old bones. This island keeps its secrets close.",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "landmark_c",
+            Speaker::Hero,
+            Concept::LandmarkFound,
+            "I'll mark this on the map. Might matter later.",
+        )
+    },
     // Heir rises (the new knight, mid-siege). Priority 30 so it cuts the fight; floored, not once.
-    Line { priority: 30, floor: 30.0, ..line("heir_rose_a", Speaker::Hero, Concept::HeirRose, "The knight is fallen. ...I have the watch now. The keep still stands.") },
-    Line { priority: 30, floor: 30.0, ..line("heir_rose_b", Speaker::Hero, Concept::HeirRose, "Take up the blade. Someone always must. Tonight, it's me.") },
+    Line {
+        priority: 30,
+        floor: 30.0,
+        ..line(
+            "heir_rose_a",
+            Speaker::Hero,
+            Concept::HeirRose,
+            "The knight is fallen. ...I have the watch now. The keep still stands.",
+        )
+    },
+    Line {
+        priority: 30,
+        floor: 30.0,
+        ..line(
+            "heir_rose_b",
+            Speaker::Hero,
+            Concept::HeirRose,
+            "Take up the blade. Someone always must. Tonight, it's me.",
+        )
+    },
     // War Table upgrade purchased (hero, dry). Low musing tier, waits out the window; floored.
-    Line { priority: 8, floor: 45.0, ..line("upgrade_a", Speaker::Hero, Concept::UpgradeBought, "War Table's earned its keep. Let's see them laugh at this.") },
-    Line { priority: 8, floor: 45.0, ..line("upgrade_b", Speaker::Hero, Concept::UpgradeBought, "Good steel, coin well spent. I'll feel the difference by dark.") },
+    Line {
+        priority: 8,
+        floor: 45.0,
+        ..line(
+            "upgrade_a",
+            Speaker::Hero,
+            Concept::UpgradeBought,
+            "War Table's earned its keep. Let's see them laugh at this.",
+        )
+    },
+    Line {
+        priority: 8,
+        floor: 45.0,
+        ..line(
+            "upgrade_b",
+            Speaker::Hero,
+            Concept::UpgradeBought,
+            "Good steel, coin well spent. I'll feel the difference by dark.",
+        )
+    },
     // Building raised (villager cheer, spatial + hero note). Peaceful — drops in a fight.
-    Line { priority: 11, floor: 30.0, ..line("build_villager_a", Speaker::Villager, Concept::BuildRaised, "Fresh timbers up! Try not to knock it down, m'lord.") },
-    Line { priority: 11, floor: 30.0, ..line("build_villager_b", Speaker::Villager, Concept::BuildRaised, "New roof, new walls. Almost feels like a town again.") },
-    Line { priority: 8,  floor: 30.0, ..line("build_hero",       Speaker::Hero,     Concept::BuildRaised, "It's going up. Brick by brick, we're harder to kill.") },
+    Line {
+        priority: 11,
+        floor: 30.0,
+        ..line(
+            "build_villager_a",
+            Speaker::Villager,
+            Concept::BuildRaised,
+            "Fresh timbers up! Try not to knock it down, m'lord.",
+        )
+    },
+    Line {
+        priority: 11,
+        floor: 30.0,
+        ..line(
+            "build_villager_b",
+            Speaker::Villager,
+            Concept::BuildRaised,
+            "New roof, new walls. Almost feels like a town again.",
+        )
+    },
+    Line {
+        priority: 8,
+        floor: 30.0,
+        ..line(
+            "build_hero",
+            Speaker::Hero,
+            Concept::BuildRaised,
+            "It's going up. Brick by brick, we're harder to kill.",
+        )
+    },
     // Quest step complete (hero). Peaceful.
-    Line { priority: 12, floor: 30.0, ..line("quest_done_a", Speaker::Hero, Concept::QuestDone, "That's that done. One less thing gnawing at me.") },
-    Line { priority: 12, floor: 30.0, ..line("quest_done_b", Speaker::Hero, Concept::QuestDone, "Task's finished. Small victories — I'll take them where I find them.") },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "quest_done_a",
+            Speaker::Hero,
+            Concept::QuestDone,
+            "That's that done. One less thing gnawing at me.",
+        )
+    },
+    Line {
+        priority: 12,
+        floor: 30.0,
+        ..line(
+            "quest_done_b",
+            Speaker::Hero,
+            Concept::QuestDone,
+            "Task's finished. Small victories — I'll take them where I find them.",
+        )
+    },
     // New villager born (villager, spatial). Peaceful.
-    Line { priority: 10, floor: 90.0, ..line("born_a", Speaker::Villager, Concept::VillagerBorn, "Another mouth born into all this. Gods help the little one.") },
-    Line { priority: 10, floor: 90.0, ..line("born_b", Speaker::Villager, Concept::VillagerBorn, "New babe in the town. More of us to complain at you, m'lord.") },
+    Line {
+        priority: 10,
+        floor: 90.0,
+        ..line(
+            "born_a",
+            Speaker::Villager,
+            Concept::VillagerBorn,
+            "Another mouth born into all this. Gods help the little one.",
+        )
+    },
+    Line {
+        priority: 10,
+        floor: 90.0,
+        ..line(
+            "born_b",
+            Speaker::Villager,
+            Concept::VillagerBorn,
+            "New babe in the town. More of us to complain at you, m'lord.",
+        )
+    },
     // Keep lost — defeat (hero's last word). Priority 30, once.
-    Line { once: true, priority: 30, ..line("keep_lost_a", Speaker::Hero, Concept::KeepLost, "The keep... it's falling. I couldn't hold it. ...I'm sorry.") },
-    Line { once: true, priority: 30, ..line("keep_lost_b", Speaker::Hero, Concept::KeepLost, "The walls are down. This is how it ends, then. Standing.") },
+    Line {
+        once: true,
+        priority: 30,
+        ..line(
+            "keep_lost_a",
+            Speaker::Hero,
+            Concept::KeepLost,
+            "The keep... it's falling. I couldn't hold it. ...I'm sorry.",
+        )
+    },
+    Line {
+        once: true,
+        priority: 30,
+        ..line(
+            "keep_lost_b",
+            Speaker::Hero,
+            Concept::KeepLost,
+            "The walls are down. This is how it ends, then. Standing.",
+        )
+    },
 ];
 
 /// All catalog lines for a concept, in declaration order.
@@ -623,8 +2555,9 @@ pub fn pick_line(
     now: f32,
     rng: &mut u32,
 ) -> Option<&'static Line> {
-    let fresh: Vec<&'static Line> =
-        candidates(concept).filter(|l| passes_gates(l, last, played_once, now)).collect();
+    let fresh: Vec<&'static Line> = candidates(concept)
+        .filter(|l| passes_gates(l, last, played_once, now))
+        .collect();
     if fresh.is_empty() {
         return None;
     }
@@ -700,7 +2633,12 @@ mod tests {
     fn pick_line_returns_candidate() {
         let (last, once) = (HashMap::new(), HashSet::new());
         let mut rng = 1;
-        assert_eq!(pick_line(Concept::LevelUp, &last, &once, 0.0, &mut rng).unwrap().id, "levelup");
+        assert_eq!(
+            pick_line(Concept::LevelUp, &last, &once, 0.0, &mut rng)
+                .unwrap()
+                .id,
+            "levelup"
+        );
     }
 
     fn test_line() -> Line {
@@ -714,8 +2652,8 @@ mod tests {
         let mut last = HashMap::new();
         last.insert("t", 50.0);
         let once = HashSet::new();
-        assert!(!passes_gates(&l, &last, &once, 60.0));  // 10s later → floored
-        assert!(passes_gates(&l, &last, &once, 400.0));  // 350s later → cleared
+        assert!(!passes_gates(&l, &last, &once, 60.0)); // 10s later → floored
+        assert!(passes_gates(&l, &last, &once, 400.0)); // 350s later → cleared
     }
 
     #[test]
@@ -749,9 +2687,14 @@ mod tests {
     fn urgent_threshold_splits_the_catalog_where_intended() {
         // Warnings sit at/above the bar; idle observational remarks sit below it, so no remark
         // can ever barge into an open window no matter what opened it.
-        for (id, urgent) in
-            [("night", true), ("keep_hurt", true), ("hurt", true), ("chest", false), ("people_a", false), ("reply_jab_a", false)]
-        {
+        for (id, urgent) in [
+            ("night", true),
+            ("keep_hurt", true),
+            ("hurt", true),
+            ("chest", false),
+            ("people_a", false),
+            ("reply_jab_a", false),
+        ] {
             let l = LINES.iter().find(|l| l.id == id).unwrap();
             assert_eq!(l.priority >= HERO_URGENT_PRIORITY, urgent, "{id}");
         }
@@ -763,20 +2706,31 @@ mod tests {
         l.once = true;
         let last = HashMap::new();
         let mut once = HashSet::new();
-        assert!(passes_gates(&l, &last, &once, 0.0));        // not yet played
+        assert!(passes_gates(&l, &last, &once, 0.0)); // not yet played
         once.insert("t");
-        assert!(!passes_gates(&l, &last, &once, 1000.0));    // played once → blocked forever
+        assert!(!passes_gates(&l, &last, &once, 1000.0)); // played once → blocked forever
     }
 
     #[test]
     fn every_speaker_is_registered() {
-        for s in [Speaker::Hero, Speaker::Villager, Speaker::Ork, Speaker::Rival] {
+        for s in [
+            Speaker::Hero,
+            Speaker::Villager,
+            Speaker::Ork,
+            Speaker::Rival,
+        ] {
             let _ = speaker_voice(s);
         }
     }
 
     fn active(prio: u8, interruptible: bool, ends_at: f32) -> Active {
-        Active { id: "x", ends_at, priority: prio, interruptible, then: None }
+        Active {
+            id: "x",
+            ends_at,
+            priority: prio,
+            interruptible,
+            then: None,
+        }
     }
 
     #[test]
@@ -811,10 +2765,15 @@ mod tests {
         // The three at-the-hero villager jabs each finish with a `then` that targets the hero.
         for id in ["pa_hero", "pa_chosen", "pa_slept"] {
             let l = LINES.iter().find(|l| l.id == id).unwrap();
-            let chain = l.then.unwrap_or_else(|| panic!("{id} should chain a reply"));
+            let chain = l
+                .then
+                .unwrap_or_else(|| panic!("{id} should chain a reply"));
             assert_eq!(chain.concept, Concept::ReplyToVillagerJab);
             assert_eq!(chain.target, Speaker::Hero);
-            assert!(chain.manual, "the comeback is offered to the player, not auto-played");
+            assert!(
+                chain.manual,
+                "the comeback is offered to the player, not auto-played"
+            );
         }
     }
 
@@ -824,16 +2783,28 @@ mod tests {
         // tagged as a valid reply, and there's a pool of them (the user's "a set of replies that
         // fit a prompt").
         let pool: Vec<&Line> = replies_to(Concept::ReplyToVillagerJab).collect();
-        assert!(pool.len() >= 2, "want a pool of comebacks, got {}", pool.len());
+        assert!(
+            pool.len() >= 2,
+            "want a pool of comebacks, got {}",
+            pool.len()
+        );
         assert!(pool.iter().all(|l| l.speaker == Speaker::Hero));
-        assert!(pool.iter().all(|l| l.reply_to == Some(Concept::ReplyToVillagerJab)));
+        assert!(
+            pool.iter()
+                .all(|l| l.reply_to == Some(Concept::ReplyToVillagerJab))
+        );
     }
 
     #[test]
     fn chain_resolves_end_to_end() {
         // Replay exactly what `tick_chains` does once a `pa_*` jab finishes: take the chain, gather
         // replies for it, filter to the target speaker + per-line gates, pick the highest priority.
-        let chain = LINES.iter().find(|l| l.id == "pa_slept").unwrap().then.unwrap();
+        let chain = LINES
+            .iter()
+            .find(|l| l.id == "pa_slept")
+            .unwrap()
+            .then
+            .unwrap();
         let (last, once) = (HashMap::new(), HashSet::new());
         let pick = replies_to(chain.concept)
             .filter(|l| l.speaker == chain.target)
@@ -851,7 +2822,10 @@ mod tests {
         let chained: Vec<&Line> = replies_to(Concept::ReplyToVillagerJab)
             .filter(|l| l.then.is_some())
             .collect();
-        assert!(!chained.is_empty(), "at least one comeback should chain a last word");
+        assert!(
+            !chained.is_empty(),
+            "at least one comeback should chain a last word"
+        );
         for l in &chained {
             let chain = l.then.unwrap();
             assert_eq!(chain.concept, Concept::VillagerLastWord);
@@ -868,7 +2842,11 @@ mod tests {
     #[test]
     fn last_word_pool_answers_and_terminates() {
         let pool: Vec<&Line> = replies_to(Concept::VillagerLastWord).collect();
-        assert!(pool.len() >= 2, "want a pool of last words, got {}", pool.len());
+        assert!(
+            pool.len() >= 2,
+            "want a pool of last words, got {}",
+            pool.len()
+        );
         assert!(pool.iter().all(|l| l.speaker == Speaker::Villager));
         // The exchange must END here: a last word that chained again could ping-pong forever.
         assert!(pool.iter().all(|l| l.then.is_none()));
@@ -907,6 +2885,9 @@ mod tests {
         let any = replies_to(chain.concept)
             .filter(|l| l.speaker == chain.target)
             .any(|l| passes_gates(l, &last, &once, 10.0)); // 10s later, floor 90 still active
-        assert!(!any, "a floored pool should yield no reply → chain self-terminates");
+        assert!(
+            !any,
+            "a floored pool should yield no reply → chain self-terminates"
+        );
     }
 }

@@ -31,6 +31,10 @@ __pycache__/
 
 /target-shot
 
+# Local source checkouts of the pinned engine forks. Bootstrap them with
+# tools/bootstrap-switch-deps.sh; they are intentionally independent Git repos.
+/vendor/
+
 # Playwright-MCP scratch output (console logs + page snapshots the browser tooling dumps).
 /.playwright-mcp/
 

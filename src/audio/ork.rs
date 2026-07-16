@@ -43,7 +43,10 @@ pub(crate) struct OrkTrigger {
 
 impl Default for OrkTrigger {
     fn default() -> Self {
-        Self { next_bark: 6.0, rng: 0x51ed_270b }
+        Self {
+            next_bark: 6.0,
+            rng: 0x51ed_270b,
+        }
     }
 }
 
@@ -76,7 +79,10 @@ pub(crate) fn detect_ork_voices(
     // A newly-fallen ork's dying snarl (only sometimes, so battle cries get a turn too).
     if let Some(gt) = dying.iter().next() {
         if frand(&mut t.rng) < DEATH_CHANCE {
-            speak.write(crate::audio::Speak::at(super::Concept::OrkDeath, gt.translation()));
+            speak.write(crate::audio::Speak::at(
+                super::Concept::OrkDeath,
+                gt.translation(),
+            ));
             t.next_bark = now + BARK_GAP + frand(&mut t.rng) * BARK_GAP_JITTER;
             return;
         }

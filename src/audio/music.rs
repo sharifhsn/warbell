@@ -13,7 +13,7 @@
 use bevy::audio::{PlaybackMode, Volume};
 use bevy::prelude::*;
 
-use super::{frand, AudioConfig, MusicState};
+use super::{AudioConfig, MusicState, frand};
 use crate::game_state::AppState;
 use crate::siege::{GamePhase, Siege, WAVES};
 
@@ -21,9 +21,9 @@ use crate::siege::{GamePhase, Siege, WAVES};
 /// startup; only the chosen one's volume rides up during the day. (The two hymns are the old
 /// hurdy-gurdy night clips, re-tagged as day music.)
 const DAY_TRACKS: [&str; 3] = [
-    "audio/day-hymn-1.ogg",  // Hurdy-Gurdy Hymn (1) — the DEFAULT day track (index 0, opening day)
-    "audio/day-hymn-2.ogg",  // Hurdy-Gurdy Hymn (2)
-    "audio/music-bed.ogg",   // the original day bed
+    "audio/day-hymn-1.ogg", // Hurdy-Gurdy Hymn (1) — the DEFAULT day track (index 0, opening day)
+    "audio/day-hymn-2.ogg", // Hurdy-Gurdy Hymn (2)
+    "audio/music-bed.ogg",  // the original day bed
 ];
 
 /// The night track — ALWAYS the same dread every night (no per-night roll).
@@ -122,7 +122,10 @@ pub(crate) fn update_music(
             let wave = s.phase == GamePhase::Wave;
             // Final-wave boss music on night 8 AND every looped night beyond it (`>=`, since nights
             // now repeat the hardest wave forever).
-            (wave, wave && s.wave_index >= 0 && s.wave_index as usize >= WAVES.len() - 1)
+            (
+                wave,
+                wave && s.wave_index >= 0 && s.wave_index as usize >= WAVES.len() - 1,
+            )
         }
         None => (false, false),
     };
@@ -135,7 +138,11 @@ pub(crate) fn update_music(
     if dawn {
         // Mix the clock into the seed so the pick isn't identical every launch (`frand` self-seeds
         // a zero state); on the run-start roll the menu dwell time gives real entropy.
-        *seed ^= time.elapsed_secs().to_bits().rotate_left(13).wrapping_add(0x9e37_79b9);
+        *seed ^= time
+            .elapsed_secs()
+            .to_bits()
+            .rotate_left(13)
+            .wrapping_add(0x9e37_79b9);
         *day_pick = (frand(&mut seed) * DAY_TRACKS.len() as f32) as usize % DAY_TRACKS.len();
     }
     flags.prev_wave = is_wave;
@@ -161,7 +168,8 @@ pub(crate) fn update_music(
     *arid += ((if in_arid { 1.0 } else { 0.0 }) - *arid) * (dt * NIGHT_FADE).min(1.0);
     // Warden fight: swell the boss theme while any biome boss is engaged (eased on `flags`, which
     // is already a `Local`, so we don't add a 16th system param).
-    flags.warden += ((if state.warden_active { 1.0 } else { 0.0 }) - flags.warden) * (dt * NIGHT_FADE).min(1.0);
+    flags.warden +=
+        ((if state.warden_active { 1.0 } else { 0.0 }) - flags.warden) * (dt * NIGHT_FADE).min(1.0);
     // The title screen has its own theme; swell it (and duck everything else) while on it. On the
     // FIRST frame snap it straight to full so it plays the instant the window opens — it used to
     // ease up from silence over ~1 s, so the day bed was heard first and the menu theme only crept
@@ -199,7 +207,11 @@ pub(crate) fn update_music(
             MusicLayer::Menu => cfg.music_vol * m,
         };
         // The menu theme owns the mix while it's up; every in-game layer ducks under it.
-        let v = if matches!(layer, MusicLayer::Menu) { v } else { v * (1.0 - m) };
+        let v = if matches!(layer, MusicLayer::Menu) {
+            v
+        } else {
+            v * (1.0 - m)
+        };
         sink.set_volume(Volume::Linear(v));
     }
 }

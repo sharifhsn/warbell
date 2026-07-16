@@ -8,11 +8,11 @@ use std::collections::{HashMap, HashSet};
 use bevy::audio::{PlaybackMode, Volume};
 use bevy::prelude::*;
 
-use super::lines::{
-    can_play, hero_window_blocks, passes_gates, pick_line, replies_to, speaker_voice, Active,
-    Chain, Concept, Line, Speaker,
-};
 use super::AudioConfig;
+use super::lines::{
+    Active, Chain, Concept, Line, Speaker, can_play, hero_window_blocks, passes_gates, pick_line,
+    replies_to, speaker_voice,
+};
 
 /// A request to speak. Triggers (`detect_*` systems) write these; the director decides if/what
 /// actually plays. `at` positions a spatial speaker (villager/ork); ignored for the head-locked
@@ -28,7 +28,10 @@ impl Speak {
         Self { concept, at: None }
     }
     pub fn at(concept: Concept, pos: Vec3) -> Self {
-        Self { concept, at: Some(pos) }
+        Self {
+            concept,
+            at: Some(pos),
+        }
     }
 }
 
@@ -85,11 +88,15 @@ impl VoiceManager {
     /// Is any NON-hero speaker mid-line right now? (Replaces the old `OthersSpeaking` resource —
     /// the hero's observational lines defer while a villager/ork is talking.)
     pub fn others_speaking(&self, now: f32) -> bool {
-        self.active.iter().any(|(s, a)| *s != Speaker::Hero && now < a.ends_at)
+        self.active
+            .iter()
+            .any(|(s, a)| *s != Speaker::Hero && now < a.ends_at)
     }
     /// Is the hero mid-line? (Replaces `HeroSpeaking` — villagers/orks defer to him.)
     pub fn hero_speaking(&self, now: f32) -> bool {
-        self.active.get(&Speaker::Hero).is_some_and(|a| now < a.ends_at)
+        self.active
+            .get(&Speaker::Hero)
+            .is_some_and(|a| now < a.ends_at)
     }
     /// Clear all state for a fresh run (mirrors the old `reset_hero_line_gates`).
     pub fn reset(&mut self) {
@@ -135,7 +142,14 @@ pub fn speak_director(
         }
         // Pull rng out across the immutable `pick_line` borrow of `mgr.last_played`.
         let mut rng = mgr.rng;
-        let chosen = pick_line(req.concept, &mgr.last_played, &mgr.played_once, now, &mut rng).copied();
+        let chosen = pick_line(
+            req.concept,
+            &mgr.last_played,
+            &mgr.played_once,
+            now,
+            &mut rng,
+        )
+        .copied();
         mgr.rng = rng;
         let Some(line) = chosen else { continue };
 
@@ -144,13 +158,27 @@ pub fn speak_director(
         // it — so warnings cut through idle chatter, but ordinary remarks can't ladder up the
         // priority tiers back-to-back (see `hero_window_blocks`). Chain replies skip this — they
         // go straight through `tick_chains`/`play_line` (the talk-back comeback is player-pressed).
-        if line.speaker == Speaker::Hero && now < cd.until && hero_window_blocks(line.priority, cd.priority) {
+        if line.speaker == Speaker::Hero
+            && now < cd.until
+            && hero_window_blocks(line.priority, cd.priority)
+        {
             continue;
         }
         if !can_play(mgr.active.get(&line.speaker), now, line.priority) {
             continue;
         }
-        play_line(&mut commands, &cfg, &mut mgr, &mut cd, &sinks, &mut subs, &sources, now, &line, req.at.or(hero_pos));
+        play_line(
+            &mut commands,
+            &cfg,
+            &mut mgr,
+            &mut cd,
+            &sinks,
+            &mut subs,
+            &sources,
+            now,
+            &line,
+            req.at.or(hero_pos),
+        );
     }
 }
 
@@ -170,7 +198,9 @@ fn play_line(
 ) {
     let voice = speaker_voice(line.speaker);
     // Look up the preloaded handle; bail if the line has no clip registered.
-    let Some(clip) = mgr.clips.get(line.id).cloned() else { return };
+    let Some(clip) = mgr.clips.get(line.id).cloned() else {
+        return;
+    };
     // Not loaded yet OR the .ogg doesn't exist → no-op: don't block the mouth, don't caption.
     if sources.get(&clip).is_none() {
         return;
@@ -247,8 +277,15 @@ fn play_line(
 fn anchor_for(concept: Concept, pos: Option<Vec3>) -> Option<super::HeroLineAnchor> {
     use super::HeroLineAnchor;
     match concept {
-        Concept::NearTown | Concept::NearKids | Concept::NearPet | Concept::NearGuard
-        | Concept::InKeep | Concept::NearFortress => pos.map(|p| HeroLineAnchor::Near { pos: Vec2::new(p.x, p.z), r: 20.0 }),
+        Concept::NearTown
+        | Concept::NearKids
+        | Concept::NearPet
+        | Concept::NearGuard
+        | Concept::InKeep
+        | Concept::NearFortress => pos.map(|p| HeroLineAnchor::Near {
+            pos: Vec2::new(p.x, p.z),
+            r: 20.0,
+        }),
         Concept::BiomeEntered(b) => Some(HeroLineAnchor::Biome(b)),
         _ => None,
     }
@@ -286,7 +323,11 @@ pub fn tick_chains(
     for (chain, pos) in due {
         // A manual chain isn't played — it's put on offer for the player's E-prompt (latest wins).
         if chain.manual {
-            offered.0 = Some(Offer { chain, pos, expires_at: now + REPLY_WINDOW });
+            offered.0 = Some(Offer {
+                chain,
+                pos,
+                expires_at: now + REPLY_WINDOW,
+            });
             continue;
         }
         // Pick the highest-priority reply that passes its per-line gates (once + floor).
@@ -297,7 +338,18 @@ pub fn tick_chains(
             .copied();
         let Some(reply) = pick else { continue };
         if can_play(mgr.active.get(&reply.speaker), now, reply.priority) {
-            play_line(&mut commands, &cfg, &mut mgr, &mut cd, &sinks, &mut subs, &sources, now, &reply, pos);
+            play_line(
+                &mut commands,
+                &cfg,
+                &mut mgr,
+                &mut cd,
+                &sinks,
+                &mut subs,
+                &sources,
+                now,
+                &reply,
+                pos,
+            );
         }
     }
 }

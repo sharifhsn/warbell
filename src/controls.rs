@@ -59,6 +59,7 @@ pub struct ControlsPlugin;
 impl Plugin for ControlsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CinematicCam>()
+            .init_resource::<crate::input_focus::UiWantsPointer>()
             .add_systems(Update, (toggle_cinematic, fly_camera).chain());
     }
 }
@@ -87,7 +88,7 @@ fn fly_camera(
     keys: Res<ButtonInput<KeyCode>>,
     buttons: Res<ButtonInput<MouseButton>>,
     motion: Res<AccumulatedMouseMotion>,
-    egui_wants: Res<crate::debug_panel::EguiWantsPointer>,
+    egui_wants: Res<crate::input_focus::UiWantsPointer>,
     cine: Res<CinematicCam>,
     mut cam_q: Query<(&mut Transform, &mut FlyCam)>,
     mut cursor_q: Query<&mut CursorOptions, With<PrimaryWindow>>,

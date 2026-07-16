@@ -37,7 +37,11 @@ pub fn scrim(z: i32) -> impl Bundle {
 /// Modal card paint (caller owns the `Node`: padding/min-width/gap/`border`/`border_radius`).
 /// Pair with [`chrome_layers`] inside `.with_children` for the full medieval frame.
 pub fn card_paint() -> impl Bundle {
-    (BackgroundColor(PANEL), BorderColor::all(IRON_EDGE), shadow_card())
+    (
+        BackgroundColor(PANEL),
+        BorderColor::all(IRON_EDGE),
+        shadow_card(),
+    )
 }
 
 /// The medieval chrome frame layers: tiled linen weave, an inset gold hairline, and four gold
@@ -85,8 +89,16 @@ pub fn chrome_layers(p: &mut RelatedSpawnerCommands<ChildOf>, linen: Handle<Imag
             height: Val::Px(6.0),
             ..default()
         };
-        if t { node.top = Val::Px(1.0) } else { node.bottom = Val::Px(1.0) }
-        if l { node.left = Val::Px(1.0) } else { node.right = Val::Px(1.0) }
+        if t {
+            node.top = Val::Px(1.0)
+        } else {
+            node.bottom = Val::Px(1.0)
+        }
+        if l {
+            node.left = Val::Px(1.0)
+        } else {
+            node.right = Val::Px(1.0)
+        }
         p.spawn(fill(node, GOLD_NOTCH));
     }
 }
@@ -147,12 +159,22 @@ pub fn slot_paint() -> impl Bundle {
 
 /// Keycap (kbd) paint — a small raised key (warm iron, gold-dust edge).
 pub fn keycap_paint() -> impl Bundle {
-    (BackgroundColor(rgba(52, 43, 30, 0.95)), BorderColor::all(rgba(224, 184, 120, 0.22)))
+    (
+        BackgroundColor(rgba(52, 43, 30, 0.95)),
+        BorderColor::all(rgba(224, 184, 120, 0.22)),
+    )
 }
 
 /// A square icon image node.
 pub fn icon(handle: Handle<Image>, px: f32) -> impl Bundle {
-    (Node { width: Val::Px(px), height: Val::Px(px), ..default() }, ImageNode::new(handle))
+    (
+        Node {
+            width: Val::Px(px),
+            height: Val::Px(px),
+            ..default()
+        },
+        ImageNode::new(handle),
+    )
 }
 
 /// A square icon, tinted when the atlas entry is a monochrome game-icon (`tintable`), left
@@ -163,7 +185,14 @@ pub fn icon_tinted(entry: (Handle<Image>, bool), px: f32, tint: Color) -> impl B
     if tintable {
         img.color = tint;
     }
-    (Node { width: Val::Px(px), height: Val::Px(px), ..default() }, img)
+    (
+        Node {
+            width: Val::Px(px),
+            height: Val::Px(px),
+            ..default()
+        },
+        img,
+    )
 }
 
 /// Spawn a **medallion** — the framed icon disc used by tree nodes, satchel slots, and quickslots.
@@ -230,7 +259,10 @@ pub fn cost_chip(
 pub fn vgrad(top: Color, bot: Color) -> BackgroundGradient {
     BackgroundGradient(vec![Gradient::Linear(LinearGradient::new(
         std::f32::consts::PI, // 0 = up; π points down so `top` sits at the top
-        vec![ColorStop::new(top, Val::Percent(0.0)), ColorStop::new(bot, Val::Percent(100.0))],
+        vec![
+            ColorStop::new(top, Val::Percent(0.0)),
+            ColorStop::new(bot, Val::Percent(100.0)),
+        ],
     ))])
 }
 
@@ -249,7 +281,11 @@ pub fn close_button(
     on_parchment: bool,
 ) {
     let (fg, bg, bd) = if on_parchment {
-        (super::theme::INK, rgba(86, 58, 24, 0.12), rgba(86, 58, 24, 0.45))
+        (
+            super::theme::INK,
+            rgba(86, 58, 24, 0.12),
+            rgba(86, 58, 24, 0.45),
+        )
     } else {
         (GOLD, BTN_BG, GOLD_HAIRLINE)
     };

@@ -16,7 +16,7 @@ use crate::economy::Bank;
 use crate::player::PlayerRes;
 use crate::quality::GraphicsQuality;
 
-use super::fonts::{label, UiFonts};
+use super::fonts::{UiFonts, label};
 use super::notice::Notice;
 use super::theme::*;
 use super::widgets::border;
@@ -39,7 +39,13 @@ pub struct AudioSettings {
 
 impl Default for AudioSettings {
     fn default() -> Self {
-        Self { muted: false, unfocused: false, master: 1.0, music: 1.0, sfx: 1.0 }
+        Self {
+            muted: false,
+            unfocused: false,
+            master: 1.0,
+            music: 1.0,
+            sfx: 1.0,
+        }
     }
 }
 
@@ -75,20 +81,20 @@ impl Plugin for SettingsPlugin {
             music: prefs.music,
             sfx: prefs.sfx,
         })
-            .init_resource::<AudioBaseVols>()
-            .add_systems(Startup, setup_cheats)
-            .add_systems(
-                Update,
-                (
-                    cheat_click,
-                    keys,
-                    track_window_focus,
-                    sync_mute,
-                    // Push the user volume multipliers onto the live AudioConfig mix (every audio
-                    // system already reads those fields, so this is the single wiring point).
-                    apply_audio_volumes.run_if(resource_changed::<AudioSettings>),
-                ),
-            );
+        .init_resource::<AudioBaseVols>()
+        .add_systems(Startup, setup_cheats)
+        .add_systems(
+            Update,
+            (
+                cheat_click,
+                keys,
+                track_window_focus,
+                sync_mute,
+                // Push the user volume multipliers onto the live AudioConfig mix (every audio
+                // system already reads those fields, so this is the single wiring point).
+                apply_audio_volumes.run_if(resource_changed::<AudioSettings>),
+            ),
+        );
     }
 }
 
@@ -197,7 +203,14 @@ fn keys(
     }
     if input.just_pressed(KeyCode::F11) {
         window.fullscreen = !window.fullscreen;
-        notice.push(if window.fullscreen { "Fullscreen" } else { "Windowed" }, now);
+        notice.push(
+            if window.fullscreen {
+                "Fullscreen"
+            } else {
+                "Windowed"
+            },
+            now,
+        );
     }
     if input.just_pressed(KeyCode::F10) {
         toggle_quality(&mut quality, &mut notice, now);
@@ -208,7 +221,14 @@ pub(crate) fn toggle_mute(settings: &mut AudioSettings, notice: &mut Notice, now
     settings.muted = !settings.muted;
     // The actual silencing happens in `sync_mute` (live `AudioSink`s) — GlobalVolume alone is
     // only sampled when a sink *starts*, so it never touches already-playing music/ambience.
-    notice.push(if settings.muted { "Audio muted" } else { "Audio on" }, now);
+    notice.push(
+        if settings.muted {
+            "Audio muted"
+        } else {
+            "Audio on"
+        },
+        now,
+    );
 }
 
 pub(crate) fn toggle_quality(quality: &mut GraphicsQuality, notice: &mut Notice, now: f64) {

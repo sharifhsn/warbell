@@ -17,16 +17,22 @@ should remain incremental.
 The runner kills stale Ryujinx instances, hashes the NRO, rejects unsafe shader
 overrides, and records repository, emulator binary, configuration, and launch
 metadata. It waits for guest readiness, captures three exact-PID window frames,
-validates each against `tools/warbell-frame-profile.json`, verifies that captured
-content advances, and terminates the emulator on every exit path. Each run gets
-an isolated directory under `target/ryujinx-logs` containing the log, manifest,
-screenshots, and machine-readable visual reports.
+validates canonical game runs against `tools/warbell-game-frame-profile.json`
+and renderer-probe runs against `tools/warbell-frame-profile.json`, verifies that
+captured content advances, and terminates the emulator on every exit path. Each
+run gets an isolated directory under `target/ryujinx-logs` containing the log,
+manifest, screenshots, and machine-readable visual reports.
 
 By default the runner requires Warbell's single-line frame-60 acceptance marker
 within 75 seconds. A successful manifest reports `health=passed`; process
 survival alone is never success.
-Override `REQUIRED_LOG_PATTERN` with another regular expression when running a
-specialized build. `READY_TIMEOUT_SECONDS`, `CAPTURE_DELAY_AFTER_READY`,
+Keep readiness markers as complete static strings. The libnx debug console can
+emit Rust formatting arguments as separate `OutputDebugString` records, so a
+single regex cannot reliably match a prefix and its formatted numeric value.
+Specialized diagnostics may override `REQUIRED_LOG_PATTERN` only with
+`ALLOW_CUSTOM_READINESS=1`, and may override `FRAME_PROFILE` only with
+`ALLOW_CUSTOM_FRAME_PROFILE=1`; both choices are recorded in the manifest.
+`READY_TIMEOUT_SECONDS`, `CAPTURE_DELAY_AFTER_READY`,
 `CAPTURE_INTERVAL_SECONDS`, and `CAPTURE_COUNT` control timing. Set
 `VISUAL_CHECK=0` only for an explicit nonvisual diagnostic, or
 `KEEP_EMULATOR_RUNNING=1` when interactive inspection is required. A missing

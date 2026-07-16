@@ -18,17 +18,17 @@ use bevy::picking::Pickable;
 use bevy::prelude::*;
 use bevy::ui::Checked;
 use bevy::ui_widgets::{
-    slider_self_update, Checkbox, Slider, SliderRange, SliderStep, SliderThumb, SliderValue,
-    ValueChange,
+    Checkbox, Slider, SliderRange, SliderStep, SliderThumb, SliderValue, ValueChange,
+    slider_self_update,
 };
 
 use crate::player::FirstPerson;
 use crate::quality::{
-    save_graphics_config, AaLevel, AoLevel, AudioPrefs, GraphicsQuality, GraphicsSettings,
-    ShadowLevel, TerrainDetail, WindowSettings,
+    AaLevel, AoLevel, AudioPrefs, GraphicsQuality, GraphicsSettings, ShadowLevel, TerrainDetail,
+    WindowSettings, save_graphics_config,
 };
 
-use super::fonts::{label, UiFonts};
+use super::fonts::{UiFonts, label};
 use super::settings::AudioSettings;
 use super::theme::*;
 use super::widgets::{self, border};
@@ -63,7 +63,14 @@ impl Plugin for GraphicsMenuPlugin {
                 Update,
                 (
                     sync_overlay, // spawn / despawn / rebuild the panel
-                    (tab_click, menu_buttons, menu_keys, sync_segments, sync_controls, sync_slider_visual)
+                    (
+                        tab_click,
+                        menu_buttons,
+                        menu_keys,
+                        sync_segments,
+                        sync_controls,
+                        sync_slider_visual,
+                    )
                         .run_if(menu_is_open),
                 ),
             );
@@ -146,8 +153,13 @@ enum Seg {
 struct SegLabel;
 
 /// Resolutions offered in the Display tab (plus a prepended "Native" = no override).
-const RES_CHOICES: &[[u32; 2]] =
-    &[[1280, 720], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]];
+const RES_CHOICES: &[[u32; 2]] = &[
+    [1280, 720],
+    [1600, 900],
+    [1920, 1080],
+    [2560, 1440],
+    [3840, 2160],
+];
 
 // ── Overlay lifecycle ────────────────────────────────────────────────────────────────────────
 
@@ -173,7 +185,16 @@ fn sync_overlay(
             for e in &existing {
                 commands.entity(e).despawn();
             }
-            spawn_panel(&mut commands, &fonts, *tab, &quality, &settings, &window, &audio, &first_person);
+            spawn_panel(
+                &mut commands,
+                &fonts,
+                *tab,
+                &quality,
+                &settings,
+                &window,
+                &audio,
+                &first_person,
+            );
             *built_tab = Some(*tab);
         }
     } else if is_up {
@@ -182,7 +203,12 @@ fn sync_overlay(
         }
         *built_tab = None;
         // Persist on close — a natural commit point (not every slider tick).
-        let prefs = AudioPrefs { master: audio.master, music: audio.music, sfx: audio.sfx, muted: audio.muted };
+        let prefs = AudioPrefs {
+            master: audio.master,
+            music: audio.music,
+            sfx: audio.sfx,
+            muted: audio.muted,
+        };
         save_graphics_config(&quality, &settings, &window, &prefs);
     }
 }
@@ -251,38 +277,44 @@ fn spawn_panel(
                 });
 
                 // ── Tab bar ──
-                c.spawn((
-                    Node {
-                        flex_direction: FlexDirection::Row,
-                        column_gap: Val::Px(6.0),
-                        margin: UiRect::bottom(Val::Px(16.0)),
-                        ..default()
-                    },
-                ))
-                .with_children(|bar| {
-                    for (t, name) in [
-                        (SettingsTab::Graphics, "Graphics"),
-                        (SettingsTab::Display, "Display"),
-                        (SettingsTab::Audio, "Audio"),
-                        (SettingsTab::Controls, "Controls"),
-                    ] {
-                        let on = t == tab;
-                        bar.spawn((
-                            Button,
-                            Interaction::default(),
-                            TabBtn(t),
-                            Node {
-                                padding: UiRect::axes(Val::Px(18.0), Val::Px(9.0)),
-                                border_radius: radius(R_BTN),
-                                ..default()
-                            },
-                            BackgroundColor(if on { GOLD_DEEP } else { Color::NONE }),
-                        ))
-                        .with_children(|b| {
-                            b.spawn((label(&fonts.bold, name, 15.0, if on { INK } else { TEXT_FAINT }), TabLabel));
-                        });
-                    }
-                });
+                c.spawn((Node {
+                    flex_direction: FlexDirection::Row,
+                    column_gap: Val::Px(6.0),
+                    margin: UiRect::bottom(Val::Px(16.0)),
+                    ..default()
+                },))
+                    .with_children(|bar| {
+                        for (t, name) in [
+                            (SettingsTab::Graphics, "Graphics"),
+                            (SettingsTab::Display, "Display"),
+                            (SettingsTab::Audio, "Audio"),
+                            (SettingsTab::Controls, "Controls"),
+                        ] {
+                            let on = t == tab;
+                            bar.spawn((
+                                Button,
+                                Interaction::default(),
+                                TabBtn(t),
+                                Node {
+                                    padding: UiRect::axes(Val::Px(18.0), Val::Px(9.0)),
+                                    border_radius: radius(R_BTN),
+                                    ..default()
+                                },
+                                BackgroundColor(if on { GOLD_DEEP } else { Color::NONE }),
+                            ))
+                            .with_children(|b| {
+                                b.spawn((
+                                    label(
+                                        &fonts.bold,
+                                        name,
+                                        15.0,
+                                        if on { INK } else { TEXT_FAINT },
+                                    ),
+                                    TabLabel,
+                                ));
+                            });
+                        }
+                    });
 
                 // ── Content pane (active tab only) ──
                 c.spawn((Node {
@@ -292,16 +324,24 @@ fn spawn_panel(
                     overflow: Overflow::scroll_y(),
                     ..default()
                 },))
-                .with_children(|pane| match tab {
-                    SettingsTab::Graphics => graphics_pane(pane, fonts, *quality, settings),
-                    SettingsTab::Display => display_pane(pane, fonts, window),
-                    SettingsTab::Audio => audio_pane(pane, fonts, audio),
-                    SettingsTab::Controls => controls_pane(pane, fonts, first_person),
-                });
+                    .with_children(|pane| match tab {
+                        SettingsTab::Graphics => graphics_pane(pane, fonts, *quality, settings),
+                        SettingsTab::Display => display_pane(pane, fonts, window),
+                        SettingsTab::Audio => audio_pane(pane, fonts, audio),
+                        SettingsTab::Controls => controls_pane(pane, fonts, first_person),
+                    });
 
                 c.spawn((
-                    label(&fonts.regular, "Esc to close   ·   choices are saved", 12.0, GREY),
-                    Node { margin: UiRect::top(Val::Px(10.0)), ..default() },
+                    label(
+                        &fonts.regular,
+                        "Esc to close   ·   choices are saved",
+                        12.0,
+                        GREY,
+                    ),
+                    Node {
+                        margin: UiRect::top(Val::Px(10.0)),
+                        ..default()
+                    },
                 ));
             });
         });
@@ -309,38 +349,81 @@ fn spawn_panel(
 
 type Pane<'a> = bevy::ecs::relationship::RelatedSpawnerCommands<'a, ChildOf>;
 
-fn graphics_pane(p: &mut Pane<'_>, fonts: &UiFonts, quality: GraphicsQuality, s: &GraphicsSettings) {
-    seg_row(p, fonts, "Preset", &[
-        ("Low", Seg::Preset(GraphicsQuality::Low)),
-        ("High", Seg::Preset(GraphicsQuality::High)),
-        ("Ultra", Seg::Preset(GraphicsQuality::Ultra)),
-        ("Custom", Seg::Preset(GraphicsQuality::Custom)),
-    ], Seg::Preset(quality));
+fn graphics_pane(
+    p: &mut Pane<'_>,
+    fonts: &UiFonts,
+    quality: GraphicsQuality,
+    s: &GraphicsSettings,
+) {
+    seg_row(
+        p,
+        fonts,
+        "Preset",
+        &[
+            ("Low", Seg::Preset(GraphicsQuality::Low)),
+            ("High", Seg::Preset(GraphicsQuality::High)),
+            ("Ultra", Seg::Preset(GraphicsQuality::Ultra)),
+            ("Custom", Seg::Preset(GraphicsQuality::Custom)),
+        ],
+        Seg::Preset(quality),
+    );
     divider(p);
     // Max 2.0: above 1.0 supersamples (SSAA) for true edge-AA, below 1.0 trims fragment cost.
-    slider_row(p, fonts, "Render scale", SliderId::RenderScale, s.render_scale, 0.3, 2.0);
-    seg_row(p, fonts, "Shadows", &[
-        ("Off", Seg::Shadows(ShadowLevel::Off)),
-        ("Low", Seg::Shadows(ShadowLevel::Low)),
-        ("Med", Seg::Shadows(ShadowLevel::Medium)),
-        ("High", Seg::Shadows(ShadowLevel::High)),
-    ], Seg::Shadows(s.shadows));
-    seg_row(p, fonts, "Anti-aliasing", &[
-        ("Off", Seg::Aa(AaLevel::Off)),
-        ("Low", Seg::Aa(AaLevel::Low)),
-        ("High", Seg::Aa(AaLevel::High)),
-        ("Ultra", Seg::Aa(AaLevel::Ultra)),
-    ], Seg::Aa(s.antialias));
-    seg_row(p, fonts, "Ambient occlusion", &[
-        ("Off", Seg::Ao(AoLevel::Off)),
-        ("Medium", Seg::Ao(AoLevel::Medium)),
-        ("Ultra", Seg::Ao(AoLevel::Ultra)),
-    ], Seg::Ao(s.ssao));
-    seg_row(p, fonts, "Terrain detail", &[
-        ("Low", Seg::Terrain(TerrainDetail::Low)),
-        ("High", Seg::Terrain(TerrainDetail::High)),
-        ("Ultra", Seg::Terrain(TerrainDetail::Ultra)),
-    ], Seg::Terrain(s.terrain));
+    slider_row(
+        p,
+        fonts,
+        "Render scale",
+        SliderId::RenderScale,
+        s.render_scale,
+        0.3,
+        2.0,
+    );
+    seg_row(
+        p,
+        fonts,
+        "Shadows",
+        &[
+            ("Off", Seg::Shadows(ShadowLevel::Off)),
+            ("Low", Seg::Shadows(ShadowLevel::Low)),
+            ("Med", Seg::Shadows(ShadowLevel::Medium)),
+            ("High", Seg::Shadows(ShadowLevel::High)),
+        ],
+        Seg::Shadows(s.shadows),
+    );
+    seg_row(
+        p,
+        fonts,
+        "Anti-aliasing",
+        &[
+            ("Off", Seg::Aa(AaLevel::Off)),
+            ("Low", Seg::Aa(AaLevel::Low)),
+            ("High", Seg::Aa(AaLevel::High)),
+            ("Ultra", Seg::Aa(AaLevel::Ultra)),
+        ],
+        Seg::Aa(s.antialias),
+    );
+    seg_row(
+        p,
+        fonts,
+        "Ambient occlusion",
+        &[
+            ("Off", Seg::Ao(AoLevel::Off)),
+            ("Medium", Seg::Ao(AoLevel::Medium)),
+            ("Ultra", Seg::Ao(AoLevel::Ultra)),
+        ],
+        Seg::Ao(s.ssao),
+    );
+    seg_row(
+        p,
+        fonts,
+        "Terrain detail",
+        &[
+            ("Low", Seg::Terrain(TerrainDetail::Low)),
+            ("High", Seg::Terrain(TerrainDetail::High)),
+            ("Ultra", Seg::Terrain(TerrainDetail::Ultra)),
+        ],
+        Seg::Terrain(s.terrain),
+    );
     check_row(p, fonts, "Bloom", ToggleId::Bloom, s.bloom);
     check_row(p, fonts, "Depth of field", ToggleId::Dof, s.depth_of_field);
     check_row(p, fonts, "Outline", ToggleId::Outline, s.outline);
@@ -349,10 +432,16 @@ fn graphics_pane(p: &mut Pane<'_>, fonts: &UiFonts, quality: GraphicsQuality, s:
 }
 
 fn display_pane(p: &mut Pane<'_>, fonts: &UiFonts, w: &WindowSettings) {
-    seg_row(p, fonts, "Window mode", &[
-        ("Windowed", Seg::Fullscreen(false)),
-        ("Fullscreen", Seg::Fullscreen(true)),
-    ], Seg::Fullscreen(w.fullscreen));
+    seg_row(
+        p,
+        fonts,
+        "Window mode",
+        &[
+            ("Windowed", Seg::Fullscreen(false)),
+            ("Fullscreen", Seg::Fullscreen(true)),
+        ],
+        Seg::Fullscreen(w.fullscreen),
+    );
     let mut opts: Vec<(String, Seg)> = vec![("Native".into(), Seg::Resolution(None))];
     for r in RES_CHOICES {
         opts.push((format!("{}×{}", r[0], r[1]), Seg::Resolution(Some(*r))));
@@ -363,19 +452,39 @@ fn display_pane(p: &mut Pane<'_>, fonts: &UiFonts, w: &WindowSettings) {
 }
 
 fn audio_pane(p: &mut Pane<'_>, fonts: &UiFonts, a: &AudioSettings) {
-    slider_row(p, fonts, "Master volume", SliderId::Master, a.master, 0.0, 1.0);
+    slider_row(
+        p,
+        fonts,
+        "Master volume",
+        SliderId::Master,
+        a.master,
+        0.0,
+        1.0,
+    );
     slider_row(p, fonts, "Music volume", SliderId::Music, a.music, 0.0, 1.0);
     slider_row(p, fonts, "SFX volume", SliderId::Sfx, a.sfx, 0.0, 1.0);
     check_row(p, fonts, "Mute all", ToggleId::Mute, a.muted);
 }
 
 fn controls_pane(p: &mut Pane<'_>, fonts: &UiFonts, fp: &FirstPerson) {
-    seg_row(p, fonts, "Camera", &[
-        ("Third person", Seg::Camera(false)),
-        ("First person", Seg::Camera(true)),
-    ], Seg::Camera(fp.active));
+    seg_row(
+        p,
+        fonts,
+        "Camera",
+        &[
+            ("Third person", Seg::Camera(false)),
+            ("First person", Seg::Camera(true)),
+        ],
+        Seg::Camera(fp.active),
+    );
     divider(p);
-    p.spawn((label(&fonts.semibold, "KEYBINDS", FONT_CAPTION_SIZE, KICKER), Node { margin: UiRect::vertical(Val::Px(4.0)), ..default() }));
+    p.spawn((
+        label(&fonts.semibold, "KEYBINDS", FONT_CAPTION_SIZE, KICKER),
+        Node {
+            margin: UiRect::vertical(Val::Px(4.0)),
+            ..default()
+        },
+    ));
     for (keys, action) in [
         ("W A S D", "Move"),
         ("LMB", "Attack"),
@@ -432,7 +541,15 @@ fn seg_row(p: &mut Pane<'_>, fonts: &UiFonts, title: &str, options: &[(&str, Seg
                     *val,
                 ))
                 .with_children(|b| {
-                    b.spawn((label(&fonts.semibold, *txt, 12.5, if on { INK } else { TEXT_FAINT }), SegLabel));
+                    b.spawn((
+                        label(
+                            &fonts.semibold,
+                            *txt,
+                            12.5,
+                            if on { INK } else { TEXT_FAINT },
+                        ),
+                        SegLabel,
+                    ));
                 });
             }
         });
@@ -464,7 +581,12 @@ fn check_row(p: &mut Pane<'_>, fonts: &UiFonts, title: &str, id: ToggleId, on: b
         }
         cb.with_children(|b| {
             b.spawn((
-                Node { width: Val::Px(12.0), height: Val::Px(12.0), border_radius: radius(3.0), ..default() },
+                Node {
+                    width: Val::Px(12.0),
+                    height: Val::Px(12.0),
+                    border_radius: radius(3.0),
+                    ..default()
+                },
                 BackgroundColor(if on { GREEN } else { Color::NONE }),
                 CheckFill,
                 Pickable::IGNORE, // let the click reach the Checkbox node
@@ -475,7 +597,15 @@ fn check_row(p: &mut Pane<'_>, fonts: &UiFonts, title: &str, id: ToggleId, on: b
 
 /// A labelled row with a native [`Slider`] + a live percentage readout. The rail/thumb are
 /// `Pickable::IGNORE` so the drag always targets the Slider node (else the value never commits).
-fn slider_row(p: &mut Pane<'_>, fonts: &UiFonts, title: &str, id: SliderId, value: f32, lo: f32, hi: f32) {
+fn slider_row(
+    p: &mut Pane<'_>,
+    fonts: &UiFonts,
+    title: &str,
+    id: SliderId,
+    value: f32,
+    lo: f32,
+    hi: f32,
+) {
     p.spawn(row_node()).with_children(|r| {
         r.spawn(label(&fonts.semibold, title, 14.0, TEXT));
         r.spawn(Node {
@@ -486,9 +616,17 @@ fn slider_row(p: &mut Pane<'_>, fonts: &UiFonts, title: &str, id: SliderId, valu
         })
         .with_children(|right| {
             right.spawn((
-                label(&fonts.bold, format!("{}%", (value * 100.0).round() as i32), 13.0, GOLD),
+                label(
+                    &fonts.bold,
+                    format!("{}%", (value * 100.0).round() as i32),
+                    13.0,
+                    GOLD,
+                ),
                 SliderReadout(id),
-                Node { width: Val::Px(42.0), ..default() },
+                Node {
+                    width: Val::Px(42.0),
+                    ..default()
+                },
             ));
             right
                 .spawn((
@@ -525,7 +663,9 @@ fn slider_row(p: &mut Pane<'_>, fonts: &UiFonts, title: &str, id: SliderId, valu
                             width: Val::Px(14.0),
                             height: Val::Px(14.0),
                             top: Val::Px(2.0),
-                            left: Val::Percent(((value - lo) / (hi - lo) * 100.0).clamp(0.0, 100.0)),
+                            left: Val::Percent(
+                                ((value - lo) / (hi - lo) * 100.0).clamp(0.0, 100.0),
+                            ),
                             margin: UiRect::left(Val::Px(-7.0)),
                             border_radius: radius(7.0),
                             ..default()
@@ -551,7 +691,11 @@ fn row_node() -> Node {
 
 fn divider(p: &mut Pane<'_>) {
     p.spawn((
-        Node { height: Val::Px(1.0), margin: UiRect::vertical(Val::Px(6.0)), ..default() },
+        Node {
+            height: Val::Px(1.0),
+            margin: UiRect::vertical(Val::Px(6.0)),
+            ..default()
+        },
         BackgroundColor(BORDER_SOFT),
     ));
 }
@@ -559,7 +703,10 @@ fn divider(p: &mut Pane<'_>) {
 // ── Interaction ────────────────────────────────────────────────────────────────────────────────
 
 /// Top-bar tab clicks → select the tab (the panel rebuilds in `sync_overlay`).
-fn tab_click(q: Query<(&Interaction, &TabBtn), Changed<Interaction>>, mut tab: ResMut<SettingsTab>) {
+fn tab_click(
+    q: Query<(&Interaction, &TabBtn), Changed<Interaction>>,
+    mut tab: ResMut<SettingsTab>,
+) {
     for (i, t) in &q {
         if *i == Interaction::Pressed && *tab != t.0 {
             *tab = t.0;

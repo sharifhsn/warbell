@@ -46,7 +46,11 @@ pub(crate) struct VillagerTrigger {
 
 impl Default for VillagerTrigger {
     fn default() -> Self {
-        Self { next_ambient: 25.0, prev_phase: None, rng: 0x1234_5678 }
+        Self {
+            next_ambient: 25.0,
+            prev_phase: None,
+            rng: 0x1234_5678,
+        }
     }
 }
 
@@ -59,7 +63,10 @@ pub(crate) fn setup_villager_trigger(mut commands: Commands) {
         .map(|d| d.subsec_nanos())
         .unwrap_or(0x1234_5678)
         | 1;
-    commands.insert_resource(VillagerTrigger { rng: seed, ..default() });
+    commands.insert_resource(VillagerTrigger {
+        rng: seed,
+        ..default()
+    });
 }
 
 /// Fresh run: re-arm the trigger cadence (preserve the seeded rng so the line order doesn't
@@ -113,7 +120,9 @@ pub(crate) fn detect_villager_ambient(
         return;
     }
     let Ok(hero) = hero.single() else { return };
-    let Some((_who, pos)) = nearest_villager(hero.pos, &townsfolk, NEAR_DIST) else { return };
+    let Some((_who, pos)) = nearest_villager(hero.pos, &townsfolk, NEAR_DIST) else {
+        return;
+    };
     // Mostly stay quiet even when eligible — a miss burns a full gap, not an instant retry.
     if frand(&mut t.rng) >= SPEAK_CHANCE {
         t.next_ambient = now + AMBIENT_GAP;
@@ -142,7 +151,11 @@ pub(crate) fn detect_villager_events(
     // townsfolk — they must never voice the player's villager lines (dawn relief, etc.).
     villagers: Query<
         (Entity, &GlobalTransform),
-        (With<Villager>, Without<crate::rival::RivalSoldier>, Without<crate::rival::RivalWorker>),
+        (
+            With<Villager>,
+            Without<crate::rival::RivalSoldier>,
+            Without<crate::rival::RivalWorker>,
+        ),
     >,
     siege: Option<Res<crate::siege::Siege>>,
     mut cues: MessageReader<super::AudioCue>,
@@ -188,6 +201,8 @@ pub(crate) fn detect_villager_events(
     }
     let Ok(hero) = hero.single() else { return };
     // Any villager within range (not just workers — event lines from any townsfolk).
-    let Some((_who, pos)) = nearest_villager(hero.pos, &villagers, EVENT_NEAR) else { return };
+    let Some((_who, pos)) = nearest_villager(hero.pos, &villagers, EVENT_NEAR) else {
+        return;
+    };
     speak.write(Speak::at(c, pos));
 }

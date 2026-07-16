@@ -5,7 +5,7 @@
 use bevy::prelude::*;
 use std::collections::VecDeque;
 
-use super::fonts::{label, UiFonts};
+use super::fonts::{UiFonts, label};
 use super::theme::*;
 use super::widgets::border;
 
@@ -113,7 +113,12 @@ fn update_notice(
                 shadow_card(),
             ))
             .with_children(|p| {
-                p.spawn(label(&fonts.bold, text.to_string(), 13.0, rgb(243, 230, 200)));
+                p.spawn(label(
+                    &fonts.bold,
+                    text.to_string(),
+                    13.0,
+                    rgb(243, 230, 200),
+                ));
             });
         }
     });

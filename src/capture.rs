@@ -16,7 +16,7 @@
 //! | `FOREST_CLIP_ORBIT`  | `"cx,cy,cz,radius,height,deg_per_sec"` slow camera orbit around a point |
 
 use bevy::prelude::*;
-use bevy::render::view::screenshot::{save_to_disk, Screenshot};
+use bevy::render::view::screenshot::{Screenshot, save_to_disk};
 use std::time::Duration;
 
 pub struct CapturePlugin;
@@ -85,11 +85,16 @@ fn drive_shot(
         .unwrap_or(0.0)
         .max(10.0);
     if !clock.shot && clock.frame >= 240 && time.elapsed_secs() >= min_secs {
-        if let Some(parent) = std::path::Path::new(&path.0).parent().filter(|p| !p.as_os_str().is_empty()) {
+        if let Some(parent) = std::path::Path::new(&path.0)
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+        {
             let _ = std::fs::create_dir_all(parent);
         }
         let _ = std::fs::remove_file(&path.0);
-        commands.spawn(Screenshot::primary_window()).observe(save_to_disk(path.0.clone()));
+        commands
+            .spawn(Screenshot::primary_window())
+            .observe(save_to_disk(path.0.clone()));
         clock.shot = true;
     }
     // The shot is an async GPU readback: `save_to_disk` (and the PNG write) only fire once the
@@ -144,14 +149,19 @@ pub struct ClipProgress {
 
 fn clip_cfg(dir: String) -> ClipCfg {
     let num = |k: &str, d: f32| {
-        std::env::var(k).ok().and_then(|s| s.trim().parse::<f32>().ok()).unwrap_or(d)
+        std::env::var(k)
+            .ok()
+            .and_then(|s| s.trim().parse::<f32>().ok())
+            .unwrap_or(d)
     };
     ClipCfg {
         dir,
         frames: num("FOREST_CLIP_FRAMES", 150.0).max(1.0) as u32,
         warmup: num("FOREST_CLIP_WARMUP", 30.0).max(0.0) as u32,
         fps: num("FOREST_CLIP_FPS", 30.0).max(1.0) as u32,
-        orbit: std::env::var("FOREST_CLIP_ORBIT").ok().and_then(parse_orbit),
+        orbit: std::env::var("FOREST_CLIP_ORBIT")
+            .ok()
+            .and_then(parse_orbit),
     }
 }
 
@@ -177,11 +187,19 @@ fn clip_setup(cfg: Res<ClipCfg>, mut vtime: ResMut<Time<Virtual>>) {
 /// Optional cinematic move: circle `center` at a fixed radius/height, `speed` deg/s. Driven off
 /// the saved-frame index (not wall time) so the path is deterministic. The fly-cam is idle under
 /// capture (no input), so writing the transform here doesn't fight it.
-fn clip_orbit(cfg: Res<ClipCfg>, clock: Res<ClipClock>, mut cam: Query<&mut Transform, With<Camera3d>>) {
+fn clip_orbit(
+    cfg: Res<ClipCfg>,
+    clock: Res<ClipClock>,
+    mut cam: Query<&mut Transform, With<Camera3d>>,
+) {
     let Some(o) = cfg.orbit else { return };
     let t = clock.frame.saturating_sub(cfg.warmup) as f32 / cfg.fps as f32;
     let ang = (o.speed * t).to_radians();
-    let pos = Vec3::new(o.center.x + o.radius * ang.cos(), o.height, o.center.z + o.radius * ang.sin());
+    let pos = Vec3::new(
+        o.center.x + o.radius * ang.cos(),
+        o.height,
+        o.center.z + o.radius * ang.sin(),
+    );
     for mut tf in &mut cam {
         *tf = Transform::from_translation(pos).looking_at(o.center, Vec3::Y);
     }
@@ -208,7 +226,9 @@ fn drive_clip(
     if clock.frame >= cfg.warmup && clock.saved < cfg.frames {
         clock.saved += 1;
         let path = format!("{}/frame_{:05}.png", cfg.dir, clock.saved);
-        commands.spawn(Screenshot::primary_window()).observe(save_to_disk(path));
+        commands
+            .spawn(Screenshot::primary_window())
+            .observe(save_to_disk(path));
         if clock.saved >= cfg.frames {
             clock.done_at = Some(clock.frame);
         }

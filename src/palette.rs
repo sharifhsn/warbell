@@ -8,7 +8,11 @@ use bevy::prelude::*;
 
 /// sRGB `Color` from a `0xRRGGBB` literal.
 pub fn srgb(hex: u32) -> Color {
-    Color::srgb_u8(((hex >> 16) & 0xff) as u8, ((hex >> 8) & 0xff) as u8, (hex & 0xff) as u8)
+    Color::srgb_u8(
+        ((hex >> 16) & 0xff) as u8,
+        ((hex >> 8) & 0xff) as u8,
+        (hex & 0xff) as u8,
+    )
 }
 
 /// LINEAR `[r,g,b,1]` from a `0xRRGGBB` literal — for mesh `ATTRIBUTE_COLOR`.

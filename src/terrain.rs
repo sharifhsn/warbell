@@ -13,7 +13,19 @@ use bevy::render::render_resource::{
 };
 use bevy::shader::ShaderRef;
 
-use crate::biome::GroundDetail;
+/// Detail-texture spec → fed to [`detail_image`] to bake a seamless ground imprint.
+#[derive(Clone, Copy)]
+pub struct GroundDetail {
+    pub scale: f32,
+    pub strength: f32,
+    pub variation: f32,
+    pub seed: f32,
+    pub dark: u32,
+    pub base: u32,
+    pub light: u32,
+    pub grain: f32,
+    pub streak: f32,
+}
 
 /// Side length of the populated patch (tiles == world units), centred on the origin so it
 /// spans `[-HALF, HALF]`. Used by the (kept, unwired) `decor` charm's standalone placement.
@@ -86,7 +98,11 @@ pub fn make_material(
     let detail_h = images.add(detail_img);
     let (rut_h, rut_region) = rut.unwrap_or_else(|| {
         let img = Image::new(
-            bevy::render::render_resource::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            bevy::render::render_resource::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
             bevy::render::render_resource::TextureDimension::D2,
             vec![0u8],
             bevy::render::render_resource::TextureFormat::R8Unorm,
@@ -103,7 +119,12 @@ pub fn make_material(
         },
         extension: ForestExtension {
             params: ForestParams {
-                params: Vec4::new(detail.scale, detail.strength, detail.variation, mean.max(0.01)),
+                params: Vec4::new(
+                    detail.scale,
+                    detail.strength,
+                    detail.variation,
+                    mean.max(0.01),
+                ),
                 // High-preset defaults; apply_quality overrides on the first Update frame
                 // (after the Startup world build) and on every preset toggle.
                 params2: Vec4::new(1.0, 1.0, 1.0, 0.0),
@@ -114,7 +135,6 @@ pub fn make_material(
         },
     })
 }
-
 
 // ── Detail texture (port of terrainDetail.ts; parameterised per biome) ───────────
 
@@ -150,7 +170,11 @@ fn value_noise(u: f32, v: f32, nx: i32, ny: i32, seed: f32) -> f32 {
 }
 
 fn hex_srgb_f(c: u32) -> [f32; 3] {
-    [((c >> 16) & 0xff) as f32 / 255.0, ((c >> 8) & 0xff) as f32 / 255.0, (c & 0xff) as f32 / 255.0]
+    [
+        ((c >> 16) & 0xff) as f32 / 255.0,
+        ((c >> 8) & 0xff) as f32 / 255.0,
+        (c & 0xff) as f32 / 255.0,
+    ]
 }
 
 /// Build a 256² seamless detail texture (sRGB, Repeat) from a [`GroundDetail`] ramp,
@@ -215,7 +239,11 @@ pub(crate) fn detail_image(d: &GroundDetail) -> (Image, f32) {
     }
     let mean = (lum_sum / (n * n) as f64) as f32;
     let mut img = Image::new(
-        Extent3d { width: DETAIL_PX, height: DETAIL_PX, depth_or_array_layers: 1 },
+        Extent3d {
+            width: DETAIL_PX,
+            height: DETAIL_PX,
+            depth_or_array_layers: 1,
+        },
         TextureDimension::D2,
         data,
         TextureFormat::Rgba8UnormSrgb,

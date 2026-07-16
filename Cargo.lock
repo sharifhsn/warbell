@@ -914,6 +914,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_horizon"
+version = "0.1.0"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_tasks",
+ "bevy_window",
+]
+
+[[package]]
 name = "bevy_image"
 version = "0.19.0"
 dependencies = [
@@ -2629,7 +2639,6 @@ checksum = "7c20b425addb8661e97fe1d51c4d8bcec3ec29ed6ad0db983976a7521276b8f7"
 dependencies = [
  "hashbrown 0.17.1",
  "linebender_resource_handle",
- "memmap2",
  "parlance",
  "read-fonts",
  "smallvec",
@@ -4243,6 +4252,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fad031076f48f0d4d85ce1aea9b94b4e715a4d636a030a123038f8f5b5e4343"
 dependencies = [
+ "core_maths",
  "fontique",
  "harfrust 0.6.2",
  "hashbrown 0.17.1",
@@ -4565,6 +4575,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4ed38b89c2c77ff968c524145ad65fb010f38af5c7a224b53b81d47ac2daa81"
 dependencies = [
  "bytemuck",
+ "core_maths",
  "font-types",
 ]
 
@@ -4880,6 +4891,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c34617370ae968efb7161bb2beb517d9084659aae19e24b89e3db25b46e4564"
 dependencies = [
  "bytemuck",
+ "core_maths",
  "read-fonts",
 ]
 
@@ -5173,6 +5185,7 @@ version = "0.20.0"
 dependencies = [
  "bevy",
  "bevy_egui",
+ "bevy_horizon",
  "deko3d-sys",
  "getrandom 0.3.4",
  "image",

@@ -17,23 +17,22 @@
 #[cfg(all(feature = "desktop", feature = "switch"))]
 compile_error!("`desktop` and `switch` are mutually exclusive build targets");
 
-macro_rules! desktop_modules {
+macro_rules! game_modules {
     ($($module:ident;)*) => {
         $(
-            #[cfg(feature = "desktop")]
+            #[cfg(any(feature = "desktop", feature = "switch-full"))]
             mod $module;
         )*
     };
 }
 
-desktop_modules! {
+game_modules! {
     aftermath;
     ambient_life;
     atmospherics;
     meadow;
     melee_ring;
     meshkit;
-    audio;
     banner;
     biped;
     biome;
@@ -48,7 +47,6 @@ desktop_modules! {
     boss;
     build_fx;
     camps;
-    capture;
     cinematic;
     castle;
     castle_decor;
@@ -56,11 +54,8 @@ desktop_modules! {
     combat_fx;
     compass;
     controls;
-    creature;
     creature_anim;
     critters;
-    debug_panel;
-    debug_stats;
     decor;
     demo;
     defenses;
@@ -93,9 +88,7 @@ desktop_modules! {
     ork_fortress;
     orks;
     outline;
-    palette;
     particles;
-    perftest;
     previs_knight;
     peasant_model;
     player;
@@ -120,13 +113,11 @@ desktop_modules! {
     succession;
     succession_alert;
     succession_fx;
-    terrain;
     town;
     town_meshes;
     training_dummies;
     trees;
     tutorial;
-    ui;
     verbs;
     vignettes;
     bog;
@@ -134,15 +125,48 @@ desktop_modules! {
     villagers;
     vista;
     visual;
-    viewer;
     warlord;
-    water;
     wayside;
     wildlife;
     wind;
-    window_icon;
     worldmap;
 }
+
+#[cfg(any(feature = "desktop", feature = "switch-full"))]
+mod audio;
+#[cfg(any(feature = "desktop", feature = "switch-full"))]
+mod capture;
+#[cfg(feature = "desktop")]
+mod debug_panel;
+#[cfg(feature = "desktop")]
+mod debug_stats;
+#[cfg(any(feature = "desktop", feature = "switch-full"))]
+mod full_game;
+#[cfg(any(feature = "desktop", feature = "switch-full"))]
+mod input_focus;
+#[cfg(feature = "desktop")]
+mod perftest;
+#[cfg(feature = "desktop")]
+mod viewer;
+#[cfg(feature = "desktop")]
+mod window_icon;
+
+#[cfg(any(feature = "desktop", feature = "switch"))]
+mod shared_render;
+#[cfg(any(feature = "desktop", feature = "switch"))]
+mod terrain;
+#[cfg(any(feature = "desktop", feature = "switch"))]
+mod water;
+
+#[cfg(any(feature = "desktop", feature = "switch"))]
+mod creature;
+#[cfg(any(feature = "desktop", feature = "switch"))]
+mod palette;
+#[cfg(feature = "switch")]
+#[path = "player/model.rs"]
+mod switch_knight_model;
+#[cfg(any(feature = "desktop", feature = "switch"))]
+mod ui;
 
 #[cfg(feature = "switch")]
 mod deko_provider;
@@ -228,9 +252,8 @@ fn main() {
             succession::SuccessionPlugin, // bloodline heir pool: fall → next heir; empty → Defeat
             orbs::OrbsPlugin,        // reward orbs (gold/xp motes) from kills
             scene::ScenePlugin,
-            terrain::TerrainPlugin, // registers the terrain material
-            water::WaterPlugin,     // registers the water material
-            biome::BiomePlugin,     // orchestrates ground/scatter/backdrop/particles
+            shared_render::SharedRenderPlugin,
+            biome::BiomePlugin, // orchestrates ground/scatter/backdrop/particles
             particles::ParticlePlugin,
             decor::DecorPlugin, // firefly bob system (decor itself spawned per-biome)
             dof::DofPlugin,     // custom CoC bokeh depth-of-field post pass (player-focused)
@@ -293,8 +316,7 @@ fn main() {
         ))
         .add_plugins((
             scenes::ScenesPlugin, // hand-staged looped trailer tableaus (F1 Director → Scenes)
-            creature::CreaturePlugin, // registers the shared creature ExtendedMaterial (hero/orks/wildlife)
-            biped::BipedPlugin, // shared studio rig+animator for non-hero bipeds (orcs/peasants)
+            biped::BipedPlugin,   // shared studio rig+animator for non-hero bipeds (orcs/peasants)
             quadruped::QuadrupedPlugin, // shared studio quadruped rig+animator (wildlife mammals)
             chest::ChestPlugin, // scattered loot chests: Wood/Relic tiers + juicy opens + Gnashfang mimics
             boss::BossPlugin, // Biome Wardens: per-biome world bosses + boon rewards + reward dialog

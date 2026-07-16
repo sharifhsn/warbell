@@ -1,0 +1,33 @@
+{
+  "auto_bind_resources": true,
+  "coordinate_space": "native",
+  "emulate_3d_textures": false,
+  "entry": "vertex",
+  "explicit_bindings": [],
+  "files": {
+    "dksh": {
+      "path": "assets/shaders/deko3d-runtime/05a50465-ui.vert.dksh",
+      "sha256": "fb08677bc8f17c2724babb12a77e5901f28edc52b927edc7a4ed1c7aff6049b8",
+      "size": 796
+    },
+    "glsl": {
+      "path": "assets/shaders/deko3d-runtime/05a50465-ui.vert.glsl",
+      "sha256": "b56dbbd71d61866ebfac9ad062186807055aadfd7ed4644a6dada9c0c069f0d6",
+      "size": 7552
+    },
+    "reflection": {
+      "path": "assets/shaders/deko3d-runtime/05a50465-ui.vert.reflection.json",
+      "sha256": "4f25a1ebeb5287972467a3aac5b741734f144bc47502f8f78ea6aa2a94931b93",
+      "size": 546
+    }
+  },
+  "glsl_version": 460,
+  "immediates_binding": 15,
+  "schema": "wgsl-to-dksh-artifact-v0",
+  "source": {
+    "path": "assets/shaders/deko3d-runtime/05a50465-ui.vert.wgsl",
+    "sha256": "05a50465c754202d98483de231571aae3881b89eed3e0e2096f00f27335ce236",
+    "size": 7683
+  },
+  "stage": "vertex"
+}

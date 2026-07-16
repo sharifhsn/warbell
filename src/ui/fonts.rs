@@ -8,12 +8,12 @@ use bevy::prelude::*;
 /// Loaded font faces, indexed by the weights the UI actually uses.
 #[derive(Resource, Clone)]
 pub struct UiFonts {
-    pub regular: Handle<Font>,  // 400
-    pub semibold: Handle<Font>, // 600
-    pub bold: Handle<Font>,     // 700
+    pub regular: Handle<Font>,   // 400
+    pub semibold: Handle<Font>,  // 600
+    pub bold: Handle<Font>,      // 700
     pub extrabold: Handle<Font>, // 800
-    pub serif: Handle<Font>,    // EB Garamond — parchment body text
-    pub display: Handle<Font>,  // Cinzel — titles, headers, banners
+    pub serif: Handle<Font>,     // EB Garamond — parchment body text
+    pub display: Handle<Font>,   // Cinzel — titles, headers, banners
 }
 
 impl UiFonts {
@@ -46,7 +46,11 @@ pub fn label(font: &Handle<Font>, s: impl Into<String>, size: f32, color: Color)
         Text::new(s),
         // 0.19: `font` is a `FontSource` (From<Handle<Font>>) and `font_size` a `FontSize`
         // (From<f32>) — `.into()` keeps the same handle / pixel size.
-        TextFont { font: font.clone().into(), font_size: size.into(), ..default() },
+        TextFont {
+            font: font.clone().into(),
+            font_size: size.into(),
+            ..default()
+        },
         TextColor(color),
     )
 }

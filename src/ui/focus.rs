@@ -16,7 +16,7 @@ use bevy::prelude::*;
 // back empty, so focus reset to None each frame and hover/arrows/tooltips were all dead.
 use bevy::ui::UiGlobalTransform;
 
-use super::theme::{rgba, GOLD};
+use super::theme::{GOLD, rgba};
 
 /// Marker: this node participates in arrow-key/d-pad focus navigation.
 #[derive(Component, Default)]
@@ -46,10 +46,12 @@ pub struct FocusPlugin;
 
 impl Plugin for FocusPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<UiFocus>().add_message::<FocusActivate>().add_systems(
-            Update,
-            (hover_steals_focus, key_nav, emit_activate, draw_ring).chain(),
-        );
+        app.init_resource::<UiFocus>()
+            .add_message::<FocusActivate>()
+            .add_systems(
+                Update,
+                (hover_steals_focus, key_nav, emit_activate, draw_ring).chain(),
+            );
     }
 }
 
@@ -66,7 +68,9 @@ fn hover_steals_focus(
 }
 
 /// Centre of a focusable in physical px (consistent units are all the scoring needs).
-fn centers(q: &Query<(Entity, &ComputedNode, &UiGlobalTransform), With<Focusable>>) -> Vec<(Entity, Vec2)> {
+fn centers(
+    q: &Query<(Entity, &ComputedNode, &UiGlobalTransform), With<Focusable>>,
+) -> Vec<(Entity, Vec2)> {
     q.iter().map(|(e, _, gt)| (e, gt.translation)).collect()
 }
 
@@ -100,11 +104,16 @@ fn key_nav(
     };
 
     let pts = centers(&q);
-    let cur = focus.current.and_then(|c| pts.iter().find(|(e, _)| *e == c).copied());
+    let cur = focus
+        .current
+        .and_then(|c| pts.iter().find(|(e, _)| *e == c).copied());
     focus.current = Some(match cur {
         // Nothing focused yet: start at the top-left-most node.
         None => {
-            pts.iter().min_by(|a, b| (a.1.y + a.1.x).total_cmp(&(b.1.y + b.1.x))).unwrap().0
+            pts.iter()
+                .min_by(|a, b| (a.1.y + a.1.x).total_cmp(&(b.1.y + b.1.x)))
+                .unwrap()
+                .0
         }
         Some((ce, cp)) => {
             // Nearest node in the pressed direction: forward distance + weighted sideways drift.
@@ -173,7 +182,8 @@ pub struct TooltipPlugin;
 
 impl Plugin for TooltipPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_tip).add_systems(Update, drive_tip.after(draw_ring));
+        app.add_systems(Startup, spawn_tip)
+            .add_systems(Update, drive_tip.after(draw_ring));
     }
 }
 
@@ -209,7 +219,9 @@ fn drive_tip(
     mut text: Query<&mut Text, With<TipText>>,
     windows: Query<&Window>,
 ) {
-    let Ok((mut node, mut vis)) = root.single_mut() else { return };
+    let Ok((mut node, mut vis)) = root.single_mut() else {
+        return;
+    };
     let shown = focus.current.and_then(|e| tips.get(e).ok());
     let Some((tip, cn, gt)) = shown else {
         *vis = Visibility::Hidden;

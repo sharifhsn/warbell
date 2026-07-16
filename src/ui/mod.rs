@@ -10,15 +10,24 @@ use bevy::prelude::*;
 pub mod anim;
 pub mod focus;
 pub mod fonts;
+#[cfg(feature = "desktop")]
 pub mod graphics_menu;
+#[cfg(not(feature = "desktop"))]
+pub mod graphics_menu {
+    use bevy::prelude::*;
+
+    #[derive(Resource, Default)]
+    pub struct GraphicsMenuOpen(pub bool);
+}
 pub mod icons;
 pub mod notice;
+#[cfg(feature = "desktop")]
 pub mod settings;
 pub mod texture;
 pub mod theme;
 pub mod widgets;
 
-pub use fonts::{label, UiFonts};
+pub use fonts::{UiFonts, label};
 pub use icons::IconAtlas;
 
 pub struct UiKitPlugin;
@@ -33,12 +42,14 @@ impl Plugin for UiKitPlugin {
             icons::IconsPlugin,
             anim::AnimPlugin,
             notice::NoticePlugin,
-            settings::SettingsPlugin,
             texture::UiTexturePlugin,
             focus::FocusPlugin,
             focus::TooltipPlugin,
-            graphics_menu::GraphicsMenuPlugin, // full graphics Settings page (native 0.19 widgets)
         ));
+        #[cfg(feature = "desktop")]
+        app.add_plugins((settings::SettingsPlugin, graphics_menu::GraphicsMenuPlugin));
+        #[cfg(not(feature = "desktop"))]
+        app.init_resource::<graphics_menu::GraphicsMenuOpen>();
         // NB: the Slider/Checkbox widget plugins are added automatically by `DefaultPlugins` when the
         // `bevy_ui_widgets` feature is on — adding them again here panics ("already added").
     }

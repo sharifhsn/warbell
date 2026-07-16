@@ -43,7 +43,9 @@ fn set_window_icon(
     }
     let Ok(entity) = primary.single() else { return };
     WINIT_WINDOWS.with_borrow(|windows| {
-        let Some(window) = windows.get_window(entity) else { return };
+        let Some(window) = windows.get_window(entity) else {
+            return;
+        };
         match decode_icon() {
             Ok(icon) => window.set_window_icon(Some(icon)),
             Err(e) => warn!("window icon: failed to decode branding PNG: {e}"),
@@ -55,7 +57,9 @@ fn set_window_icon(
 /// Decode the embedded branding PNG into a winit RGBA icon.
 fn decode_icon() -> Result<winit::window::Icon, String> {
     let png = include_bytes!("../branding/icon256.png");
-    let rgba = image::load_from_memory(png).map_err(|e| e.to_string())?.into_rgba8();
+    let rgba = image::load_from_memory(png)
+        .map_err(|e| e.to_string())?
+        .into_rgba8();
     let (w, h) = rgba.dimensions();
     winit::window::Icon::from_rgba(rgba.into_raw(), w, h).map_err(|e| e.to_string())
 }

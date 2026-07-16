@@ -54,7 +54,11 @@ pub(crate) struct AdviceTrigger {
 impl Default for AdviceTrigger {
     fn default() -> Self {
         // Hold off the first ~35 s so a fresh player gets to look around before being advised.
-        Self { next: 35.0, prev_pop: None, pop_lost_pending: false }
+        Self {
+            next: 35.0,
+            prev_pop: None,
+            pop_lost_pending: false,
+        }
     }
 }
 
@@ -107,7 +111,14 @@ fn advice_for(
 /// hero's own head.
 fn nearest_townsperson(
     hero: Vec2,
-    townsfolk: &Query<&GlobalTransform, (With<Townsfolk>, With<Villager>, Without<crate::dying::Dying>)>,
+    townsfolk: &Query<
+        &GlobalTransform,
+        (
+            With<Townsfolk>,
+            With<Villager>,
+            Without<crate::dying::Dying>,
+        ),
+    >,
 ) -> Option<Vec3> {
     let mut best: Option<(Vec3, f32)> = None;
     for gt in townsfolk {
@@ -130,7 +141,14 @@ pub(crate) fn detect_town_advice(
     player: Res<PlayerRes>,
     mgr: Res<VoiceManager>,
     hero: Query<&Hero>,
-    townsfolk: Query<&GlobalTransform, (With<Townsfolk>, With<Villager>, Without<crate::dying::Dying>)>,
+    townsfolk: Query<
+        &GlobalTransform,
+        (
+            With<Townsfolk>,
+            With<Villager>,
+            Without<crate::dying::Dying>,
+        ),
+    >,
     mut t: ResMut<AdviceTrigger>,
     mut speak: MessageWriter<Speak>,
 ) {
@@ -157,7 +175,14 @@ pub(crate) fn detect_town_advice(
     }
 
     let walls = up.0.is_purchased("def_walls");
-    match advice_for(&town.0, &bank.0, player.0.gold, walls, siege.wave_index, t.pop_lost_pending) {
+    match advice_for(
+        &town.0,
+        &bank.0,
+        player.0.gold,
+        walls,
+        siege.wave_index,
+        t.pop_lost_pending,
+    ) {
         Some(concept) => {
             // Advice concepts are pooled hero+villager (the director picks the speaker). A villager
             // gripe is spatial, so it MUST come from a real peasant's mouth — position the request at
@@ -204,33 +229,51 @@ mod tests {
     fn starving_town_is_told_to_farm() {
         // pop 5, no farms → net_food negative (upkeep with no production).
         let t = town(5, 3);
-        assert_eq!(advice_for(&t, &stocked(99.0, 99.0), 0, true, 3, false), Some(Concept::AdviseFarm));
+        assert_eq!(
+            advice_for(&t, &stocked(99.0, 99.0), 0, true, 3, false),
+            Some(Concept::AdviseFarm)
+        );
     }
 
     #[test]
     fn lost_population_voices_the_dirge_over_lesser_nudges() {
         // Healthy stocks + gold, but a peasant died → PopLost outranks the gold/upgrade nudge.
         let t = town(2, 3); // pop 2 = larder pair, net_food >= 0 (no deficit)
-        assert_eq!(advice_for(&t, &stocked(99.0, 99.0), 999, true, 3, true), Some(Concept::PopLost));
+        assert_eq!(
+            advice_for(&t, &stocked(99.0, 99.0), 999, true, 3, true),
+            Some(Concept::PopLost)
+        );
     }
 
     #[test]
     fn low_wood_then_low_stone_are_flagged() {
         let t = town(2, 3);
-        assert_eq!(advice_for(&t, &stocked(0.0, 99.0), 0, true, 3, false), Some(Concept::AdviseWood));
-        assert_eq!(advice_for(&t, &stocked(99.0, 0.0), 0, true, 3, false), Some(Concept::AdviseStone));
+        assert_eq!(
+            advice_for(&t, &stocked(0.0, 99.0), 0, true, 3, false),
+            Some(Concept::AdviseWood)
+        );
+        assert_eq!(
+            advice_for(&t, &stocked(99.0, 0.0), 0, true, 3, false),
+            Some(Concept::AdviseStone)
+        );
     }
 
     #[test]
     fn no_walls_after_a_night_prompts_walls() {
         let t = town(2, 3);
-        assert_eq!(advice_for(&t, &stocked(99.0, 99.0), 0, false, 2, false), Some(Concept::AdviseWalls));
+        assert_eq!(
+            advice_for(&t, &stocked(99.0, 99.0), 0, false, 2, false),
+            Some(Concept::AdviseWalls)
+        );
     }
 
     #[test]
     fn first_day_orients_the_player() {
         // Day 1 (wave_index -1), nothing wrong, no walls yet → the generic "use the hours" nudge.
         let t = town(2, 3);
-        assert_eq!(advice_for(&t, &stocked(99.0, 99.0), 0, false, -1, false), Some(Concept::PrepNudge));
+        assert_eq!(
+            advice_for(&t, &stocked(99.0, 99.0), 0, false, -1, false),
+            Some(Concept::PrepNudge)
+        );
     }
 }

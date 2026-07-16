@@ -21,6 +21,7 @@
 use bevy::light::DirectionalLight;
 use bevy::pbr::DistanceFog;
 use bevy::prelude::*;
+pub use crate::terrain::GroundDetail;
 
 use crate::palette::srgb;
 use crate::terrain::TerrainMaterial;
@@ -206,25 +207,6 @@ impl BiomeAmbiences {
 }
 
 // ── Declarative biome description ───────────────────────────────────────────────
-
-/// Detail-texture spec → fed to `terrain::detail_image` to bake a seamless ground
-/// imprint (the low-opacity `vision.ts` texture). Mirrors the TS `terrainDetail` specs.
-#[derive(Clone, Copy)]
-pub struct GroundDetail {
-    /// World-space tiling scale of the detail texture (shader `detailScale`).
-    pub scale: f32,
-    /// How strongly the detail imprints onto the flat ground colour (`detailStrength`).
-    pub strength: f32,
-    /// Large-scale hue/value drift across the terrain (the cure for "flat" ground).
-    pub variation: f32,
-    /// Texture generator seed + ramp (dark → base → light) + grain/streak amounts.
-    pub seed: f32,
-    pub dark: u32,
-    pub base: u32,
-    pub light: u32,
-    pub grain: f32,
-    pub streak: f32,
-}
 
 /// One scatter class: a bag of mesh variants placed with some per-tile probability.
 #[derive(Default)]

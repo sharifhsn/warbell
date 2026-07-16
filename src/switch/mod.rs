@@ -12,7 +12,7 @@ use bevy::{
     },
     prelude::*,
     tasks::tick_global_task_pools_on_main_thread,
-    window::{PrimaryWindow, Window, WindowPlugin, WindowResolution},
+    window::{Window, WindowPlugin, WindowResolution},
 };
 #[cfg(target_os = "horizon")]
 use std::sync::Arc;
@@ -75,54 +75,10 @@ mod emulator_tls {
 // ABI verified against libnx's `switch/runtime/pad.h` and `switch.h` from the
 // devkitPro distribution used by the NRO build script.
 mod nx {
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub struct HidAnalogStickState {
-        pub x: i32,
-        pub y: i32,
-    }
-
-    #[repr(C)]
-    pub struct PadState {
-        pub id_mask: u8,
-        pub active_id_mask: u8,
-        pub read_handheld: bool,
-        pub active_handheld: bool,
-        pub style_set: u32,
-        pub attributes: u32,
-        pub buttons_cur: u64,
-        pub buttons_old: u64,
-        pub sticks: [HidAnalogStickState; 2],
-        pub gc_triggers: [u32; 2],
-    }
-
-    impl PadState {
-        pub const fn zeroed() -> Self {
-            Self {
-                id_mask: 0,
-                active_id_mask: 0,
-                read_handheld: false,
-                active_handheld: false,
-                style_set: 0,
-                attributes: 0,
-                buttons_cur: 0,
-                buttons_old: 0,
-                sticks: [HidAnalogStickState { x: 0, y: 0 }; 2],
-                gc_triggers: [0; 2],
-            }
-        }
-    }
-
-    pub const HID_NPAD_STYLE_SET_NPAD_STANDARD: u32 = 0x1f;
-
     unsafe extern "C" {
-        pub fn appletMainLoop() -> bool;
         pub fn randomGet(buf: *mut core::ffi::c_void, len: usize);
         pub fn romfsMountSelf(name: *const core::ffi::c_char) -> u32;
         pub fn romfsUnmount(name: *const core::ffi::c_char) -> u32;
-        pub fn padConfigureInput(max_players: u32, style_set: u32);
-        pub fn padInitializeWithMask(pad: *mut PadState, mask: u64);
-        pub fn padUpdate(pad: *mut PadState);
         pub fn consoleDebugInit(device: i32);
     }
 
@@ -132,10 +88,6 @@ mod nx {
 
     pub unsafe fn romfs_exit() -> u32 {
         unsafe { romfsUnmount(c"romfs".as_ptr()) }
-    }
-
-    pub unsafe fn pad_initialize_default(pad: *mut PadState) {
-        unsafe { padInitializeWithMask(pad, (1 << 0) | (1 << 0x20)) }
     }
 }
 
@@ -190,6 +142,10 @@ const UP: u64 = 1 << 13;
 const RIGHT: u64 = 1 << 14;
 const DOWN: u64 = 1 << 15;
 
+mod game;
+#[cfg(feature = "switch-probe")]
+mod probe;
+
 #[derive(Resource)]
 struct HorizonGamepad(Entity);
 
@@ -199,9 +155,6 @@ struct PreviousPad {
     left_stick: Vec2,
     right_stick: Vec2,
 }
-
-#[derive(Component)]
-struct SwitchPlayer;
 
 impl Default for PreviousPad {
     fn default() -> Self {
@@ -273,10 +226,14 @@ pub fn run() {
                     ..default()
                 }),
         )
-        .add_systems(Startup, setup_switch_scene)
-        .add_systems(Update, move_switch_player)
         .init_resource::<PreviousPad>()
         .set_runner(horizon_runner);
+    #[cfg(feature = "switch-probe")]
+    probe::configure(&mut app);
+    #[cfg(all(not(feature = "switch-probe"), feature = "switch-full"))]
+    crate::full_game::configure(&mut app);
+    #[cfg(all(not(feature = "switch-probe"), not(feature = "switch-full")))]
+    game::configure(&mut app);
     println!("[warbell-switch] phase=app_run");
     let exit = app.run();
     let unmount_result = unsafe { nx::romfs_exit() };
@@ -288,129 +245,6 @@ pub fn run() {
     if exit.is_error() {
         eprintln!("Warbell exited with {exit:?}");
     }
-}
-
-fn setup_switch_scene(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    commands.insert_resource(GlobalAmbientLight {
-        color: Color::srgb(0.88, 0.93, 1.0),
-        brightness: 1_000.0,
-        affects_lightmapped_meshes: true,
-    });
-    let grass = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.12, 0.35, 0.12),
-        perceptual_roughness: 0.9,
-        cull_mode: None,
-        ..default()
-    });
-    let stone = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.42, 0.39, 0.34),
-        perceptual_roughness: 0.8,
-        ..default()
-    });
-    let timber = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.30, 0.12, 0.05),
-        perceptual_roughness: 0.75,
-        ..default()
-    });
-    let blue = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.08, 0.22, 0.62),
-        perceptual_roughness: 0.6,
-        ..default()
-    });
-    let steel = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.58, 0.62, 0.68),
-        metallic: 0.7,
-        perceptual_roughness: 0.35,
-        ..default()
-    });
-    let wall_mesh = meshes.add(Cuboid::new(5.5, 1.8, 0.45));
-    let tower_mesh = meshes.add(Cuboid::new(1.35, 3.0, 1.35));
-
-    commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(18.0, 18.0))),
-        MeshMaterial3d(grass),
-    ));
-    for (translation, rotation) in [
-        (Vec3::new(0.0, 0.9, -5.0), 0.0),
-        (Vec3::new(-5.0, 0.9, 0.0), core::f32::consts::FRAC_PI_2),
-        (Vec3::new(5.0, 0.9, 0.0), core::f32::consts::FRAC_PI_2),
-    ] {
-        commands.spawn((
-            Mesh3d(wall_mesh.clone()),
-            MeshMaterial3d(stone.clone()),
-            Transform::from_translation(translation).with_rotation(Quat::from_rotation_y(rotation)),
-        ));
-    }
-    for x in [-5.0, 5.0] {
-        for z in [-5.0, 5.0] {
-            commands.spawn((
-                Mesh3d(tower_mesh.clone()),
-                MeshMaterial3d(stone.clone()),
-                Transform::from_xyz(x, 1.5, z),
-            ));
-        }
-    }
-    commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(3.0, 0.22, 0.8))),
-        MeshMaterial3d(timber.clone()),
-        Transform::from_xyz(0.0, 0.12, 2.2),
-    ));
-    commands
-        .spawn((
-            SwitchPlayer,
-            Transform::from_xyz(0.0, 0.0, 1.0),
-            Visibility::default(),
-        ))
-        .with_children(|player| {
-            player.spawn((
-                Mesh3d(meshes.add(Cuboid::new(0.75, 1.05, 0.45))),
-                MeshMaterial3d(blue),
-                Transform::from_xyz(0.0, 0.85, 0.0),
-            ));
-            player.spawn((
-                Mesh3d(meshes.add(Cuboid::new(0.58, 0.55, 0.58))),
-                MeshMaterial3d(steel.clone()),
-                Transform::from_xyz(0.0, 1.65, 0.0),
-            ));
-            player.spawn((
-                Mesh3d(meshes.add(Cuboid::new(0.12, 1.25, 0.12))),
-                MeshMaterial3d(steel),
-                Transform::from_xyz(0.62, 0.85, 0.0).with_rotation(Quat::from_rotation_z(-0.25)),
-            ));
-        });
-    commands.spawn((
-        DirectionalLight {
-            illuminance: 12_000.0,
-            shadow_maps_enabled: false,
-            ..default()
-        },
-        Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.8, -0.6, 0.0)),
-    ));
-    commands.spawn((
-        Camera3d::default(),
-        bevy::core_pipeline::tonemapping::Tonemapping::AgX,
-        Msaa::Off,
-        Transform::from_xyz(-7.5, 7.0, 10.0).looking_at(Vec3::new(0.0, 0.8, 0.0), Vec3::Y),
-    ));
-}
-
-fn move_switch_player(
-    time: Res<Time>,
-    input: Res<PreviousPad>,
-    mut player: Single<&mut Transform, With<SwitchPlayer>>,
-) {
-    let movement = switch_movement(&input);
-    if movement == Vec2::ZERO {
-        return;
-    }
-    player.translation += Vec3::new(movement.x, 0.0, -movement.y) * 3.5 * time.delta_secs();
-    player.translation.x = player.translation.x.clamp(-4.2, 4.2);
-    player.translation.z = player.translation.z.clamp(-4.2, 4.2);
-    player.rotation = Quat::from_rotation_y(movement.x.atan2(-movement.y));
 }
 
 fn switch_movement(input: &PreviousPad) -> Vec2 {
@@ -451,82 +285,66 @@ fn render_plugin() -> bevy::render::RenderPlugin {
 }
 
 fn horizon_runner(mut app: App) -> AppExit {
-    unsafe { nx::padConfigureInput(1, nx::HID_NPAD_STYLE_SET_NPAD_STANDARD) };
-    let mut pad = nx::PadState::zeroed();
-    unsafe { nx::pad_initialize_default(&mut pad) };
-
-    prepare_app(&mut app);
-    println!("[warbell-switch] phase=plugins_ready");
-
-    // WindowPlugin creates the primary window during plugin setup. It must be
-    // available before the first applet grant, but the first app.update must
-    // still run inside one.
-    let window = {
-        let world = app.world_mut();
-        let mut windows = world.query_filtered::<Entity, With<PrimaryWindow>>();
-        windows
-            .single(world)
-            .expect("Horizon runner requires the single primary Bevy window")
-    };
-    let window_component = app
-        .world()
-        .get::<Window>(window)
-        .expect("primary window missing");
-    assert_eq!(window_component.resolution.physical_width(), 1280);
-    assert_eq!(window_component.resolution.physical_height(), 720);
-    println!("[warbell-switch] phase=window_ready width=1280 height=720");
     let mut gamepad = None;
-    let mut frame = 0_u64;
-    let exit = loop {
-        if !unsafe { nx::appletMainLoop() } && !cfg!(feature = "switch-emulator") {
-            break AppExit::Success;
-        }
-        gamepad.get_or_insert_with(|| {
-            let gamepad = connect_gamepad(&mut app);
-            println!("[warbell-switch] phase=gamepad_connected entity={gamepad:?}");
-            gamepad
-        });
-        unsafe { nx::padUpdate(&mut pad) };
-        if pad.buttons_cur & (PLUS | MINUS) == (PLUS | MINUS)
-            && pad.buttons_old & (PLUS | MINUS) != (PLUS | MINUS)
-        {
-            wgpu_hal::deko3d::dump_debug_trace("warbell_button_trigger");
-        }
-        inject_input(&mut app, window, &pad);
-        if frame < 4 {
-            eprintln!("[warbell-switch] phase=update_begin frame={frame}");
-        }
-        app.update();
-        tick_global_task_pools_on_main_thread();
-        frame += 1;
-        if frame <= 4 {
-            eprintln!("[warbell-switch] phase=update_end frame={frame}");
-        }
-        if matches!(frame, 1 | 60 | 300) {
-            log_switch_frame_status(app.world(), frame);
-        }
-        if frame == 60 {
-            eprintln!("[warbell-switch] phase=acceptance_ready frame=60");
-        }
-        if frame == 300 && cfg!(feature = "switch-emulator") {
-            wgpu_hal::deko3d::dump_debug_trace("warbell_emulator_frame_300");
-        }
-        if let Some(exit) = app.should_exit() {
-            eprintln!("[warbell-switch] phase=app_should_exit frame={frame} exit={exit:?}");
-            break exit;
-        }
-        if cfg!(feature = "switch-emulator") {
-            std::thread::sleep(std::time::Duration::from_millis(16));
-        }
-    };
-    println!("[warbell-switch] phase=runner_exit frame={frame} exit={exit:?}");
-
+    let exit = bevy_horizon::run(
+        &mut app,
+        bevy_horizon::Config {
+            emulator_frame_ms: cfg!(feature = "switch-emulator").then_some(16),
+            log_label: "warbell-switch",
+            ..default()
+        },
+        |mut app, window, pad, frame| {
+            let gamepad = gamepad.get_or_insert_with(|| {
+                let gamepad = connect_gamepad(&mut app);
+                println!("[warbell-switch] phase=gamepad_connected entity={gamepad:?}");
+                gamepad
+            });
+            if pad.buttons_cur & (PLUS | MINUS) == (PLUS | MINUS)
+                && pad.buttons_old & (PLUS | MINUS) != (PLUS | MINUS)
+            {
+                #[cfg(target_os = "horizon")]
+                wgpu_hal::deko3d::dump_debug_trace("warbell_button_trigger");
+            }
+            inject_input(app, window, pad);
+            if frame < 4 {
+                eprintln!("[warbell-switch] phase=update_begin frame={frame}");
+            }
+            let _ = gamepad;
+        },
+        |app, frame| {
+            if frame <= 4 {
+                eprintln!("[warbell-switch] phase=update_end frame={frame}");
+            }
+            if matches!(frame, 1 | 60 | 300) {
+                log_switch_frame_status(app.world(), frame);
+            }
+            if frame == 60 {
+                #[cfg(feature = "switch-probe")]
+                eprintln!("[warbell-switch-probe] phase=probe_ready frame=60");
+                #[cfg(all(not(feature = "switch-probe"), feature = "switch-full"))]
+                if crate::full_game::ready(app.world()) {
+                    eprintln!("[warbell-switch-full] phase=full_ready frame=60");
+                } else {
+                    eprintln!("[warbell-switch-full] phase=full_not_ready frame=60");
+                }
+                #[cfg(all(not(feature = "switch-probe"), not(feature = "switch-full")))]
+                if game::combat_proven(app.world()) {
+                    eprintln!("[warbell-switch-game] phase=game_ready frame=60 combat=proven");
+                } else {
+                    eprintln!(
+                        "[warbell-switch-game] phase=game_not_ready frame=60 combat=unproven"
+                    );
+                }
+            }
+            if frame == 300 && cfg!(feature = "switch-emulator") {
+                #[cfg(target_os = "horizon")]
+                wgpu_hal::deko3d::dump_debug_trace("warbell_emulator_frame_300");
+            }
+        },
+    );
     if let Some(gamepad) = gamepad {
         disconnect_gamepad(&mut app, gamepad);
     }
-
-    // Let render and gameplay resources drop after libnx has ended the frame;
-    // Deko3D's default window remains valid for the process lifetime.
     drop(app);
     exit
 }
@@ -590,7 +408,7 @@ fn disconnect_gamepad(app: &mut App, gamepad: Entity) {
         .write_message(RawGamepadEvent::Connection(connection));
 }
 
-fn inject_input(app: &mut App, window: Entity, pad: &nx::PadState) {
+fn inject_input(app: &mut App, window: Entity, pad: bevy_horizon::PadSnapshot) {
     let buttons = pad.buttons_cur;
     let left_stick = stick(pad.sticks[0]);
     let right_stick = stick(pad.sticks[1]);
@@ -724,7 +542,7 @@ fn mouse_delta(current: Vec2, previous: Vec2) -> Vec2 {
     current - previous
 }
 
-fn stick(stick: nx::HidAnalogStickState) -> Vec2 {
+fn stick(stick: bevy_horizon::AnalogStick) -> Vec2 {
     Vec2::new(stick.x as f32 / STICK_MAX, stick.y as f32 / STICK_MAX).clamp_length_max(1.0)
 }
 
@@ -793,7 +611,7 @@ mod tests {
     #[test]
     fn sticks_are_normalized_and_clamped() {
         assert_eq!(
-            stick(nx::HidAnalogStickState {
+            stick(bevy_horizon::AnalogStick {
                 x: 32_767,
                 y: -32_767
             }),

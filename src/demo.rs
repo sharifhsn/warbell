@@ -343,7 +343,7 @@ fn defend_cam(
     let Ok(mut ctf) = cam_q.single_mut() else { return };
     let f = prog.as_ref().map_or(0, |p| p.frame) as f32;
     let centre = Vec2::new(0.0, 5.6); // between the keep and the knight's stand at (0,7)
-    let ang = 0.55 + f / 30.0 * 0.085; // rad; ~4.9°/s of playback — a slow battle pan
+    let ang: f32 = 0.55 + f / 30.0 * 0.085; // rad; ~4.9°/s of playback — a slow battle pan
     let r = 9.6;
     let eye2 = centre + Vec2::new(ang.sin(), ang.cos()) * r;
     let gy = crate::worldmap::ground_at_world(centre.x, centre.y).unwrap_or(0.0);

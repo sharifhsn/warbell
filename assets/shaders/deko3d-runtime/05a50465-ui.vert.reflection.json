@@ -1,0 +1,24 @@
+{
+  "auto_bind_resources": true,
+  "coordinate_space": "native",
+  "emulate_3d_textures": false,
+  "entry": "vertex",
+  "explicit_bindings": [],
+  "glsl_version": 460,
+  "immediates": [],
+  "immediates_binding": null,
+  "resources": [
+    {
+      "binding": 0,
+      "binding_map_target": 0,
+      "count": 1,
+      "group": 0,
+      "kind": "uniform_buffer",
+      "name": "view"
+    }
+  ],
+  "sampled_pairs": [],
+  "schema": "wgsl-to-dksh-reflection-v0",
+  "source": "assets/shaders/deko3d-runtime/05a50465-ui.vert.wgsl",
+  "stage": "vertex"
+}

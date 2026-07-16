@@ -2,7 +2,12 @@
 set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-NRO=${NRO:-$ROOT_DIR/target/switch-nro/cargo-target/horizon-newlib-gcc/debug/warbell-switch.nro}
+SWITCH_APP=${SWITCH_APP:-game}
+case "$SWITCH_APP" in
+  game|full|probe) ;;
+  *) echo "SWITCH_APP must be game, full, or probe" >&2; exit 2 ;;
+esac
+NRO=${NRO:-$ROOT_DIR/target/switch-nro/$SWITCH_APP/cargo-target/horizon-newlib-gcc/debug/warbell-switch.nro}
 RYUJINX_APP=${RYUJINX_APP:-$ROOT_DIR/../switch/target/ryujinx-d3-fixed/bundle/Ryujinx.app}
 LOG_DIR=${LOG_DIR:-$ROOT_DIR/target/ryujinx-logs}
 OVERRIDE_DIR=${RYUJINX_SD_ROOT:-$HOME/Library/Application Support/Ryujinx/sdcard}/switch/warbell-shader-overrides
@@ -13,8 +18,28 @@ OVERRIDE_MAX_AGE_SECONDS=${OVERRIDE_MAX_AGE_SECONDS:-86400}
 GOLDEN_SCREENSHOT=${GOLDEN_SCREENSHOT:-}
 SCREENSHOT_REGIONS=${SCREENSHOT_REGIONS:-}
 SCREENSHOT_REPORT=${SCREENSHOT_REPORT:-}
-REQUIRED_LOG_PATTERN=${REQUIRED_LOG_PATTERN-'\[warbell-switch\] phase=acceptance_ready frame=60'}
-FRAME_PROFILE=${FRAME_PROFILE:-$ROOT_DIR/tools/warbell-frame-profile.json}
+ALLOW_CUSTOM_FRAME_PROFILE=${ALLOW_CUSTOM_FRAME_PROFILE:-0}
+ALLOW_CUSTOM_READINESS=${ALLOW_CUSTOM_READINESS:-0}
+if [ "$SWITCH_APP" = game ]; then
+  EXPECTED_REQUIRED_LOG_PATTERN='\[warbell-switch-game\] phase=game_ready frame=60 combat=proven'
+  EXPECTED_FRAME_PROFILE=$ROOT_DIR/tools/warbell-game-frame-profile.json
+elif [ "$SWITCH_APP" = full ]; then
+  EXPECTED_REQUIRED_LOG_PATTERN='\[warbell-switch-full\] phase=full_ready frame=60'
+  EXPECTED_FRAME_PROFILE=$ROOT_DIR/tools/warbell-full-frame-profile.json
+else
+  EXPECTED_REQUIRED_LOG_PATTERN='\[warbell-switch-probe\] phase=probe_ready frame=60'
+  EXPECTED_FRAME_PROFILE=$ROOT_DIR/tools/warbell-frame-profile.json
+fi
+REQUIRED_LOG_PATTERN=${REQUIRED_LOG_PATTERN:-$EXPECTED_REQUIRED_LOG_PATTERN}
+FRAME_PROFILE=${FRAME_PROFILE:-$EXPECTED_FRAME_PROFILE}
+[ "$REQUIRED_LOG_PATTERN" = "$EXPECTED_REQUIRED_LOG_PATTERN" ] || [ "$ALLOW_CUSTOM_READINESS" = 1 ] || {
+  echo "custom readiness pattern requires ALLOW_CUSTOM_READINESS=1" >&2
+  exit 2
+}
+[ "$FRAME_PROFILE" = "$EXPECTED_FRAME_PROFILE" ] || [ "$ALLOW_CUSTOM_FRAME_PROFILE" = 1 ] || {
+  echo "custom frame profile requires ALLOW_CUSTOM_FRAME_PROFILE=1" >&2
+  exit 2
+}
 READY_TIMEOUT_SECONDS=${READY_TIMEOUT_SECONDS:-${HEALTHCHECK_AFTER_SECONDS:-75}}
 CAPTURE_DELAY_AFTER_READY=${CAPTURE_DELAY_AFTER_READY:-2}
 CAPTURE_INTERVAL_SECONDS=${CAPTURE_INTERVAL_SECONDS:-2}
@@ -38,6 +63,10 @@ BUILD_INFO="$NRO.build-info.txt"
 }
 [ "$(awk -F= '$1 == "switch_emulator" { print $2 }' "$BUILD_INFO")" = 1 ] || {
   echo "NRO was not built for emulator TLS; rebuild with SWITCH_EMULATOR=1 tools/build-switch-nro.sh" >&2
+  exit 1
+}
+[ "$(awk -F= '$1 == "switch_app" { print $2 }' "$BUILD_INFO")" = "$SWITCH_APP" ] || {
+  echo "NRO metadata does not identify a $SWITCH_APP build" >&2
   exit 1
 }
 expected_nro_sha=$(awk -F= '$1 == "sha256" { print $2 }' "$BUILD_INFO")
@@ -153,12 +182,13 @@ case "$NRO" in */release/*) inferred_build_mode=release ;; */debug/*) inferred_b
   echo "nro_sha256=$actual_nro_sha"
   echo "nro_build_info=$BUILD_INFO"
   echo "switch_emulator=1"
+  echo "switch_app=$SWITCH_APP"
   echo "warbell_revision=$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || true)"
   echo "warbell_branch=$(git -C "$ROOT_DIR" branch --show-current 2>/dev/null || true)"
   echo "warbell_dirty_files=$(git -C "$ROOT_DIR" status --short 2>/dev/null | wc -l | tr -d ' ')"
-  echo "wgpu29_revision=$(git -C "$ROOT_DIR/../wgpu-deko3d-29" rev-parse HEAD 2>/dev/null || true)"
-  echo "wgpu29_branch=$(git -C "$ROOT_DIR/../wgpu-deko3d-29" branch --show-current 2>/dev/null || true)"
-  echo "wgpu29_dirty_files=$(git -C "$ROOT_DIR/../wgpu-deko3d-29" status --short 2>/dev/null | wc -l | tr -d ' ')"
+  echo "wgpu29_revision=$(git -C "$ROOT_DIR/vendor/wgpu" rev-parse HEAD 2>/dev/null || true)"
+  echo "wgpu29_branch=$(git -C "$ROOT_DIR/vendor/wgpu" branch --show-current 2>/dev/null || true)"
+  echo "wgpu29_dirty_files=$(git -C "$ROOT_DIR/vendor/wgpu" status --short 2>/dev/null | wc -l | tr -d ' ')"
   echo "build_mode=${BUILD_MODE:-$inferred_build_mode}"
   echo "ryujinx_app=$RYUJINX_APP"
   echo "ryujinx_binary=$RYUJINX_APP/Contents/MacOS/Ryujinx"
@@ -169,12 +199,19 @@ case "$NRO" in */release/*) inferred_build_mode=release ;; */debug/*) inferred_b
   echo "golden_screenshot=$GOLDEN_SCREENSHOT"
   echo "screenshot_regions=$SCREENSHOT_REGIONS"
   echo "required_log_pattern=$REQUIRED_LOG_PATTERN"
+  echo "custom_readiness_allowed=$ALLOW_CUSTOM_READINESS"
   echo "ready_timeout_seconds=$READY_TIMEOUT_SECONDS"
   echo "capture_delay_after_ready=$CAPTURE_DELAY_AFTER_READY"
   echo "capture_interval_seconds=$CAPTURE_INTERVAL_SECONDS"
   echo "capture_count=$CAPTURE_COUNT"
   echo "visual_check=$VISUAL_CHECK"
   echo "frame_profile=$FRAME_PROFILE"
+  if [ -f "$FRAME_PROFILE" ]; then
+    echo "frame_profile_sha256=$(shasum -a 256 "$FRAME_PROFILE" | awk '{print $1}')"
+  else
+    echo "frame_profile_sha256="
+  fi
+  echo "custom_frame_profile_allowed=$ALLOW_CUSTOM_FRAME_PROFILE"
   echo "keep_emulator_running=$KEEP_EMULATOR_RUNNING"
   echo "log=$log"
   echo "ryujinx_config=$HOME/Library/Application Support/Ryujinx/Config.json"
@@ -196,8 +233,10 @@ kill -0 "$pid" 2>/dev/null || { echo "Ryujinx failed to start" | tee -a "$log" >
 echo "pid=$pid" | tee -a "$log" "$manifest"
 failure_kind=
 fatal_failure() {
-  if grep -aEq 'PAL_SEHException|InvalidMemoryRegionException' "$log"; then
+  if grep -aEq 'PAL_SEHException' "$log"; then
     echo pre_main_tls
+  elif grep -aEq 'InvalidMemoryRegionException' "$log"; then
+    echo invalid_memory_region
   elif grep -aEq 'proof_artifact_lookup miss|shader_provider_(wgsl_hash|entry)_miss' "$log"; then
     echo shader_provider_miss
   elif grep -aiEq 'device lost' "$log"; then

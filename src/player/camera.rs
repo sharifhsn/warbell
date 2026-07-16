@@ -22,7 +22,7 @@ use super::{Hero, PlayMode};
 pub struct CamGate<'w> {
     app: Res<'w, State<AppState>>,
     modal: Option<Res<'w, State<Modal>>>,
-    egui_wants: Res<'w, crate::debug_panel::EguiWantsPointer>,
+    egui_wants: Res<'w, crate::input_focus::UiWantsPointer>,
     build_mode: Res<'w, crate::town::BuildMode>,
     /// Set while a warden rears back for a killing blow — eases a tension dolly-out (see below).
     crit_tension: Option<Res<'w, crate::boss::CritTension>>,

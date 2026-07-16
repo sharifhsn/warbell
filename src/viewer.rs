@@ -24,7 +24,10 @@ use bevy::window::WindowResolution;
 /// Build + run the minimal viewer app. Returns only when the window closes / a capture exits.
 pub fn run() {
     let model = std::env::var("FOREST_VIEW").unwrap_or_default();
-    let mut window = Window { title: format!("Warbell — model viewer: {model}"), ..default() };
+    let mut window = Window {
+        title: format!("Warbell — model viewer: {model}"),
+        ..default()
+    };
     // Match the game's capture resolutions so shots/clips are crisp; otherwise a square window.
     window.resolution = if std::env::var("FOREST_SHOT").is_ok() {
         WindowResolution::new(1920, 1080).with_scale_factor_override(1.0)
@@ -35,15 +38,21 @@ pub fn run() {
     };
 
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin { primary_window: Some(window), ..default() }))
-        .add_plugins(crate::creature::CreaturePlugin) // the shared CreatureMaterial + its shader
-        .add_plugins(crate::quadruped::QuadrupedPlugin) // poses any previewed quadruped from its QuadDrive
-        .add_plugins(crate::biped::BipedPlugin) // poses any previewed ork/peasant biped from its BipedDrive
-        .add_plugins(crate::capture::CapturePlugin) // FOREST_SHOT / FOREST_CLIP (+ _ORBIT turntable)
-        .add_plugins(crate::ruins::RuinsFxPlugin) // landmark part animators (sails/orbits/pulses)
-        .insert_resource(GlobalAmbientLight { brightness: 160.0, ..default() })
-        .insert_resource(ClearColor(Color::srgb(0.16, 0.17, 0.20)))
-        .add_systems(Startup, setup);
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(window),
+        ..default()
+    }))
+    .add_plugins(crate::creature::CreaturePlugin) // the shared CreatureMaterial + its shader
+    .add_plugins(crate::quadruped::QuadrupedPlugin) // poses any previewed quadruped from its QuadDrive
+    .add_plugins(crate::biped::BipedPlugin) // poses any previewed ork/peasant biped from its BipedDrive
+    .add_plugins(crate::capture::CapturePlugin) // FOREST_SHOT / FOREST_CLIP (+ _ORBIT turntable)
+    .add_plugins(crate::ruins::RuinsFxPlugin) // landmark part animators (sails/orbits/pulses)
+    .insert_resource(GlobalAmbientLight {
+        brightness: 160.0,
+        ..default()
+    })
+    .insert_resource(ClearColor(Color::srgb(0.16, 0.17, 0.20)))
+    .add_systems(Startup, setup);
 
     // `FOREST_VIEW_ANIM=idle|walk|block|attack` drives the REAL game animator on the previewed
     // model (otherwise it shows the static rest pose). Reuses `hero_anim` so what you see matches
@@ -60,8 +69,13 @@ pub fn run() {
 }
 
 /// Synthesise `Hero`/`HeroHealth` state from `FOREST_VIEW_ANIM` so `hero_anim` plays that clip.
-fn anim_drive(time: Res<Time>, mut q: Query<(&mut crate::player::Hero, &mut crate::player::HeroHealth)>) {
-    let Ok((mut hero, mut hh)) = q.single_mut() else { return };
+fn anim_drive(
+    time: Res<Time>,
+    mut q: Query<(&mut crate::player::Hero, &mut crate::player::HeroHealth)>,
+) {
+    let Ok((mut hero, mut hh)) = q.single_mut() else {
+        return;
+    };
     let dt = time.delta_secs();
     hero.moving = false;
     hero.moving_amt = 0.0;
@@ -79,7 +93,10 @@ fn anim_drive(time: Res<Time>, mut q: Query<(&mut crate::player::Hero, &mut crat
         hero.attack_variant = variant;
         hero.attack_t = (hero.attack_t + dt) % crate::player::ATTACK_DURATION;
     };
-    match std::env::var("FOREST_VIEW_ANIM").unwrap_or_default().as_str() {
+    match std::env::var("FOREST_VIEW_ANIM")
+        .unwrap_or_default()
+        .as_str()
+    {
         "walk" => {
             hero.moving = true;
             hero.moving_amt = 1.0;
@@ -148,7 +165,10 @@ fn quad_anim_drive(time: Res<Time>, mut q: Query<&mut crate::quadruped::QuadDriv
     d.sit_amt = 0.0;
     d.lie_amt = 0.0;
     d.attacking = false;
-    match std::env::var("FOREST_VIEW_ANIM").unwrap_or_default().as_str() {
+    match std::env::var("FOREST_VIEW_ANIM")
+        .unwrap_or_default()
+        .as_str()
+    {
         "walk" => {
             d.moving_amt = 1.0;
             d.phase = now;
@@ -174,7 +194,10 @@ fn biped_anim_drive(time: Res<Time>, mut q: Query<&mut crate::biped::BipedDrive>
     let Ok(mut d) = q.single_mut() else { return };
     let now = time.elapsed_secs();
     *d = crate::biped::BipedDrive::default();
-    match std::env::var("FOREST_VIEW_ANIM").unwrap_or_default().as_str() {
+    match std::env::var("FOREST_VIEW_ANIM")
+        .unwrap_or_default()
+        .as_str()
+    {
         "walk" => {
             d.moving_amt = 1.0;
             d.walk_phase = now * 8.0;
@@ -247,7 +270,8 @@ fn setup(
 ) {
     // Camera — framed on a ~1.8u-tall model standing at the origin (chest-height look-at).
     // The landmark path below re-frames from the model's real bounds instead.
-    let (mut eye, mut target) = parse_cam().unwrap_or((Vec3::new(0.0, 1.0, 3.0), Vec3::new(0.0, 0.85, 0.0)));
+    let (mut eye, mut target) =
+        parse_cam().unwrap_or((Vec3::new(0.0, 1.0, 3.0), Vec3::new(0.0, 0.85, 0.0)));
 
     // `FOREST_VIEW=landmark:<name>` — a full landmark set-piece: merged base on the white
     // vertex-colour material + its animated parts (RuinsFxPlugin drives them here too).
@@ -263,7 +287,10 @@ fn setup(
             target = Vec3::new(centre.x, centre.y * 0.9, centre.z);
             eye = centre + Vec3::new(0.62, 0.38, 1.0).normalize() * radius * 2.1;
         }
-        commands.spawn((Camera3d::default(), Transform::from_translation(eye).looking_at(target, Vec3::Y)));
+        commands.spawn((
+            Camera3d::default(),
+            Transform::from_translation(eye).looking_at(target, Vec3::Y),
+        ));
         spawn_stage_lights(&mut commands);
         spawn_ground(&mut commands, &mut meshes, &mut std_mats, 14.0);
         let white = std_mats.add(StandardMaterial {
@@ -282,7 +309,10 @@ fn setup(
         return;
     }
 
-    commands.spawn((Camera3d::default(), Transform::from_translation(eye).looking_at(target, Vec3::Y)));
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_translation(eye).looking_at(target, Vec3::Y),
+    ));
 
     spawn_stage_lights(&mut commands);
     spawn_ground(&mut commands, &mut meshes, &mut std_mats, 6.0);
@@ -358,14 +388,27 @@ fn spawn_model(
                 rotation: Quat::from_euler(EulerRot::XYZ, 0.15, -0.45, 0.1),
                 scale: Vec3::ONE,
             };
-            let mut h = crate::orks::ork_biped_meshes(variant, crate::orks::Faction::Red).upload(meshes);
+            let mut h =
+                crate::orks::ork_biped_meshes(variant, crate::orks::Faction::Red).upload(meshes);
             let torch = s.contains("torch");
             if torch {
                 h = h.with_shield(Some(meshes.add(crate::orks::ork_torch_mesh())));
             }
-            commands.entity(root).insert(crate::biped::BipedDrive::default());
-            let (_, off_hand) =
-                crate::biped::spawn_biped(commands, root, mat, h, 1.22, 1.0, 0.17, 0.38, -0.05, Some(shield_xf));
+            commands
+                .entity(root)
+                .insert(crate::biped::BipedDrive::default());
+            let (_, off_hand) = crate::biped::spawn_biped(
+                commands,
+                root,
+                mat,
+                h,
+                1.22,
+                1.0,
+                0.17,
+                0.38,
+                -0.05,
+                Some(shield_xf),
+            );
             if let (true, Some(hand)) = (torch, off_hand) {
                 // Bright vertex-coloured stand-in for the emissive flame (the viewer only carries
                 // the shared CreatureMaterial) — placement, not look.
@@ -402,9 +445,13 @@ fn spawn_model(
             // desert-garbed variant (turban + cloak, sandy tunic).
             let desert = s.contains("desert");
             let tunic = if desert { 0xbf9a55 } else { 0x6a4a2a };
-            let m = crate::peasant_model::peasant_biped_meshes(kind, 0xd8a06a, tunic, 0x3a2a18, false, desert);
+            let m = crate::peasant_model::peasant_biped_meshes(
+                kind, 0xd8a06a, tunic, 0x3a2a18, false, desert,
+            );
             let h = m.upload(meshes);
-            commands.entity(root).insert(crate::biped::BipedDrive::default());
+            commands
+                .entity(root)
+                .insert(crate::biped::BipedDrive::default());
             // Off-hand mount matches `villagers::build_biped_body` — only the guard mesh set
             // carries a shield, so this stays empty-handed for the worker kinds.
             let shield_xf = Transform {
@@ -412,7 +459,18 @@ fn spawn_model(
                 rotation: Quat::from_euler(EulerRot::XYZ, 0.15, -0.45, 0.1),
                 ..default()
             };
-            crate::biped::spawn_biped(commands, root, mat, h, 1.06, 1.0, 0.15, 0.3, -0.06, Some(shield_xf));
+            crate::biped::spawn_biped(
+                commands,
+                root,
+                mat,
+                h,
+                1.06,
+                1.0,
+                0.15,
+                0.3,
+                -0.06,
+                Some(shield_xf),
+            );
         }
         // The studio quadruped animals on the shared quad skeleton (Phase 4). `FOREST_VIEW=
         // animal:wolf|dog|horse|deer|camel|bear|polar` picks the species (default wolf). Rest/idle
@@ -429,7 +487,9 @@ fn spawn_model(
                 _ => Wolf,
             };
             let h = crate::quadruped::quad_meshes(species).upload(meshes);
-            commands.entity(root).insert(crate::quadruped::QuadDrive::new(species));
+            commands
+                .entity(root)
+                .insert(crate::quadruped::QuadDrive::new(species));
             crate::quadruped::spawn_quad(commands, root, mat, species, h);
         }
         // A biome-warden boss (static rest pose — torso + limb parts at their pivots, at the real
@@ -445,9 +505,15 @@ fn spawn_model(
             };
             let spec = crate::boss::models::build(biome);
             let scale = crate::boss::models::root_scale(biome);
-            commands.entity(root).insert(Transform::from_scale(Vec3::splat(scale)));
+            commands
+                .entity(root)
+                .insert(Transform::from_scale(Vec3::splat(scale)));
             commands.entity(root).with_children(|p| {
-                p.spawn((Mesh3d(meshes.add(spec.torso)), MeshMaterial3d(mat.clone()), Transform::default()));
+                p.spawn((
+                    Mesh3d(meshes.add(spec.torso)),
+                    MeshMaterial3d(mat.clone()),
+                    Transform::default(),
+                ));
                 for part in spec.parts {
                     p.spawn((
                         Mesh3d(meshes.add(part.mesh)),
@@ -471,15 +537,27 @@ fn spawn_model(
 /// Three-point-ish lighting: a shadowed key, a soft fill from the opposite side, a back rim.
 fn spawn_stage_lights(commands: &mut Commands) {
     commands.spawn((
-        DirectionalLight { illuminance: 10_000.0, shadow_maps_enabled: true, ..default() },
+        DirectionalLight {
+            illuminance: 10_000.0,
+            shadow_maps_enabled: true,
+            ..default()
+        },
         Transform::from_xyz(4.0, 7.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
     commands.spawn((
-        DirectionalLight { illuminance: 3_500.0, shadow_maps_enabled: false, ..default() },
+        DirectionalLight {
+            illuminance: 3_500.0,
+            shadow_maps_enabled: false,
+            ..default()
+        },
         Transform::from_xyz(-5.0, 4.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
     commands.spawn((
-        DirectionalLight { illuminance: 2_500.0, shadow_maps_enabled: false, ..default() },
+        DirectionalLight {
+            illuminance: 2_500.0,
+            shadow_maps_enabled: false,
+            ..default()
+        },
         Transform::from_xyz(0.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
@@ -506,7 +584,13 @@ fn spawn_ground(
 
 /// `FOREST_EQUIP="weapon_id,armor_id"` → `(weapon, armor)`; either side may be empty.
 fn parse_equip() -> (Option<String>, Option<String>) {
-    let Ok(s) = std::env::var("FOREST_EQUIP") else { return (None, None) };
-    let mut it = s.split(',').map(|p| p.trim()).filter(|p| !p.is_empty()).map(str::to_string);
+    let Ok(s) = std::env::var("FOREST_EQUIP") else {
+        return (None, None);
+    };
+    let mut it = s
+        .split(',')
+        .map(|p| p.trim())
+        .filter(|p| !p.is_empty())
+        .map(str::to_string);
     (it.next(), it.next())
 }

@@ -21,7 +21,11 @@ const T: usize = 64; // tile edge in px
 
 fn image(buf: Vec<u8>) -> Image {
     Image::new(
-        Extent3d { width: T as u32, height: T as u32, depth_or_array_layers: 1 },
+        Extent3d {
+            width: T as u32,
+            height: T as u32,
+            depth_or_array_layers: 1,
+        },
         TextureDimension::D2,
         buf,
         TextureFormat::Rgba8UnormSrgb,
@@ -73,7 +77,10 @@ pub struct UiTexturePlugin;
 impl Plugin for UiTexturePlugin {
     fn build(&self, app: &mut App) {
         let mut images = app.world_mut().resource_mut::<Assets<Image>>();
-        let tex = UiTextures { linen: images.add(linen()), parchment: images.add(parchment()) };
+        let tex = UiTextures {
+            linen: images.add(linen()),
+            parchment: images.add(parchment()),
+        };
         app.insert_resource(tex);
     }
 }

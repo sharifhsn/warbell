@@ -45,7 +45,9 @@ impl Plugin for PerftestPlugin {
         if std::env::var("FOREST_SPIKEWATCH").is_ok() {
             app.add_systems(Update, perf_spike_watch);
         }
-        let Ok(raw) = std::env::var("FOREST_PERFTEST") else { return };
+        let Ok(raw) = std::env::var("FOREST_PERFTEST") else {
+            return;
+        };
         let duration = raw.trim().parse::<f32>().unwrap_or(600.0).max(10.0);
         let speed = std::env::var("FOREST_PERFSPEED")
             .ok()
@@ -57,12 +59,18 @@ impl Plugin for PerftestPlugin {
             // FrameTime/EntityCount/SystemInformation diagnostics are all registered by `debug_stats`
             // (always present); we just read them here.
             .add_systems(Startup, perf_setup)
-            .add_systems(Update, (perf_tick, perf_exit, perf_keep_hero_alive, perf_state_watch));
+            .add_systems(
+                Update,
+                (perf_tick, perf_exit, perf_keep_hero_alive, perf_state_watch),
+            );
         // FOREST_PERFROAM=1: also drive the hero on a wide circuit so the follow-cam streams every
         // biome — exercises the position-reactive systems (groundcover/atmosphere/weather/footsteps)
         // that an idle-hero test leaves dormant. Gated to Modal::None like the rest of the sim.
         if std::env::var("FOREST_PERFROAM").is_ok() {
-            app.add_systems(Update, perf_roam.run_if(in_state(crate::game_state::Modal::None)));
+            app.add_systems(
+                Update,
+                perf_roam.run_if(in_state(crate::game_state::Modal::None)),
+            );
         }
         // FOREST_PERFPANELS=1: open and close every freeze-gate panel on a fast loop — a classic
         // over-time leak is UI a panel forgets to despawn on close. Runs ungated (it must fire while
@@ -115,8 +123,15 @@ fn perf_spike_watch(time: Res<Time<Real>>, mut last_spike: Local<f32>) {
         return;
     }
     let now = time.elapsed_secs();
-    let gap = if *last_spike > 0.0 { now - *last_spike } else { 0.0 };
-    info!("SPIKE t={now:>7.2} dt={:.1}ms gap_since_last={gap:>6.2}s", dt * 1000.0);
+    let gap = if *last_spike > 0.0 {
+        now - *last_spike
+    } else {
+        0.0
+    };
+    info!(
+        "SPIKE t={now:>7.2} dt={:.1}ms gap_since_last={gap:>6.2}s",
+        dt * 1000.0
+    );
     *last_spike = now;
 }
 
@@ -132,7 +147,10 @@ fn perf_despawn_trees(
     }
     if n > 0 {
         *total += n;
-        info!("PERFTEST FOREST_NOTREES: despawned {n} trees (total {})", *total);
+        info!(
+            "PERFTEST FOREST_NOTREES: despawned {n} trees (total {})",
+            *total
+        );
     }
 }
 
@@ -164,8 +182,18 @@ fn perf_panels(
     }
     *last = t;
     const SEQ: [Modal; 12] = [
-        Modal::UpgradeTree, Modal::None, Modal::Inventory, Modal::None, Modal::Shop, Modal::None,
-        Modal::Build, Modal::None, Modal::Quest, Modal::None, Modal::Tutorial, Modal::None,
+        Modal::UpgradeTree,
+        Modal::None,
+        Modal::Inventory,
+        Modal::None,
+        Modal::Shop,
+        Modal::None,
+        Modal::Build,
+        Modal::None,
+        Modal::Quest,
+        Modal::None,
+        Modal::Tutorial,
+        Modal::None,
     ];
     next.set(SEQ[(*step as usize) % SEQ.len()]);
     *step = step.wrapping_add(1);
@@ -246,11 +274,18 @@ fn perf_tick(world: &mut World) {
     // ── scalar metrics ───────────────────────────────────────────────────────────────
     let (fps, ms, ent, rss) = {
         let d = world.resource::<DiagnosticsStore>();
-        let fps = d.get(&FrameTimeDiagnosticsPlugin::FPS).and_then(|x| x.smoothed()).unwrap_or(0.0);
-        let ms =
-            d.get(&FrameTimeDiagnosticsPlugin::FRAME_TIME).and_then(|x| x.smoothed()).unwrap_or(0.0);
-        let ent =
-            d.get(&EntityCountDiagnosticsPlugin::ENTITY_COUNT).and_then(|x| x.value()).unwrap_or(0.0);
+        let fps = d
+            .get(&FrameTimeDiagnosticsPlugin::FPS)
+            .and_then(|x| x.smoothed())
+            .unwrap_or(0.0);
+        let ms = d
+            .get(&FrameTimeDiagnosticsPlugin::FRAME_TIME)
+            .and_then(|x| x.smoothed())
+            .unwrap_or(0.0);
+        let ent = d
+            .get(&EntityCountDiagnosticsPlugin::ENTITY_COUNT)
+            .and_then(|x| x.value())
+            .unwrap_or(0.0);
         let rss = d
             .get(&SystemInformationDiagnosticsPlugin::PROCESS_MEM_USAGE)
             .and_then(|x| x.value())
@@ -293,7 +328,10 @@ fn perf_tick(world: &mut World) {
         .collect();
     rows.sort_by(|a, b| b.0.cmp(&a.0));
     for (n, sig) in rows.iter().take(12) {
-        info!("   arch {n:>6}  {}", sig.chars().take(180).collect::<String>());
+        info!(
+            "   arch {n:>6}  {}",
+            sig.chars().take(180).collect::<String>()
+        );
     }
 
     // ── GPU pass breakdown (where the frame time actually goes) ─────────────────────────
@@ -306,7 +344,10 @@ fn perf_tick(world: &mut World) {
             .filter_map(|diag| {
                 let p = diag.path().as_str();
                 let name = p.strip_prefix("render/")?.strip_suffix("/elapsed_gpu")?;
-                if diag.measurement().is_none_or(|m| m.time.elapsed().as_millis() > 500) {
+                if diag
+                    .measurement()
+                    .is_none_or(|m| m.time.elapsed().as_millis() > 500)
+                {
                     return None; // skip stale passes (a node that only ran during warmup)
                 }
                 let ms = diag.smoothed().filter(|m| *m > 0.0)?;

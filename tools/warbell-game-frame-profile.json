@@ -1,0 +1,47 @@
+{
+  "content_box_normalized": [0.04, 0.12, 0.96, 0.94],
+  "min_mean_luma": 45.0,
+  "min_stddev_luma": 20.0,
+  "max_dark_fraction": 0.55,
+  "min_content_delta_rms": 0.2,
+  "regions": [
+    {
+      "name": "combat_hud",
+      "box_normalized": [0.05, 0.14, 0.36, 0.22],
+      "min_mean_rgb": [20.0, 18.0, 6.0],
+      "max_mean_rgb": [120.0, 110.0, 80.0],
+      "min_stddev_luma": 20.0,
+      "max_dark_fraction": 0.75
+    },
+    {
+      "name": "courtyard_ground",
+      "box_normalized": [0.10, 0.66, 0.32, 0.84],
+      "min_mean_rgb": [85.0, 110.0, 80.0],
+      "min_green_excess": 10.0,
+      "max_dark_fraction": 0.05
+    },
+    {
+      "name": "gate",
+      "box_normalized": [0.58, 0.17, 0.89, 0.43],
+      "min_mean_luma": 55.0,
+      "min_stddev_luma": 15.0,
+      "max_dark_fraction": 0.45
+    },
+    {
+      "name": "warbell_hero",
+      "box_normalized": [0.45, 0.43, 0.55, 0.72],
+      "min_mean_luma": 55.0,
+      "min_stddev_luma": 12.0,
+      "max_dark_fraction": 0.30,
+      "max_mean_rgb": [145.0, 150.0, 145.0]
+    },
+    {
+      "name": "warbell_rival",
+      "box_normalized": [0.58, 0.38, 0.65, 0.65],
+      "min_mean_luma": 55.0,
+      "min_stddev_luma": 12.0,
+      "max_dark_fraction": 0.30,
+      "max_mean_rgb": [145.0, 155.0, 145.0]
+    }
+  ]
+}

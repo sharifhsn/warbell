@@ -1,0 +1,33 @@
+{
+  "auto_bind_resources": true,
+  "coordinate_space": "adjusted",
+  "emulate_3d_textures": false,
+  "entry": "fragment",
+  "explicit_bindings": [],
+  "files": {
+    "dksh": {
+      "path": "assets/shaders/deko3d-runtime/f12bbe2a-creature.frag.dksh",
+      "sha256": "15a7debfdef51d234cd16adfb5e870d36e438c1153730c73dbf37cd2379623a4",
+      "size": 51580
+    },
+    "glsl": {
+      "path": "assets/shaders/deko3d-runtime/f12bbe2a-creature.frag.glsl",
+      "sha256": "fbb5f92132d55a8ed6a0288e467e95e10c0eaab65756f9663a653df449f5a113",
+      "size": 104887
+    },
+    "reflection": {
+      "path": "assets/shaders/deko3d-runtime/f12bbe2a-creature.frag.reflection.json",
+      "sha256": "6be88bc7fee34e58b655f648bef39adb6a2dfbcfb6cfa40eb952be62e093db8d",
+      "size": 8288
+    }
+  },
+  "glsl_version": 460,
+  "immediates_binding": 15,
+  "schema": "wgsl-to-dksh-artifact-v0",
+  "source": {
+    "path": "assets/shaders/deko3d-runtime/f12bbe2a-creature.frag.wgsl",
+    "sha256": "f12bbe2aa32c89586ebbf61e6dad655be7c6afff317749b4803a96c9e503d22c",
+    "size": 111252
+  },
+  "stage": "fragment"
+}

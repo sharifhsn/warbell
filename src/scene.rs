@@ -3,21 +3,34 @@
 //! verified Bevy 0.18 components, plus a procedural gradient-cubemap IBL and SSAO
 //! (both adapted from the working tileworld-bevy port's `lighting.rs`).
 
+#[cfg(feature = "desktop")]
 use bevy::anti_alias::smaa::{Smaa, SmaaPreset};
 use bevy::asset::RenderAssetUsages;
-use bevy::camera::{Exposure, Hdr};
+use bevy::camera::Exposure;
+#[cfg(feature = "desktop")]
+use bevy::camera::Hdr;
+#[cfg(feature = "desktop")]
 use bevy::core_pipeline::prepass::{DepthPrepass, MotionVectorPrepass, NormalPrepass};
 use bevy::core_pipeline::tonemapping::Tonemapping;
 // 0.19: `Atmosphere` + `ScatteringMedium` moved bevy::pbr → bevy::light, and the procedural sky is
 // now a standalone entity (not a camera component) opted into per-camera by `AtmosphereSettings`.
+#[cfg(feature = "switch")]
+use crate::audio::SpatialListener;
+#[cfg(feature = "desktop")]
+use bevy::audio::SpatialListener;
+#[cfg(feature = "desktop")]
+use bevy::light::Atmosphere;
+#[cfg(feature = "desktop")]
 use bevy::light::atmosphere::ScatteringMedium; // only re-exported from the submodule, not the root
 use bevy::light::{
-    Atmosphere, CascadeShadowConfigBuilder, DirectionalLightShadowMap, ShadowFilteringMethod,
-    SunDisk,
+    CascadeShadowConfigBuilder, DirectionalLightShadowMap, ShadowFilteringMethod, SunDisk,
 };
+#[cfg(feature = "desktop")]
+use bevy::pbr::AtmosphereSettings;
+use bevy::pbr::{DistanceFog, FogFalloff};
+#[cfg(feature = "desktop")]
 use bevy::pbr::{
-    AtmosphereSettings, ContactShadows, DistanceFog, FogFalloff, ScreenSpaceAmbientOcclusion,
-    ScreenSpaceAmbientOcclusionQualityLevel,
+    ContactShadows, ScreenSpaceAmbientOcclusion, ScreenSpaceAmbientOcclusionQualityLevel,
 };
 use bevy::post_process::bloom::Bloom;
 use bevy::prelude::*;
@@ -99,7 +112,11 @@ impl Plugin for ScenePlugin {
             .add_systems(Startup, (setup_camera, setup_sun))
             .add_systems(
                 Update,
-                ((track_biome_atmo, advance_sky).chain(), drive_dof_focus, freeze_ibl_filtering),
+                (
+                    (track_biome_atmo, advance_sky).chain(),
+                    drive_dof_focus,
+                    freeze_ibl_filtering,
+                ),
             );
     }
 }
@@ -116,7 +133,13 @@ impl Plugin for ScenePlugin {
 /// `EnvironmentMapLight.intensity` in `advance_sky` — a cheap scalar, no refiltering.
 fn freeze_ibl_filtering(
     mut commands: Commands,
-    q: Query<Entity, (With<GeneratedEnvironmentMapLight>, With<EnvironmentMapLight>)>,
+    q: Query<
+        Entity,
+        (
+            With<GeneratedEnvironmentMapLight>,
+            With<EnvironmentMapLight>,
+        ),
+    >,
     mut settle: Local<u32>,
 ) {
     // Count only once the filtered light exists (Bevy inserts it a frame or two after the cubemap
@@ -248,7 +271,9 @@ fn track_biome_atmo(
     ambiences: Option<Res<BiomeAmbiences>>,
     mut state: ResMut<SmoothBiomeAtmo>,
 ) {
-    let (Some(hero), Some(ambiences)) = (hero, ambiences) else { return };
+    let (Some(hero), Some(ambiences)) = (hero, ambiences) else {
+        return;
+    };
     // World-space lookup: the Blight (ork castle) eases toward its own red-ember mood; every other
     // region eases toward its biome's atmosphere. (`sample_world`, not `sample`, is what stops the
     // ork castle inheriting swamp's grey-green sky.)
@@ -319,7 +344,10 @@ fn advance_sky(
                         s.prep_seconds_left,
                         crate::siege::mods_for(s.difficulty),
                     );
-                    ease_to(&mut clock.t, T_DAWN + (T_NIGHTFALL - T_DAWN) * prog.powf(PREP_SUN_EASE));
+                    ease_to(
+                        &mut clock.t,
+                        T_DAWN + (T_NIGHTFALL - T_DAWN) * prog.powf(PREP_SUN_EASE),
+                    );
                 }
                 GamePhase::Wave => {
                     // Already night (the normal case after a full prep): let time creep slowly
@@ -453,7 +481,11 @@ fn advance_sky(
     if let Some(t) = tint {
         ambient.brightness *= 1.0 + (t.ambient_scale - 1.0) * day;
     }
-    ambient.color = lerp_col(Color::srgb(0.50, 0.60, 0.95), Color::srgb(1.0, 0.95, 0.86), day);
+    ambient.color = lerp_col(
+        Color::srgb(0.50, 0.60, 0.95),
+        Color::srgb(1.0, 0.95, 0.86),
+        day,
+    );
     // Golden hour: as the sun skims the horizon, warm the ambient fill too, so the whole
     // scene catches the sunset glow instead of just the sky band.
     ambient.color = lerp_col(ambient.color, Color::srgb(1.0, 0.80, 0.62), horizon * 0.40);
@@ -506,7 +538,9 @@ fn advance_sky(
     let bloom_scale = tint.map(|t| t.bloom_scale).unwrap_or(1.0);
     // Calmer base (0.22, god-rays 0.30 — was 0.30/0.42): the old amount read as too aggressive.
     // Tune live with the F1 → "bloom (master)" slider; `visual.bloom` rides on top of this curve.
-    let bloom_base = settings.map(|s| if s.god_rays { 0.30 } else { 0.22 }).unwrap_or(0.22);
+    let bloom_base = settings
+        .map(|s| if s.god_rays { 0.30 } else { 0.22 })
+        .unwrap_or(0.22);
     let bloom = (bloom_base * bloom_scale * (1.0 + horizon * 0.5) * (1.0 + night * 0.25)
         * (1.0 + surge * 0.9) // war-dusk: everything bright haloes as the night falls
         * visual.bloom)
@@ -538,10 +572,16 @@ fn advance_sky(
         let dn = (d - FOG_REF_DENSITY) / (FOG_MAX_DENSITY - FOG_REF_DENSITY);
         if dn >= 0.0 {
             let t = dn.min(1.0) * day;
-            (FOG_BASE_START - FOG_PULL_START * t, FOG_BASE_END - FOG_PULL_END * t)
+            (
+                FOG_BASE_START - FOG_PULL_START * t,
+                FOG_BASE_END - FOG_PULL_END * t,
+            )
         } else {
             let t = ((-dn) * FOG_CLEAR_GAIN).min(1.0) * day;
-            (FOG_BASE_START + FOG_CLEAR_PUSH_START * t, FOG_BASE_END + FOG_CLEAR_PUSH_END * t)
+            (
+                FOG_BASE_START + FOG_CLEAR_PUSH_START * t,
+                FOG_BASE_END + FOG_CLEAR_PUSH_END * t,
+            )
         }
     });
     for mut fog in &mut fog_q {
@@ -562,15 +602,20 @@ fn advance_sky(
 
 /// The fog's directional in-scatter (sun-toward-camera glow) — warm low, pale high.
 fn light_glow_color(high: f32) -> Color {
-    lerp_col(Color::srgb(1.0, 0.6, 0.35), Color::srgb(1.0, 0.93, 0.78), high)
+    lerp_col(
+        Color::srgb(1.0, 0.6, 0.35),
+        Color::srgb(1.0, 0.93, 0.78),
+        high,
+    )
 }
 
 fn setup_camera(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
-    mut media: ResMut<Assets<ScatteringMedium>>,
+    #[cfg(feature = "desktop")] mut media: ResMut<Assets<ScatteringMedium>>,
 ) {
     let env = images.add(gradient_env_cubemap());
+    #[cfg(feature = "desktop")]
     let medium = media.add(ScatteringMedium::default());
 
     // Low, immersive starting pose among the trees; fly controls take over from here.
@@ -595,7 +640,7 @@ fn setup_camera(
     // side airy — crushed blacks were a big part of the old "harsh" read.
     grading.shadows.gain = 1.05;
 
-    commands.spawn((
+    let mut camera = commands.spawn((
         Camera3d::default(),
         // far=230 (was the 1000 default). The Linear fog reaches full horizon colour by 190
         // tiles (biome.rs), so everything past ~190 is solid fog — invisible but still drawn at
@@ -606,8 +651,14 @@ fn setup_camera(
         // lens and the default near-plane sliced through them, popping bits in/out every frame as the
         // walk-bob moved them across z=near (the "flicker" bug). 0.04 keeps the close viewmodel whole.
         // Safe for depth precision — `far` is only 230 (ratio ~5750:1), not the 1000 default.
-        Projection::from(PerspectiveProjection { fov: 50f32.to_radians(), near: 0.04, far: 230.0, ..default() }),
+        Projection::from(PerspectiveProjection {
+            fov: 50f32.to_radians(),
+            near: 0.04,
+            far: 230.0,
+            ..default()
+        }),
         cam_tf,
+        #[cfg(feature = "desktop")]
         Hdr,
         Exposure { ev100: 10.85 },
         Tonemapping::AgX,
@@ -619,7 +670,11 @@ fn setup_camera(
         // needed when SSAO or the outline is on — the Low preset strips it (and the outline) via
         // `quality::apply_quality`, which inserts/removes these per-preset on this camera.
         Msaa::Off,
-        Smaa { preset: SmaaPreset::High },
+        #[cfg(feature = "desktop")]
+        Smaa {
+            preset: SmaaPreset::High,
+        },
+        #[cfg(feature = "desktop")]
         ScreenSpaceAmbientOcclusion {
             // Medium (was High): AO is a subtle contact-shadow read near the camera; the High→
             // Medium drop is barely perceptible but trims a chunk of the fullscreen prepass cost.
@@ -628,6 +683,7 @@ fn setup_camera(
         },
         // Prepass + contact shadows grouped into a nested bundle so the camera spawn tuple stays
         // within Bevy's 15-element tuple-`Bundle` arity limit (ContactShadows would be the 16th).
+        #[cfg(feature = "desktop")]
         (
             DepthPrepass,
             NormalPrepass,
@@ -641,10 +697,15 @@ fn setup_camera(
             // carry it; `quality::apply_quality` strips it on Low alongside the depth prepass.
             ContactShadows::default(),
         ),
-        Bloom { intensity: 0.30, ..Bloom::NATURAL },
+        #[cfg(feature = "desktop")]
+        Bloom {
+            intensity: 0.30,
+            ..Bloom::NATURAL
+        },
         // Custom CoC **bokeh** depth-of-field (Bevy's built-in no-ops here): a focal plane
         // auto-focused on the player by `drive_dof_focus`, fore/background melting into
         // bokeh. Tunable live in F1 → Blur+Bloom (sharp band / blur radius).
+        #[cfg(feature = "desktop")]
         crate::dof::default_dof(),
         DistanceFog {
             color: SKY,
@@ -652,16 +713,21 @@ fn setup_camera(
             // 7 (was 12): a wider sun-toward-camera in-scatter lobe — the haze catches the
             // light across a broad band of the frame instead of a tight sun-adjacent glow.
             directional_light_exponent: 7.0,
-            falloff: FogFalloff::ExponentialSquared { density: FOG_DENSITY },
+            falloff: FogFalloff::ExponentialSquared {
+                density: FOG_DENSITY,
+            },
         },
-        GeneratedEnvironmentMapLight { environment_map: env, intensity: IBL_INTENSITY, ..default() },
-    ))
+        GeneratedEnvironmentMapLight {
+            environment_map: env,
+            intensity: IBL_INTENSITY,
+            ..default()
+        },
+    ));
     // Procedural sky — real blue sky + sun disk + horizon glow, using the DirectionalLight as the
     // sun. `AtmosphereSettings` is the per-camera opt-in (0.19): the sky itself is the standalone
     // `Atmosphere` entity spawned below. Plus a saturation grade to richen the AgX look toward the
     // TS palette.
-    .insert((
-        AtmosphereSettings::default(),
+    camera.insert((
         grading,
         // God rays are the screen-space scatter pass in `godrays.rs` (a PostProcess ping-pong pass
         // alongside outline/dof) — NOT Bevy's volumetric fog, which was retired (imperceptible at
@@ -669,6 +735,7 @@ fn setup_camera(
         // per-preset by `quality.rs`, so it isn't part of this base camera bundle.
         ShadowFilteringMethod::Gaussian,
         // Toon edge-outline (runs before the blur): crisp object silhouettes. Tunable in F1.
+        #[cfg(feature = "desktop")]
         crate::outline::default_outline(),
         crate::controls::FlyCam::new(yaw, pitch),
         // Listener for spatial wildlife audio (see `audio.rs`). `gap` = ear separation in
@@ -676,10 +743,15 @@ fn setup_camera(
         SpatialListener::new(4.0),
     ));
 
+    #[cfg(feature = "desktop")]
+    camera.insert(AtmosphereSettings::default());
+    drop(camera);
+
     // 0.19: the procedural sky is its own entity (was a camera component). Its `on_add` hook parks
     // it at -Y·inner_radius so the planet sits under the world; the camera opts in via
     // `AtmosphereSettings` above. The sun (DirectionalLight) drives the gradient + sun disk, so
     // moving it through the day still slides the sky — no per-frame Atmosphere mutation needed.
+    #[cfg(feature = "desktop")]
     commands.spawn(Atmosphere::earth(medium));
 }
 
@@ -726,7 +798,9 @@ fn drive_dof_focus(
     }
     // Screenshot knob: FOREST_FOCAL="tiles" pins the focal plane (free-cam parks it at a
     // fixed 28, which blurs close-up staged subjects).
-    if let Some(f) = std::env::var("FOREST_FOCAL").ok().and_then(|s| s.trim().parse::<f32>().ok())
+    if let Some(f) = std::env::var("FOREST_FOCAL")
+        .ok()
+        .and_then(|s| s.trim().parse::<f32>().ok())
     {
         dof.focal = f;
         return;
@@ -734,7 +808,11 @@ fn drive_dof_focus(
     let target = if *mode == crate::player::PlayMode::Play {
         let hero_d = hero_q
             .single()
-            .map(|h| cam_tf.translation().distance(Vec3::new(h.pos.x, h.y + 1.0, h.pos.y)))
+            .map(|h| {
+                cam_tf
+                    .translation()
+                    .distance(Vec3::new(h.pos.x, h.y + 1.0, h.pos.y))
+            })
             .unwrap_or(28.0);
         // First person: the camera IS (in) the hero, so the camera→hero distance is ~0.33 —
         // a focal plane parked ON the lens defocuses the whole world, and any CoC excuse
@@ -755,7 +833,11 @@ fn drive_dof_focus(
         hero_q
             .single()
             .ok()
-            .map(|h| cam_tf.translation().distance(Vec3::new(h.pos.x, h.y + 1.0, h.pos.y)))
+            .map(|h| {
+                cam_tf
+                    .translation()
+                    .distance(Vec3::new(h.pos.x, h.y + 1.0, h.pos.y))
+            })
             .filter(|d| *d < 14.0)
             .unwrap_or(28.0)
     };
@@ -788,7 +870,10 @@ fn setup_sun(mut commands: Commands) {
         // Visible solar disk in the Atmosphere sky. Default is `SunDisk::EARTH` —
         // physically-accurate 0.0093 rad (≈0.5°), a barely-visible dot. The stylized look
         // wants a big warm ball: ~6× earth size, overexposed so Bloom halos it into a glow.
-        SunDisk { angular_size: 0.060, intensity: 1.6 },
+        SunDisk {
+            angular_size: 0.060,
+            intensity: 1.6,
+        },
         CascadeShadowConfigBuilder {
             num_cascades: 4,
             // 150 (was 75): with the elevated follow-cam most of the visible frame sits 60–150
@@ -872,14 +957,20 @@ fn gradient_env_cubemap() -> Image {
     }
 
     let mut image = Image::new(
-        Extent3d { width: FACE, height: FACE, depth_or_array_layers: 6 },
+        Extent3d {
+            width: FACE,
+            height: FACE,
+            depth_or_array_layers: 6,
+        },
         TextureDimension::D2,
         data,
         TextureFormat::Rgba16Float,
         RenderAssetUsages::RENDER_WORLD,
     );
-    image.texture_view_descriptor =
-        Some(TextureViewDescriptor { dimension: Some(TextureViewDimension::Cube), ..default() });
+    image.texture_view_descriptor = Some(TextureViewDescriptor {
+        dimension: Some(TextureViewDimension::Cube),
+        ..default()
+    });
     image
 }
 

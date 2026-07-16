@@ -136,7 +136,10 @@ fn kids_swell(d: f32) -> f32 {
 pub(crate) fn setup_ambience(asset: Res<AssetServer>, mut commands: Commands) {
     let beds = [
         (AmbienceKind::Biome(Biome::Snow), "audio/wind.ogg"),
-        (AmbienceKind::Biome(Biome::Forest), "audio/forest-ambient.ogg"),
+        (
+            AmbienceKind::Biome(Biome::Forest),
+            "audio/forest-ambient.ogg",
+        ),
         (AmbienceKind::Biome(Biome::Desert), "audio/desert-wind.ogg"),
         (AmbienceKind::Biome(Biome::Swamp), "audio/swamp-ambient.ogg"),
         (AmbienceKind::Water, "audio/water.ogg"),
@@ -165,7 +168,12 @@ pub(crate) fn setup_ambience(asset: Res<AssetServer>, mut commands: Commands) {
             spatial: false,
             ..default()
         },
-        KidsChatter { level: 0.0, talking: false, until: 0.0, rng: 0x1234_5678 },
+        KidsChatter {
+            level: 0.0,
+            talking: false,
+            until: 0.0,
+            rng: 0x1234_5678,
+        },
     ));
 }
 
@@ -182,20 +190,22 @@ pub(crate) fn attach_campfire_audio(
         // application — a bare insert would panic, and even a `try_insert` + `with_children`
         // would orphan a forever-looping sink. The closure runs only if the flame still exists.
         let clip = asset.load::<AudioSource>("audio/campfire-loop.ogg");
-        commands.entity(e).queue_silenced(move |mut flame: EntityWorldMut| {
-            flame.insert(CampfireAudio).with_children(|p| {
-                p.spawn((
-                    AudioPlayer(clip),
-                    PlaybackSettings {
-                        mode: PlaybackMode::Loop,
-                        volume: Volume::Linear(CAMPFIRE_VOL),
-                        spatial: true,
-                        ..default()
-                    },
-                    Transform::default(),
-                ));
+        commands
+            .entity(e)
+            .queue_silenced(move |mut flame: EntityWorldMut| {
+                flame.insert(CampfireAudio).with_children(|p| {
+                    p.spawn((
+                        AudioPlayer(clip),
+                        PlaybackSettings {
+                            mode: PlaybackMode::Loop,
+                            volume: Volume::Linear(CAMPFIRE_VOL),
+                            spatial: true,
+                            ..default()
+                        },
+                        Transform::default(),
+                    ));
+                });
             });
-        });
     }
 }
 
@@ -210,21 +220,23 @@ pub(crate) fn attach_war_drum_audio(
     let Some(drums) = drums else { return };
     for e in &flames {
         let clip = drums.0.clone();
-        commands.entity(e).queue_silenced(move |mut flame: EntityWorldMut| {
-            flame.insert(WarDrumAudio).with_children(|p| {
-                p.spawn((
-                    AudioPlayer(clip),
-                    PlaybackSettings {
-                        mode: PlaybackMode::Loop,
-                        volume: Volume::Linear(0.0),
-                        spatial: true,
-                        ..default()
-                    },
-                    Transform::default(),
-                    WarDrums { level: 0.0 },
-                ));
+        commands
+            .entity(e)
+            .queue_silenced(move |mut flame: EntityWorldMut| {
+                flame.insert(WarDrumAudio).with_children(|p| {
+                    p.spawn((
+                        AudioPlayer(clip),
+                        PlaybackSettings {
+                            mode: PlaybackMode::Loop,
+                            volume: Volume::Linear(0.0),
+                            spatial: true,
+                            ..default()
+                        },
+                        Transform::default(),
+                        WarDrums { level: 0.0 },
+                    ));
+                });
             });
-        });
     }
 }
 
@@ -241,7 +253,11 @@ pub(crate) fn war_drums(
         crate::siege::GamePhase::Prep => s.prep_seconds_left < DRUM_LEAD,
         _ => false,
     });
-    let target = if on { cfg.ambience_vol * WAR_DRUM_VOL } else { 0.0 };
+    let target = if on {
+        cfg.ambience_vol * WAR_DRUM_VOL
+    } else {
+        0.0
+    };
     let k = (time.delta_secs() * DRUM_FADE).min(1.0);
     for (mut d, mut sink) in &mut q {
         d.level += (target - d.level) * k;
@@ -293,7 +309,9 @@ pub(crate) fn biome_ambience(
     let water = near_water(cam_xz);
     // Town-square bustle plays near the castle by day; the night curfew empties the streets, so
     // it falls silent during a wave.
-    let day = siege.map(|s| s.phase != crate::siege::GamePhase::Wave).unwrap_or(true);
+    let day = siege
+        .map(|s| s.phase != crate::siege::GamePhase::Wave)
+        .unwrap_or(true);
     let near_castle = cam_xz.is_some_and(|p| p.length() < CASTLE_AMBIENCE_R);
     // The grass ring ("łąka"): standing on dry land that belongs to no biome blob, beyond the
     // town-square radius, and not over water. `cur` is None over grass AND over open sea, so the
@@ -336,7 +354,8 @@ pub(crate) fn kids_chatter(
             .min_by(f32::total_cmp)
     });
     // Peak = 2/3 of a villager voice line (voice_vol × villager gain), ridden by the swell curve.
-    let villager_gain = crate::audio::lines::speaker_voice(crate::audio::lines::Speaker::Villager).gain;
+    let villager_gain =
+        crate::audio::lines::speaker_voice(crate::audio::lines::Speaker::Villager).gain;
     let peak = cfg.voice_vol * villager_gain * KIDS_VS_VILLAGER;
     let now = time.elapsed_secs();
     let near = nearest.is_some_and(|d| d < KIDS_FAR);

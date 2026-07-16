@@ -2,12 +2,17 @@
 set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+SWITCH_APP=${SWITCH_APP:-game}
+case "$SWITCH_APP" in
+  game|full|probe) ;;
+  *) echo "SWITCH_APP must be game, full, or probe" >&2; exit 2 ;;
+esac
 SWITCH_REPO=${SWITCH_REPO:-"$ROOT_DIR/../switch"}
 DEVKITPRO=${DEVKITPRO:-/tmp/devkitpro-switch1/opt/devkitpro}
 DEVKITA64=${DEVKITA64:-$DEVKITPRO/devkitA64}
 TARGET_JSON=${TARGET_JSON:-"$SWITCH_REPO/experiments/switch1-deko3d-wgpu/targets/aarch64-nintendo-switch-horizon-newlib.json"}
 PATCH_DIR=${PATCH_DIR:-"$SWITCH_REPO/experiments/switch1-deko3d-wgpu/dependency-patches"}
-OUT_ROOT=${OUT_ROOT:-"$ROOT_DIR/target/switch-nro"}
+OUT_ROOT=${OUT_ROOT:-"$ROOT_DIR/target/switch-nro/$SWITCH_APP"}
 LIBNX_FILTERED="$OUT_ROOT/libnx.a"
 CLEAN_BUILD=${CLEAN_BUILD:-0}
 GENERATED_TARGET="$OUT_ROOT/horizon-newlib-gcc.json"
@@ -104,6 +109,36 @@ require_command shasum
 require_file "$ROOT_DIR/Cargo.lock"
 require_file "$TARGET_JSON"
 
+for artifact in "$ROOT_DIR"/assets/shaders/deko3d-runtime/*.artifact.json; do
+  require_file "$artifact"
+  [ "$(jq -r '.schema' "$artifact")" = wgsl-to-dksh-artifact-v0 ] || {
+    echo "invalid DKSH artifact manifest: $artifact" >&2
+    exit 1
+  }
+  if [ "$(jq -r '.stage' "$artifact")" = vertex ] &&
+     [ "$(jq -r '.coordinate_space' "$artifact")" != native ]; then
+    echo "Bevy vertex DKSH must use native coordinates: $artifact" >&2
+    exit 1
+  fi
+  for kind in dksh glsl reflection; do
+    path=$(jq -r ".files.$kind.path // empty" "$artifact")
+    expected=$(jq -r ".files.$kind.sha256 // empty" "$artifact")
+    [ -n "$path" ] && [ -n "$expected" ] || {
+      echo "incomplete DKSH artifact manifest: $artifact ($kind)" >&2
+      exit 1
+    }
+    case "$path" in
+      /*) resolved=$path ;;
+      *) resolved=$ROOT_DIR/$path ;;
+    esac
+    require_file "$resolved"
+    [ "$(shasum -a 256 "$resolved" | awk '{print $1}')" = "$expected" ] || {
+      echo "stale DKSH artifact output: $artifact ($kind)" >&2
+      exit 1
+    }
+  done
+done
+
 LIBC_VERSION=$(locked_version libc)
 POLLING_VERSION=$(locked_version polling)
 if [ -z "$LIBC_VERSION" ] || [ -z "$POLLING_VERSION" ]; then
@@ -186,8 +221,14 @@ fi
 export RUSTFLAGS
 
 SWITCH_FEATURES=switch
+if [ "$SWITCH_APP" = probe ]; then
+  SWITCH_FEATURES="$SWITCH_FEATURES,switch-probe"
+fi
+if [ "$SWITCH_APP" = full ]; then
+  SWITCH_FEATURES="$SWITCH_FEATURES,switch-full"
+fi
 if [ "${SWITCH_EMULATOR:-0}" = 1 ]; then
-  SWITCH_FEATURES=switch-emulator
+  SWITCH_FEATURES="$SWITCH_FEATURES,switch-emulator"
 fi
 
 cd "$ROOT_DIR"
@@ -214,8 +255,9 @@ require_file "$OUT_NRO"
 shasum -a 256 "$OUT_NRO" > "$OUT_NRO.sha256"
 {
   echo "warbell=$(git -C "$ROOT_DIR" rev-parse HEAD)"
-  echo "bevy=$(git -C "$ROOT_DIR/../bevy-deko3d-019" rev-parse HEAD)"
-  echo "wgpu=$(git -C "$ROOT_DIR/../wgpu-deko3d-29" rev-parse HEAD)"
+  echo "bevy=$(git -C "$ROOT_DIR/vendor/bevy" rev-parse HEAD)"
+  echo "wgpu=$(git -C "$ROOT_DIR/vendor/wgpu" rev-parse HEAD)"
+  echo "switch_app=$SWITCH_APP"
   echo "switch_emulator=${SWITCH_EMULATOR:-0}"
   echo "bytes=$(wc -c < "$OUT_NRO" | tr -d ' ')"
   echo "sha256=$(cut -d ' ' -f 1 "$OUT_NRO.sha256")"

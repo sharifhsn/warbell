@@ -1,0 +1,32 @@
+{
+  "auto_bind_resources": true,
+  "coordinate_space": "native",
+  "emulate_3d_textures": false,
+  "entry": "vertex",
+  "explicit_bindings": [],
+  "glsl_version": 460,
+  "immediates": [],
+  "immediates_binding": null,
+  "resources": [
+    {
+      "binding": 0,
+      "binding_map_target": 2,
+      "count": 1,
+      "group": 2,
+      "kind": "uniform_buffer",
+      "name": "meshX_naga_oil_mod_XMJSXM6K7OBRHEOR2NVSXG2C7MJUW4ZDJNZTXGX"
+    },
+    {
+      "binding": 0,
+      "binding_map_target": 0,
+      "count": 1,
+      "group": 0,
+      "kind": "uniform_buffer",
+      "name": "viewX_naga_oil_mod_XMJSXM6K7OBRHEOR2NVSXG2C7OZUWK527MJUW4ZDJNZTXGX"
+    }
+  ],
+  "sampled_pairs": [],
+  "schema": "wgsl-to-dksh-reflection-v0",
+  "source": "/Users/sharif/Library/Application Support/Ryujinx/sdcard/switch/warbell-shaders/e8e76aadb97c9c0e74a8a9c6ec56bcc1ee955863e76cafc65cf1868b7710107a-vertex-main.wgsl",
+  "stage": "vertex"
+}

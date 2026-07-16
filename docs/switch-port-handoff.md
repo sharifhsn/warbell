@@ -1,6 +1,6 @@
 # Warbell Switch Port Handoff
 
-Last updated: 2026-07-14
+Last updated: 2026-07-16
 
 ## Goal
 
@@ -10,19 +10,18 @@ Run the Bevy 0.19 Warbell game on Nintendo Switch through an experimental Deko3D
 
 | Repository | Branch | Responsibility |
 | --- | --- | --- |
-| `../wgpu-deko3d-29` | `codex/deko3d-wgpu29` | Deko3D HAL, FFI, resource semantics, capability reporting, and DKSH artifact lookup |
-| `../bevy-deko3d-019` | `codex/deko3d-horizon` | Horizon platform wiring, Deko3D surface selection, shader capture, and artifact-provider installation |
+| `vendor/wgpu` | `codex/deko3d-wgpu29` | Deko3D HAL, FFI, resource semantics, capability reporting, and DKSH artifact lookup |
+| `vendor/bevy` | `codex/deko3d-horizon` | Horizon platform wiring, Deko3D surface selection, shader capture, and artifact-provider installation |
 | this repository | `codex/warbell-wgpu29` | Warbell Switch profile, game integration, assets, shader artifacts, NRO packaging, and hardware diagnostics |
 | `../switch` | `codex/switch-wgpu29-support` | External homebrew harnesses and hardware documentation only |
-| `../wgpu-deko3d-30` | existing fork branch | Reference and documentation only |
+| `/Users/sharif/Code/wgpu-deko3d-30-reference` | existing fork branch | Reference and documentation only |
 
-Do not create a parallel backend patch series in `../switch`. Backend changes belong in `wgpu-deko3d-29`; harness-only changes belong in `switch`.
+Do not create a parallel backend patch series in `../switch`. Backend changes belong in `vendor/wgpu`; harness-only changes belong in `switch`.
 
 ## Current milestone
 
-The port has an emulator-tested opaque-scene vertical slice and a newly built native full-PBR
-candidate, but the full-PBR build has not yet been visually accepted. It has not been run on
-physical hardware.
+The port has an emulator-tested, visually accepted game vertical slice using the native full-PBR
+path. It has not been run on physical hardware.
 
 Implemented:
 
@@ -43,9 +42,9 @@ Implemented:
 - NRO build metadata, SHA-256 output, and nxlink deployment logging.
 
 The Switch feature now runs a small controller-driven Warbell courtyard with a primitive knight,
-castle walls, towers, and lighting, not the full gameplay modules. The current emulator profile
-is missing the user's local `prod.keys`; do not download or substitute keys. Resume visual
-acceptance after the user supplies their own keys.
+castle walls, towers, lighting, HUD, and a deterministic combat exchange, not the full gameplay
+modules. The local emulator profile has the user's keys and the pinned D3-fixed Ryujinx build;
+never download or substitute keys.
 
 ### Known-good commits
 
@@ -108,15 +107,20 @@ Known missing or intentionally deferred:
 
 Treat this as a workload-driven list, not a mandate to implement everything. Add a capability only when a captured Warbell scene or hardware failure demonstrates the need.
 
-## Immediate next step: full-PBR visual acceptance
+## Validated emulator game slice
 
-With the user's own Ryujinx keys installed, launch the current emulator NRO and verify the native
-full-PBR artifacts before expanding gameplay. The current build is:
+On 2026-07-16, the emulator-specific `game` NRO reached
+`phase=game_ready frame=60 combat=proven` in 16 seconds. Three captured frames passed the regional
+visual profile, and the log contained no shader-provider miss, Deko3D device loss, validation
+error, or panic. The validated build is:
 
 ```text
-target/switch-nro/cargo-target/horizon-newlib-gcc/debug/warbell-switch.nro
-SHA-256: 581213f45a42a8992b9b7acb01e99f42ac7af559e5518a19f1976eeedc91303d
+target/switch-nro/game/cargo-target/horizon-newlib-gcc/debug/warbell-switch.nro
+SHA-256: c38b72e30d3f3c4f54542d898565347daf50ba5a48d1e03c9346371e169d079d
 ```
+
+The evidence bundle is under
+`target/ryujinx-logs/warbell-20260716T161004Z/` and is intentionally ignored by Git.
 
 Acceptance order:
 
@@ -137,10 +141,11 @@ SHA-256: a9703744b68ea70b7c5ddab066817177c735cbf3e8a63884762a80c4e6419706
 ```
 
 The first uploads four padded slices and validates native `sampler3D` results. The second uploads
-and reads back padded 4x4x4 and 2x2x2 mip levels. Run both before Warbell after Ryujinx keys are
-restored.
+and reads back padded 4x4x4 and 2x2x2 mip levels. Keep both as focused regressions when the sampled
+3D path changes.
 
-After this passes, replace the smoke scene with the smallest recognizable Warbell gameplay slice.
+The emulator gate now passes. Use physical hardware acceptance to drive the next backend or game
+integration change.
 
 ## Hardware acceptance
 
@@ -149,16 +154,16 @@ Build and send the current NRO:
 ```sh
 ../switch/experiments/switch1-deko3d-wgpu/tools/bootstrap-devkitpro-switch.sh
 tools/build-switch-nro.sh
-tools/run-switch-nro.sh <switch-ip>
+tools/run-switch-nro.sh game <switch-ip>
 ```
 
 Acceptance checklist:
 
 1. The application starts without an abort or provider miss.
-2. The green triangle appears and presents continuously.
-3. Controller input changes the clear color.
-4. PNG, font, and WGSL asset loads report success.
-5. Frame diagnostics reach at least frame 300.
+2. The courtyard, knight, rival, lighting, and combat HUD appear and present continuously.
+3. Controller input moves and turns the knight and can trigger the combat exchange.
+4. PNG, font, WGSL, and embedded DKSH asset loads report success.
+5. Frame diagnostics reach at least frame 300 with no provider misses or validation errors.
 6. Applet exit produces the expected teardown logs.
 7. Repeat in handheld and docked modes and record resolution, screenshots, nxlink logs, crashes, and obvious frame-pacing problems.
 
