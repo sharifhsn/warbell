@@ -17,6 +17,9 @@ REQUEST_HASH=$5
 EXPECTED_REFLECTION_HASH=$6
 DESIGNATION=$7
 COORDINATE_SPACE=${COORDINATE_SPACE:-adjusted}
+MULTIVIEW_MASK=${MULTIVIEW_MASK:-}
+MULTIVIEW_FLAG=
+MULTIVIEW_JSON=null
 
 case "$STAGE" in
   vertex|fragment|compute) ;;
@@ -36,6 +39,12 @@ if [ "${#EXPECTED_REFLECTION_HASH}" -ne 64 ]; then
   echo "expected reflection SHA-256 must be 64 lowercase hex characters" >&2; exit 2
 fi
 case "$DESIGNATION" in diagnostic|production) ;; *) echo "designation must be diagnostic or production" >&2; exit 2 ;; esac
+if [ -n "$MULTIVIEW_MASK" ]; then
+  case "$MULTIVIEW_MASK" in *[!0-9]*|0|'') echo "MULTIVIEW_MASK must be a positive decimal u32" >&2; exit 2 ;; esac
+  [ "$STAGE" = vertex ] || { echo "MULTIVIEW_MASK is only valid for vertex shaders" >&2; exit 2; }
+  MULTIVIEW_FLAG=--multiview
+  MULTIVIEW_JSON=$MULTIVIEW_MASK
+fi
 if [ ! -f "$INPUT" ]; then
   echo "missing WGSL input: $INPUT" >&2
   exit 2
@@ -43,6 +52,7 @@ fi
 
 SAFE_ENTRY=$(printf '%s' "$REQUEST_ENTRY" | tr -c 'A-Za-z0-9_' '_')
 NAME="$REQUEST_HASH-$STAGE-$SAFE_ENTRY"
+if [ -n "$MULTIVIEW_MASK" ]; then NAME="$NAME-mv$MULTIVIEW_MASK"; fi
 OUT_DIR="$ROOT_DIR/target/dksh-overrides/$NAME"
 INSTALL_DIR="$RYUJINX_SD_ROOT/switch/warbell-shader-overrides"
 TOOL_MANIFEST="$SWITCH_REPO/Cargo.toml"
@@ -61,6 +71,7 @@ else
     --entry "$COMPILE_ENTRY" \
     --input "$INPUT" \
     --coordinate-space "$COORDINATE_SPACE" \
+    $MULTIVIEW_FLAG \
     --auto-bind-resources \
     --glsl-out "$OUT_DIR/shader.glsl" \
     --dksh-out "$OUT_DIR/shader.dksh" \
@@ -87,6 +98,7 @@ cat > "$INSTALL_DIR/$NAME.json" <<EOF
   "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "designation": "$DESIGNATION",
   "coordinate_space": "$COORDINATE_SPACE",
+  "multiview_mask": $MULTIVIEW_JSON,
   "binding_map_targets": $(jq -c '[.resources[] | {group, binding, kind, binding_map_target}]' "$OUT_DIR/shader.reflection.json")
 }
 EOF

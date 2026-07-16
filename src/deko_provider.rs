@@ -102,6 +102,11 @@ impl Deko3dWgslArtifactProvider for WarbellDeko3dProvider {
         if let Some(artifact) = load_shader_override(&request)? {
             return Ok(artifact);
         }
+        if request.multiview_mask.is_some() {
+            return Err(String::from(
+                "Warbell has no embedded multiview DKSH variant for this vertex shader",
+            ));
+        }
         if request.wgsl_sha256 == FULLSCREEN_VERTEX_SHA256
             && request.stage == Deko3dWgslArtifactStage::Vertex
             && request.entry_point == "fullscreen_vertex_shader"
@@ -372,6 +377,8 @@ fn load_shader_override(
         stage: String,
         request_entry: String,
         designation: String,
+        #[serde(default)]
+        multiview_mask: Option<u32>,
     }
 
     let mut digest = String::with_capacity(64);
@@ -394,8 +401,13 @@ fn load_shader_override(
             }
         })
         .collect();
-    let path = PathBuf::from("sdmc:/switch/warbell-shader-overrides")
-        .join(format!("{digest}-{stage}-{entry_point}.dksh"));
+    let multiview_suffix = request
+        .multiview_mask
+        .map(|mask| format!("-mv{}", mask.get()))
+        .unwrap_or_default();
+    let path = PathBuf::from("sdmc:/switch/warbell-shader-overrides").join(format!(
+        "{digest}-{stage}-{entry_point}{multiview_suffix}.dksh"
+    ));
     match fs::read(&path) {
         Ok(bytes) => {
             let manifest_path = path.with_extension("json");
@@ -415,6 +427,7 @@ fn load_shader_override(
             if manifest.request_sha256 != digest
                 || manifest.stage != stage
                 || manifest.request_entry != request.entry_point
+                || manifest.multiview_mask != request.multiview_mask.map(|mask| mask.get())
             {
                 return Err(format!(
                     "shader override {} manifest does not match the request",
@@ -518,6 +531,7 @@ mod tests {
             wgsl_sha256,
             stage,
             entry_point,
+            multiview_mask: None,
         }
     }
 
@@ -547,10 +561,14 @@ mod tests {
                     wgsl: b"",
                     wgsl_sha256: [0; 32],
                     stage: Deko3dWgslArtifactStage::Vertex,
-                    entry_point: "vs_main"
+                    entry_point: "vs_main",
+                    multiview_mask: None,
                 })
                 .is_err()
         );
+        let mut multiview = request(Deko3dWgslArtifactStage::Vertex, "vs_main");
+        multiview.multiview_mask = core::num::NonZeroU32::new(0b11);
+        assert!(provider.resolve(multiview).is_err());
     }
 
     #[test]
