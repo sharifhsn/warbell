@@ -316,7 +316,7 @@ fn render_plugin() -> bevy::render::RenderPlugin {
     bevy::render::RenderPlugin {
         render_creation: bevy::render::settings::WgpuSettings {
             deko3d_wgsl_artifact_provider: Some(Arc::new(
-                crate::deko_provider::WarbellDeko3dProvider,
+                crate::deko_provider::WarbellDeko3dProvider::default(),
             )),
             ..default()
         }

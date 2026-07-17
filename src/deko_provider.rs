@@ -95,14 +95,17 @@ const UI_GRADIENT_SHA256: [u8; 32] = [
     0xaf, 0x17, 0x20, 0xf7, 0xdc, 0xab, 0x1e, 0x7a, 0x22, 0xd4, 0xeb, 0xc3, 0x25, 0x5c, 0x7c, 0xdf,
 ];
 
-pub struct WarbellDeko3dProvider;
+#[derive(Default)]
+pub struct WarbellDeko3dProvider {
+    cache: deko_shader_compiler::CompilerCache,
+}
 
 impl Deko3dWgslArtifactProvider for WarbellDeko3dProvider {
     fn resolve(&self, request: Deko3dWgslArtifactRequest<'_>) -> Result<Arc<[u8]>, String> {
         if let Some(artifact) = load_shader_override(&request)? {
             return Ok(artifact);
         }
-        if let Some(artifact) = try_compile_runtime(&request)? {
+        if let Some(artifact) = try_compile_runtime(&self.cache, &request)? {
             return Ok(artifact);
         }
         if !request.constants.is_empty() {
@@ -376,9 +379,10 @@ impl Deko3dWgslArtifactProvider for WarbellDeko3dProvider {
 }
 
 fn try_compile_runtime(
+    cache: &deko_shader_compiler::CompilerCache,
     request: &Deko3dWgslArtifactRequest<'_>,
 ) -> Result<Option<Arc<[u8]>>, String> {
-    use deko_shader_compiler::{Compiler, Options, PipelineConstants, Stage};
+    use deko_shader_compiler::{Options, PipelineConstants, Stage};
 
     let source = std::str::from_utf8(request.wgsl)
         .map_err(|error| format!("Deko3D WGSL source is not UTF-8: {error}"))?;
@@ -397,15 +401,16 @@ fn try_compile_runtime(
         zero_initialize_workgroup_memory: request.zero_initialize_workgroup_memory,
         ..Options::default()
     };
-    match Compiler.compile_wgsl(source, stage, request.entry_point, &constants, options) {
-        Ok(artifact) => {
+    match cache.compile_wgsl(source, stage, request.entry_point, &constants, options) {
+        Ok((cache_key, artifact)) => {
             eprintln!(
-                "[warbell-switch] runtime_shader_compile hit stage={:?} entry={} bytes={}",
+                "[warbell-switch] runtime_shader_compile hit stage={:?} entry={} cache={} bytes={}",
                 request.stage,
                 request.entry_point,
+                cache_key.to_hex(),
                 artifact.dksh.len()
             );
-            Ok(Some(Arc::from(artifact.dksh)))
+            Ok(Some(Arc::from(artifact.dksh.clone())))
         }
         Err(error) => {
             eprintln!(
@@ -628,17 +633,21 @@ mod tests {
             ),
         ];
 
+        let provider = WarbellDeko3dProvider::default();
         for (stage, wgsl) in shaders {
-            let artifact = WarbellDeko3dProvider
-                .resolve(request_with_wgsl(wgsl, stage))
-                .unwrap();
+            let artifact = provider.resolve(request_with_wgsl(wgsl, stage)).unwrap();
             assert!(artifact.starts_with(b"DKSH"));
+            assert_eq!(
+                artifact,
+                provider.resolve(request_with_wgsl(wgsl, stage)).unwrap()
+            );
         }
+        assert_eq!(provider.cache.len(), 3);
     }
 
     #[test]
     fn resolves_both_proof_stages_and_rejects_misses() {
-        let provider = WarbellDeko3dProvider;
+        let provider = WarbellDeko3dProvider::default();
         assert!(
             provider
                 .resolve(request(Deko3dWgslArtifactStage::Vertex, "vs_main"))
@@ -676,7 +685,7 @@ mod tests {
 
     #[test]
     fn resolves_native_full_pbr_fragments() {
-        let provider = WarbellDeko3dProvider;
+        let provider = WarbellDeko3dProvider::default();
         let tone_mapping = provider
             .resolve(request_with_hash(
                 PBR_FRAGMENT_SHA256,
@@ -742,14 +751,14 @@ mod tests {
 
     #[test]
     fn resolves_full_game_mesh_pipeline() {
-        let vertex = WarbellDeko3dProvider
+        let vertex = WarbellDeko3dProvider::default()
             .resolve(request_with_hash(
                 MESH_VERTEX_SHA256,
                 Deko3dWgslArtifactStage::Vertex,
                 "main",
             ))
             .unwrap();
-        let fragment = WarbellDeko3dProvider
+        let fragment = WarbellDeko3dProvider::default()
             .resolve(request_with_hash(
                 MESH_FRAGMENT_SHA256,
                 Deko3dWgslArtifactStage::Fragment,
@@ -771,7 +780,7 @@ mod tests {
 
     #[test]
     fn resolves_ui_shadow_pipeline() {
-        let provider = WarbellDeko3dProvider;
+        let provider = WarbellDeko3dProvider::default();
         let vertex = provider
             .resolve(request_with_hash(
                 UI_SHADOW_SHA256,
