@@ -24,10 +24,10 @@ correctness requirement.
 ## Current verified status (2026-07-17)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `f5b82a28a9babc41d5ed2cfbc3d2f1680d9169a9`. It lowers supported Naga/WGSL directly
+  `2996bc9f3ad5e2223c6280a895a4cce5095bb373`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `f8ecf2a6f` makes that compiler the
+- wgpu revision `5dca684fb` makes that compiler the
   default Deko3D WGSL path. An installed artifact provider remains a higher-priority
   diagnostic override, but ordinary applications no longer need one.
 - The compiler workspace has 43 passing compiler tests and 100 tests across all workspace
@@ -60,9 +60,11 @@ correctness requirement.
 - `subgroupBroadcastFirst` lowers through an active-lane vote and indexed shuffle.
   Array `textureNumLayers` queries are native, including exact cube-array face-to-layer
   conversion, and pipeline-specialized compute workgroup-size overrides reach DKSH metadata.
-- The compiler backend ABI has advanced through 28 so persistent cache entries cannot cross
+- Multiview pipelines load `view_index` from wgpu's reserved Deko uniform slot, emit the
+  Maxwell layer output for each replayed vertex draw, and expose that layer to fragment WGSL.
+- The compiler backend ABI has advanced through 29 so persistent cache entries cannot cross
   gradient, subgroup, texture-query, or specialization codegen boundaries. The latest clean,
-  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260717T145742Z`
+  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260717T151455Z`
   reached ready in six seconds, passed all three visual captures, and passed the run-health
   gate with diagnostic overrides disabled.
 - Full-game corpus closure, explicit physical-hardware timing/memory budgets,
