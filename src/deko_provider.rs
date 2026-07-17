@@ -382,7 +382,7 @@ fn try_compile_runtime(
     cache: &deko_shader_compiler::CompilerCache,
     request: &Deko3dWgslArtifactRequest<'_>,
 ) -> Result<Option<Arc<[u8]>>, String> {
-    use deko_shader_compiler::{Options, PipelineConstants, Stage};
+    use deko_shader_compiler::{BindingArraySize, Options, PipelineConstants, Stage};
 
     let source = std::str::from_utf8(request.wgsl)
         .map_err(|error| format!("Deko3D WGSL source is not UTF-8: {error}"))?;
@@ -399,14 +399,31 @@ fn try_compile_runtime(
     let options = Options {
         multiview_mask: request.multiview_mask.map(core::num::NonZeroU32::get),
         zero_initialize_workgroup_memory: request.zero_initialize_workgroup_memory,
+        binding_array_sizes: request
+            .binding_array_sizes
+            .iter()
+            .map(|size| BindingArraySize {
+                group: size.group,
+                binding: size.binding,
+                count: size.count,
+            })
+            .collect(),
         ..Options::default()
     };
-    match cache.compile_wgsl(source, stage, request.entry_point, &constants, options) {
+    let selected_entry = if request.entry_point == "main" {
+        deko_shader_compiler::Compiler
+            .resolve_wgsl_entry_point(source, stage, request.entry_point)
+            .unwrap_or_else(|_| request.entry_point.to_owned())
+    } else {
+        request.entry_point.to_owned()
+    };
+    match cache.compile_wgsl(source, stage, &selected_entry, &constants, options) {
         Ok((cache_key, artifact)) => {
             eprintln!(
-                "[warbell-switch] runtime_shader_compile hit stage={:?} entry={} cache={} bytes={}",
+                "[warbell-switch] runtime_shader_compile hit stage={:?} entry={} selected_entry={} cache={} bytes={}",
                 request.stage,
                 request.entry_point,
+                selected_entry,
                 cache_key.to_hex(),
                 artifact.dksh.len()
             );
