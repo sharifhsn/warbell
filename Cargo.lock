@@ -2312,6 +2312,7 @@ dependencies = [
  "deko-dksh",
  "deko-nak",
  "naga",
+ "sha2",
  "thiserror 2.0.18",
 ]
 
