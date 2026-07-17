@@ -171,6 +171,12 @@ Do not broaden the backend before this gate passes. If it fails, fix the smalles
 
 ## Dependency-ordered roadmap
 
+The runtime WGSL compiler is now tracked as an explicit completion goal. Its locked
+architecture, gates, and acceptance contract are in
+[`deko-shader-compiler-plan.md`](deko-shader-compiler-plan.md). The artifact-provider
+roadmap below remains the validated fallback and migration baseline until the compiler
+passes its physical-hardware gates.
+
 ### 1. Minimal recognizable Warbell scene
 
 Replace the proof app with the smallest real gameplay slice:
