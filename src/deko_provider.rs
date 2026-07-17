@@ -646,6 +646,21 @@ mod tests {
     }
 
     #[test]
+    fn runtime_cache_distinguishes_pipeline_override_values() {
+        let wgsl = b"override scale: f32 = 1.0; @fragment fn main() -> @location(0) vec4<f32> { return vec4<f32>(scale, 0.0, 0.0, 1.0); }";
+        let provider = WarbellDeko3dProvider::default();
+        let mut first_request = request_with_wgsl(wgsl, Deko3dWgslArtifactStage::Fragment);
+        first_request.constants = &[("scale", 0.25)];
+        let mut second_request = request_with_wgsl(wgsl, Deko3dWgslArtifactStage::Fragment);
+        second_request.constants = &[("scale", 0.75)];
+
+        let first = provider.resolve(first_request).unwrap();
+        let second = provider.resolve(second_request).unwrap();
+        assert_ne!(first, second);
+        assert_eq!(provider.cache.len(), 2);
+    }
+
+    #[test]
     fn resolves_both_proof_stages_and_rejects_misses() {
         let provider = WarbellDeko3dProvider::default();
         assert!(
