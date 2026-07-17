@@ -99,6 +99,28 @@ On Switch or in Ryujinx, pressing Plus and Minus together dumps the same trace
 on demand. Emulator builds also dump it once at frame 300 so deterministic runs
 capture resource and native-binding records without enabling per-draw logging.
 
+## Runtime WGSL compute probe
+
+The sibling `switch` repository contains the provider-free acceptance app at
+`experiments/switch1-deko3d-wgpu/examples/deko-wgpu-public-runtime-compute-rs`.
+Always build the emulator form explicitly:
+
+```sh
+cd ../switch
+SWITCH_EMULATOR=1 \
+  experiments/switch1-deko3d-wgpu/tools/build-wgpu-public-runtime-compute.sh
+```
+
+Without `SWITCH_EMULATOR=1`, the NRO uses hardware TLS and can fail before `main` in
+Ryujinx. The acceptance app must not install a DKSH provider: it exercises ordinary
+WGSL through the compiler embedded by wgpu's `deko3d` feature.
+
+The current patched Ryujinx run proves pipeline creation, binding, dispatch command
+submission, and the separate buffer-copy/readback path. Compute output remains zero
+for both compiler-produced DKSH and an official UAM-produced artifact, so do not treat
+that emulator result as a compiler-codegen failure. Use physical Switch readback as
+the authoritative compute semantic test.
+
 ## Screenshot comparison
 
 The canonical run always performs profile-based validation. The checked-in

@@ -1,6 +1,6 @@
 # Deko Shader Compiler: End-to-End Execution Plan
 
-Status: active goal, architecture baseline
+Status: active goal, runtime integration implemented; hardware closure in progress
 
 ## Goal
 
@@ -20,6 +20,31 @@ The finished path must compile shaders at runtime without Warbell-specific hashe
 embedded shader variants, UAM, Mesa, a host-side compiler, or a proprietary Nintendo
 SDK. Offline precompilation may remain as an optional cache warmer, never as a
 correctness requirement.
+
+## Current verified status (2026-07-17)
+
+- `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
+  `0a789581662cf2777e24848351aeb883c1988b5d`. It lowers supported Naga/WGSL directly
+  through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
+  UAM, or proprietary SDK libraries at runtime.
+- wgpu revision `f18240773cd09c6333c3475c4179aeb45c6bb551` makes that compiler the
+  default Deko3D WGSL path. An installed artifact provider remains a higher-priority
+  diagnostic override, but ordinary applications no longer need one.
+- The compiler workspace test and strict-clippy suites pass. The wgpu Deko3D HAL has
+  32 passing host tests, and the no-provider acceptance NRO links for Horizon without
+  `getrandom` or any host compiler dependency.
+- wgpu revision `e16bd0643` correctly marks the Deko CPU shadow mapping as
+  non-coherent and downloads GPU-written ranges for `MAP_READ`. A Ryujinx acceptance
+  probe proves CPU upload, Deko buffer copy, fence flush, invalidation, and exact
+  readback end to end.
+- The no-provider compute probe reaches a valid compute shader, binds storage targets
+  0 and 1 with the correct input contents, and dispatches four workgroups. Ryujinx
+  currently leaves the output unchanged. The identical failure with an official
+  UAM-produced DKSH rules out the new compiler as the differentiator; physical Switch
+  execution remains the authoritative P0/P2 gate.
+- The in-memory compiler cache is deterministic. Bounded eviction, persistent SD
+  storage, corrupt-entry recovery, cold/warm budgets, fuzzing, and physical-hardware
+  execution remain incomplete, so this goal is not complete.
 
 ## Completion contract
 
@@ -295,4 +320,3 @@ progress.
   features change.
 - Preserve existing Warbell and sibling Switch-lab worktrees. Inspect status before
   every edit and stage only files owned by the current change.
-
