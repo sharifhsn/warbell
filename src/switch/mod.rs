@@ -15,9 +15,6 @@ use bevy::{
     window::{Window, WindowPlugin, WindowResolution},
 };
 #[cfg(target_os = "horizon")]
-use std::sync::Arc;
-
-#[cfg(target_os = "horizon")]
 #[unsafe(no_mangle)]
 static mut __nx_heap_size: usize = 1024 * 1024 * 1024;
 
@@ -315,8 +312,8 @@ fn switch_movement(input: &PreviousPad) -> Vec2 {
 fn render_plugin() -> bevy::render::RenderPlugin {
     bevy::render::RenderPlugin {
         render_creation: bevy::render::settings::WgpuSettings {
-            deko3d_wgsl_artifact_provider: Some(Arc::new(
-                crate::deko_provider::WarbellDeko3dProvider::default(),
+            deko3d_shader_cache_directory: Some(String::from(
+                "sdmc:/switch/warbell/cache/wgpu-deko3d",
             )),
             ..default()
         }
@@ -397,7 +394,7 @@ fn horizon_runner(mut app: App) -> AppExit {
 
 fn log_switch_frame_status(world: &World, frame: u64) {
     eprintln!(
-        "[warbell-switch] phase=frame frame={frame} provider=embedded_dksh entities={}",
+        "[warbell-switch] phase=frame frame={frame} shader_source=runtime_wgsl entities={}",
         world.entities().len()
     );
 }

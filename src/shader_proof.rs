@@ -266,7 +266,7 @@ pub fn log_switch_frame_status(world: &World, frame: u64) {
     let assets = world.resource::<ProofAssetStates>();
     let input = world.resource::<ProofInputState>();
     eprintln!(
-        "[warbell-switch] phase=frame frame={frame} asset_png={:?} asset_font={:?} asset_wgsl={:?} provider=embedded_dksh proof_input_x={:.3} proof_input_y={:.3} proof_action={} proof_assets_ready={}",
+        "[warbell-switch] phase=frame frame={frame} asset_png={:?} asset_font={:?} asset_wgsl={:?} shader_source=runtime_wgsl proof_input_x={:.3} proof_input_y={:.3} proof_action={} proof_assets_ready={}",
         assets.png,
         assets.font,
         assets.wgsl,

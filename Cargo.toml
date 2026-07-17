@@ -59,12 +59,10 @@ bevy_horizon = { path = "crates/bevy_horizon", optional = true }
 # Save/continue: JSON snapshot of a run, written at each dawn (`src/savegame.rs`).
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.10"
 # Same wgpu major bevy 0.19 depends on (29.x) — used in quality.rs to inspect
 # RenderAdapterInfo::device_type for the hardware-aware startup preset. Kept at the bare major so
 # cargo unifies it with bevy's own wgpu (same compiled crate → DeviceType types match).
 wgpu = { version = "29", default-features = false }
-deko-shader-compiler = { path = "vendor/deko-shader-compiler/crates/deko-shader-compiler", optional = true }
 # Runtime window icon (taskbar / title-bar / Alt-Tab): winit's window class ships hIcon=0, so it
 # does NOT adopt the exe's embedded icon for the live window — we set it ourselves in
 # `src/window_icon.rs`. `winit` (pinned to bevy_winit's 0.30 so the WinitWindow types unify) gives
@@ -119,7 +117,6 @@ switch = [
     "bevy/bevy_ui_render",
     "wgpu/deko3d",
     "dep:bevy_horizon",
-    "dep:deko-shader-compiler",
 ]
 switch-full = ["switch", "bevy/debug"]
 switch-probe = ["switch"]

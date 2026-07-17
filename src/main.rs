@@ -168,8 +168,6 @@ mod switch_knight_model;
 #[cfg(any(feature = "desktop", feature = "switch"))]
 mod ui;
 
-#[cfg(feature = "switch")]
-mod deko_provider;
 #[cfg(feature = "shader-proof-capture")]
 mod shader_proof;
 #[cfg(feature = "switch")]
