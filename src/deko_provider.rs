@@ -646,6 +646,30 @@ mod tests {
     }
 
     #[test]
+    fn compiles_captured_bevy_ui_pipeline_at_runtime() {
+        let shaders = [
+            (
+                Deko3dWgslArtifactStage::Vertex,
+                "vertex",
+                include_bytes!("../assets/shaders/deko3d-runtime/05a50465-ui.vert.wgsl").as_slice(),
+            ),
+            (
+                Deko3dWgslArtifactStage::Fragment,
+                "fragment",
+                include_bytes!("../assets/shaders/deko3d-runtime/05a50465-ui.frag.wgsl").as_slice(),
+            ),
+        ];
+        let provider = WarbellDeko3dProvider::default();
+        for (stage, entry_point, wgsl) in shaders {
+            let mut request = request_with_wgsl(wgsl, stage);
+            request.entry_point = entry_point;
+            let artifact = provider.resolve(request).unwrap();
+            assert!(artifact.starts_with(b"DKSH"));
+        }
+        assert_eq!(provider.cache.len(), 2);
+    }
+
+    #[test]
     fn runtime_cache_distinguishes_pipeline_override_values() {
         let wgsl = b"override scale: f32 = 1.0; @fragment fn main() -> @location(0) vec4<f32> { return vec4<f32>(scale, 0.0, 0.0, 1.0); }";
         let provider = WarbellDeko3dProvider::default();
