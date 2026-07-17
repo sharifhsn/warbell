@@ -109,36 +109,6 @@ require_command shasum
 require_file "$ROOT_DIR/Cargo.lock"
 require_file "$TARGET_JSON"
 
-for artifact in "$ROOT_DIR"/assets/shaders/deko3d-runtime/*.artifact.json; do
-  require_file "$artifact"
-  [ "$(jq -r '.schema' "$artifact")" = wgsl-to-dksh-artifact-v0 ] || {
-    echo "invalid DKSH artifact manifest: $artifact" >&2
-    exit 1
-  }
-  if [ "$(jq -r '.stage' "$artifact")" = vertex ] &&
-     [ "$(jq -r '.coordinate_space' "$artifact")" != native ]; then
-    echo "Bevy vertex DKSH must use native coordinates: $artifact" >&2
-    exit 1
-  fi
-  for kind in dksh glsl reflection; do
-    path=$(jq -r ".files.$kind.path // empty" "$artifact")
-    expected=$(jq -r ".files.$kind.sha256 // empty" "$artifact")
-    [ -n "$path" ] && [ -n "$expected" ] || {
-      echo "incomplete DKSH artifact manifest: $artifact ($kind)" >&2
-      exit 1
-    }
-    case "$path" in
-      /*) resolved=$path ;;
-      *) resolved=$ROOT_DIR/$path ;;
-    esac
-    require_file "$resolved"
-    [ "$(shasum -a 256 "$resolved" | awk '{print $1}')" = "$expected" ] || {
-      echo "stale DKSH artifact output: $artifact ($kind)" >&2
-      exit 1
-    }
-  done
-done
-
 LIBC_VERSION=$(locked_version libc)
 POLLING_VERSION=$(locked_version polling)
 if [ -z "$LIBC_VERSION" ] || [ -z "$POLLING_VERSION" ]; then

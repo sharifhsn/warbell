@@ -1,6 +1,6 @@
 # Warbell Switch Port Handoff
 
-Last updated: 2026-07-16
+Last updated: 2026-07-17
 
 ## Goal
 
@@ -10,9 +10,9 @@ Run the Bevy 0.19 Warbell game on Nintendo Switch through an experimental Deko3D
 
 | Repository | Branch | Responsibility |
 | --- | --- | --- |
-| `vendor/wgpu` | `codex/deko3d-wgpu29` | Deko3D HAL, FFI, resource semantics, capability reporting, and DKSH artifact lookup |
-| `vendor/bevy` | `codex/deko3d-horizon` | Horizon platform wiring, Deko3D surface selection, shader capture, and artifact-provider installation |
-| this repository | `codex/warbell-wgpu29` | Warbell Switch profile, game integration, assets, shader artifacts, NRO packaging, and hardware diagnostics |
+| `vendor/wgpu` | `codex/deko3d-wgpu29` | Deko3D HAL, FFI, resource semantics, capability reporting, and runtime WGSL compilation |
+| `vendor/bevy` | `codex/deko3d-horizon` | Horizon platform wiring, Deko3D surface selection, shader capture, and persistent-cache configuration |
+| this repository | `codex/warbell-wgpu29` | Warbell Switch profile, game integration, WGSL assets, NRO packaging, and hardware diagnostics |
 | `../switch` | `codex/switch-wgpu29-support` | External homebrew harnesses and hardware documentation only |
 | `/Users/sharif/Code/wgpu-deko3d-30-reference` | existing fork branch | Reference and documentation only |
 
@@ -28,17 +28,16 @@ Implemented:
 - Horizon runner using `appletMainLoop`, plugin readiness, AppExit, and teardown.
 - Bevy window surface acquisition and presentation through the Deko3D backend.
 - A real Bevy plane, cube, directional light, and camera rendered through the wgpu 29 Deko3D path in Ryujinx.
-- Metadata-aware native-coordinate DKSH artifacts. Deko3D already uses upper-left origin and zero-to-one depth, so vertex artifacts must not apply the OpenGL Y/depth fixup.
-- Native DKSH artifacts for Bevy tone mapping and the untouched full Bevy PBR fragment are now
-  embedded and selected by their captured WGSL hashes. The earlier constrained material shader
-  remains in the tree as a diagnostic reference, not the active PBR artifact.
+- Runtime WGSL compilation through Naga and the extracted Maxwell NAK backend. Deko3D
+  already uses upper-left origin and zero-to-one depth, so generated vertex programs do
+  not apply an OpenGL Y/depth fixup.
 - Native sampled 3D textures, including a D2-array staging copy into Deko3D 3D images for padded
   WebGPU buffer uploads. `DkCopyBuf` strides are passed in bytes as required by Deko3D.
 - RomFS mounted before `AssetPlugin`, with `assets/` packaged at `romfs:/assets`.
 - Representative PNG, TTF, and WGSL loads through Bevy's `AssetServer`.
 - Gamepad event injection; controller input visibly changes the proof clear color.
-- Structured startup, asset, shader-provider, frame 1/60/300, and exit diagnostics.
-- Deterministic shader capture and exact `(final WGSL SHA, stage, entry point)` DKSH lookup.
+- Structured startup, asset, runtime-compiler/cache, frame 1/60/300, and exit diagnostics.
+- Deterministic shader capture remains available as a coverage tool, not a runtime input.
 - NRO build metadata, SHA-256 output, and nxlink deployment logging.
 
 The Switch feature now runs a small controller-driven Warbell courtyard with a primitive knight,
@@ -62,6 +61,7 @@ Bevy:
 - `f4f0179d7` Add deterministic shader capture infrastructure
 - `a4bd4640e` Add Deko3D shader capture planning tool
 - `1729ae1a0` Install Deko3D shader artifact providers
+- `344421f93` Configure the persistent Deko3D shader cache
 
 Warbell:
 
@@ -71,6 +71,7 @@ Warbell:
 - `b707658` Add Switch hardware diagnostics
 - `bc5c760` Render Deko3D shader proof on Switch
 - `f65de12` Prove Switch assets and controller render state
+- `afccf82` Use the runtime WGSL compiler directly
 
 Harness:
 
@@ -111,7 +112,7 @@ Treat this as a workload-driven list, not a mandate to implement everything. Add
 
 On 2026-07-16, the emulator-specific `game` NRO reached
 `phase=game_ready frame=60 combat=proven` in 16 seconds. Three captured frames passed the regional
-visual profile, and the log contained no shader-provider miss, Deko3D device loss, validation
+visual profile, and the log contained no shader-compiler error, Deko3D device loss, validation
 error, or panic. The validated build is:
 
 ```text
@@ -128,7 +129,7 @@ Acceptance order:
 2. Tone mapping with the 3D LUT produces the expected lit courtyard.
 3. The embedded untouched full Bevy PBR fragment produces the lit courtyard and knight.
 4. Left stick or D-pad moves and turns the knight within the courtyard.
-5. Runtime logs contain no shader-provider miss or Deko3D device-loss error.
+5. Runtime logs contain no shader-compiler or Deko3D device-loss error.
 
 Two smaller wgpu 29 probes isolate the sampled-3D path before the Warbell run:
 
@@ -159,11 +160,11 @@ tools/run-switch-nro.sh game <switch-ip>
 
 Acceptance checklist:
 
-1. The application starts without an abort or provider miss.
+1. The application starts without an abort or shader-compiler error.
 2. The courtyard, knight, rival, lighting, and combat HUD appear and present continuously.
 3. Controller input moves and turns the knight and can trigger the combat exchange.
-4. PNG, font, WGSL, and embedded DKSH asset loads report success.
-5. Frame diagnostics reach at least frame 300 with no provider misses or validation errors.
+4. PNG, font, and WGSL asset loads report success; runtime compilation/cache telemetry is present.
+5. Frame diagnostics reach at least frame 300 with no compiler or validation errors.
 6. Applet exit produces the expected teardown logs.
 7. Repeat in handheld and docked modes and record resolution, screenshots, nxlink logs, crashes, and obvious frame-pacing problems.
 
@@ -174,9 +175,10 @@ Do not broaden the backend before this gate passes. If it fails, fix the smalles
 The runtime WGSL compiler is an active completion goal. Its architecture, gates,
 current revisions, and acceptance evidence are in
 [`deko-shader-compiler-plan.md`](deko-shader-compiler-plan.md). Supported WGSL now
-compiles automatically in the wgpu Deko3D backend; the artifact provider is retained
-only as a higher-priority diagnostic oracle and migration fallback until physical
-hardware execution, persistent caching, and Warbell shader-corpus closure pass.
+compiles automatically in the wgpu Deko3D backend. Warbell's provider, hash table,
+embedded runtime DKSH bundle, and prebuilt proof shaders have been removed. A provider
+API remains available in wgpu only as an explicit diagnostic oracle; Warbell does not
+install it.
 
 ### 1. Minimal recognizable Warbell scene
 
@@ -188,20 +190,21 @@ Replace the proof app with the smallest real gameplay slice:
 - One textured material with depth testing.
 - Minimal HUD or debug text.
 
-Gate: walk around a recognizable Warbell scene on hardware for several minutes without validation errors, corruption, or provider misses.
+Gate: walk around a recognizable Warbell scene on hardware for several minutes without validation errors, corruption, or shader-compiler errors.
 
 ### 2. Close the shader set
 
 For each representative Switch scene:
 
 1. Run it on desktop with deterministic shader capture enabled.
-2. Generate the exact shader manifest.
-3. Compile each `(WGSL hash, stage, entry point)` to DKSH.
-4. Embed the artifacts in the Switch build.
-5. Make missing artifacts a clear build report and fail-closed runtime error.
-6. Require zero provider misses before advancing the scene.
+2. Add each captured shader to the compiler coverage corpus.
+3. Require either successful runtime compilation or a typed unsupported-feature error.
+4. Add a minimized regression fixture for every compiler failure or miscompile.
+5. Require zero validation errors before advancing the scene.
 
-Keep the provider architecture stable. Expand its artifact content rather than adding a second shader path.
+Do not restore hash-keyed embedded artifacts as a correctness path. The persistent
+cache may be warmed offline, but it must contain the same validated format that the
+runtime compiler produces and must remain optional.
 
 ### 3. Add rendering in game-value order
 
@@ -258,4 +261,4 @@ Prioritize stable gameplay and frame pacing. Add visual features one at a time w
 
 ## Definition of playable
 
-The Switch port is playable when a real Warbell gameplay loop boots from RomFS, accepts controller input, renders its required scene and UI with zero shader-provider misses, saves safely, handles suspend/resume and exit, and maintains an agreed frame-time and memory budget during a hardware soak test.
+The Switch port is playable when a real Warbell gameplay loop boots from RomFS, accepts controller input, renders its required scene and UI with zero shader-compiler errors, saves safely, handles suspend/resume and exit, and maintains an agreed frame-time and memory budget during a hardware soak test.

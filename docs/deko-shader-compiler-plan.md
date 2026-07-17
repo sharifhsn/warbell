@@ -24,14 +24,15 @@ correctness requirement.
 ## Current verified status (2026-07-17)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `0a789581662cf2777e24848351aeb883c1988b5d`. It lowers supported Naga/WGSL directly
+  `1a908ab3e0f5a13ad91c7940aa03982f66555212`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `f18240773cd09c6333c3475c4179aeb45c6bb551` makes that compiler the
+- wgpu revision `d6a707d77` makes that compiler the
   default Deko3D WGSL path. An installed artifact provider remains a higher-priority
   diagnostic override, but ordinary applications no longer need one.
-- The compiler workspace test and strict-clippy suites pass. The wgpu Deko3D HAL has
-  32 passing host tests, and the no-provider acceptance NRO links for Horizon without
+- The compiler workspace has 42 passing compiler tests plus its backend/utilities suites,
+  strict clippy, and rustdoc. The wgpu Deko3D HAL has 32 passing host tests, and the
+  no-provider acceptance NRO links for Horizon without
   `getrandom` or any host compiler dependency.
 - wgpu revision `e16bd0643` correctly marks the Deko CPU shadow mapping as
   non-coherent and downloads GPU-written ranges for `MAP_READ`. A Ryujinx acceptance
@@ -42,9 +43,15 @@ correctness requirement.
   currently leaves the output unchanged. The identical failure with an official
   UAM-produced DKSH rules out the new compiler as the differentiator; physical Switch
   execution remains the authoritative P0/P2 gate.
-- The in-memory compiler cache is deterministic. Bounded eviction, persistent SD
-  storage, corrupt-entry recovery, cold/warm budgets, fuzzing, and physical-hardware
-  execution remain incomplete, so this goal is not complete.
+- Warbell no longer installs an artifact provider or ships its hash-keyed runtime DKSH
+  bundle. Bevy configures `sdmc:/switch/warbell/cache/wgpu-deko3d`; a clean Ryujinx run
+  compiled and persisted 29 distinct shaders, then a warm run loaded all 29 from SD.
+  Both reached the probe-ready gate with no overrides. Cold resolution recorded 34
+  requests in 150,094 microseconds total (29 compiled, five RAM hits); warm resolution
+  recorded 34 in 44,983 microseconds (29 persistent hits, five RAM hits).
+- Fuzzing, full-game corpus closure, explicit physical-hardware timing/memory budgets,
+  and physical vertex/fragment/compute execution remain incomplete, so this goal is
+  not complete.
 
 ## Completion contract
 

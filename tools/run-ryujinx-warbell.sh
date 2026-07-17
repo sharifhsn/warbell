@@ -95,17 +95,6 @@ for f in "$OVERRIDE_DIR"/*.dksh; do
   designation=$(jq -r '.designation' "$meta")
   expected_reflection=$(jq -r '.expected_original_reflection_sha256' "$meta")
   original_reflection="$ORIGINAL_REFLECTION_DIR/$(basename "${f%.dksh}").reflection.json"
-  if [ ! -f "$original_reflection" ]; then
-    request_prefix=$(basename "$f" | cut -c1-8)
-    for candidate in "$ROOT_DIR/assets/shaders/deko3d-runtime/$request_prefix"-*.reflection.json; do
-      [ -f "$candidate" ] || continue
-      [ -z "${fallback_reflection:-}" ] ||
-        { echo "multiple original reflections match $request_prefix" >&2; exit 1; }
-      fallback_reflection=$candidate
-    done
-    original_reflection=${fallback_reflection:-$original_reflection}
-    unset fallback_reflection
-  fi
   if [ -f "$original_reflection" ]; then
     actual_reflection=$(shasum -a 256 "$original_reflection" | awk '{print $1}')
     [ "$actual_reflection" = "$expected_reflection" ] ||
