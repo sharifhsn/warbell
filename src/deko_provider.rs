@@ -102,6 +102,19 @@ impl Deko3dWgslArtifactProvider for WarbellDeko3dProvider {
         if let Some(artifact) = load_shader_override(&request)? {
             return Ok(artifact);
         }
+        if let Some(artifact) = try_compile_runtime(&request)? {
+            return Ok(artifact);
+        }
+        if !request.constants.is_empty() {
+            return Err(String::from(
+                "the runtime compiler does not yet support pipeline-overridable constants, and embedded artifacts cannot safely ignore them",
+            ));
+        }
+        if !request.zero_initialize_workgroup_memory {
+            return Err(String::from(
+                "the runtime compiler could not satisfy disabled workgroup-memory initialization, and embedded artifacts do not encode that policy",
+            ));
+        }
         if request.multiview_mask.is_some() {
             return Err(String::from(
                 "Warbell has no embedded multiview DKSH variant for this vertex shader",
@@ -362,6 +375,48 @@ impl Deko3dWgslArtifactProvider for WarbellDeko3dProvider {
     }
 }
 
+fn try_compile_runtime(
+    request: &Deko3dWgslArtifactRequest<'_>,
+) -> Result<Option<Arc<[u8]>>, String> {
+    use deko_shader_compiler::{Compiler, Options, PipelineConstants, Stage};
+
+    let source = std::str::from_utf8(request.wgsl)
+        .map_err(|error| format!("Deko3D WGSL source is not UTF-8: {error}"))?;
+    let stage = match request.stage {
+        Deko3dWgslArtifactStage::Vertex => Stage::Vertex,
+        Deko3dWgslArtifactStage::Fragment => Stage::Fragment,
+        Deko3dWgslArtifactStage::Compute => Stage::Compute,
+    };
+    let constants = request
+        .constants
+        .iter()
+        .map(|(name, value)| ((*name).to_owned(), *value))
+        .collect::<PipelineConstants>();
+    let options = Options {
+        multiview_mask: request.multiview_mask.map(core::num::NonZeroU32::get),
+        zero_initialize_workgroup_memory: request.zero_initialize_workgroup_memory,
+        ..Options::default()
+    };
+    match Compiler.compile_wgsl(source, stage, request.entry_point, &constants, options) {
+        Ok(artifact) => {
+            eprintln!(
+                "[warbell-switch] runtime_shader_compile hit stage={:?} entry={} bytes={}",
+                request.stage,
+                request.entry_point,
+                artifact.dksh.len()
+            );
+            Ok(Some(Arc::from(artifact.dksh)))
+        }
+        Err(error) => {
+            eprintln!(
+                "[warbell-switch] runtime_shader_compile fallback stage={:?} entry={} error={error}",
+                request.stage, request.entry_point
+            );
+            Ok(None)
+        }
+    }
+}
+
 #[cfg(all(target_os = "horizon", feature = "switch-emulator"))]
 fn load_shader_override(
     request: &Deko3dWgslArtifactRequest<'_>,
@@ -516,6 +571,7 @@ fn capture_runtime_shader(_: &Deko3dWgslArtifactRequest<'_>) {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sha2::{Digest, Sha256};
 
     fn request(stage: Deko3dWgslArtifactStage, entry_point: &str) -> Deko3dWgslArtifactRequest<'_> {
         request_with_hash(SOURCE_SHA256, stage, entry_point)
@@ -531,7 +587,52 @@ mod tests {
             wgsl_sha256,
             stage,
             entry_point,
+            constants: &[],
+            zero_initialize_workgroup_memory: true,
             multiview_mask: None,
+        }
+    }
+
+    fn request_with_wgsl<'a>(
+        wgsl: &'a [u8],
+        stage: Deko3dWgslArtifactStage,
+    ) -> Deko3dWgslArtifactRequest<'a> {
+        let digest = Sha256::digest(wgsl);
+        let mut wgsl_sha256 = [0; 32];
+        wgsl_sha256.copy_from_slice(&digest);
+        Deko3dWgslArtifactRequest {
+            wgsl,
+            wgsl_sha256,
+            stage,
+            entry_point: "main",
+            constants: &[],
+            zero_initialize_workgroup_memory: true,
+            multiview_mask: None,
+        }
+    }
+
+    #[test]
+    fn compiles_supported_wgsl_at_runtime_for_every_stage() {
+        let shaders = [
+            (
+                Deko3dWgslArtifactStage::Vertex,
+                b"@vertex fn main() -> @builtin(position) vec4<f32> { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }".as_slice(),
+            ),
+            (
+                Deko3dWgslArtifactStage::Fragment,
+                b"@fragment fn main() -> @location(0) vec4<f32> { return vec4<f32>(1.0, 0.0, 0.0, 1.0); }".as_slice(),
+            ),
+            (
+                Deko3dWgslArtifactStage::Compute,
+                b"@compute @workgroup_size(1) fn main() {}".as_slice(),
+            ),
+        ];
+
+        for (stage, wgsl) in shaders {
+            let artifact = WarbellDeko3dProvider
+                .resolve(request_with_wgsl(wgsl, stage))
+                .unwrap();
+            assert!(artifact.starts_with(b"DKSH"));
         }
     }
 
@@ -562,6 +663,8 @@ mod tests {
                     wgsl_sha256: [0; 32],
                     stage: Deko3dWgslArtifactStage::Vertex,
                     entry_point: "vs_main",
+                    constants: &[],
+                    zero_initialize_workgroup_memory: true,
                     multiview_mask: None,
                 })
                 .is_err()

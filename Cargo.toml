@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/core", "crates/bevy_horizon"]
-exclude = ["vendor/bevy", "vendor/wgpu"]
+exclude = ["vendor/bevy", "vendor/deko-shader-compiler", "vendor/wgpu"]
 
 [package]
 name = "tileworld_bevy_forest"
@@ -64,6 +64,7 @@ sha2 = "0.10"
 # RenderAdapterInfo::device_type for the hardware-aware startup preset. Kept at the bare major so
 # cargo unifies it with bevy's own wgpu (same compiled crate → DeviceType types match).
 wgpu = { version = "29", default-features = false }
+deko-shader-compiler = { path = "vendor/deko-shader-compiler/crates/deko-shader-compiler", optional = true }
 # Runtime window icon (taskbar / title-bar / Alt-Tab): winit's window class ships hIcon=0, so it
 # does NOT adopt the exe's embedded icon for the live window — we set it ourselves in
 # `src/window_icon.rs`. `winit` (pinned to bevy_winit's 0.30 so the WinitWindow types unify) gives
@@ -118,6 +119,7 @@ switch = [
     "bevy/bevy_ui_render",
     "wgpu/deko3d",
     "dep:bevy_horizon",
+    "dep:deko-shader-compiler",
 ]
 switch-full = ["switch", "bevy/debug"]
 switch-probe = ["switch"]
