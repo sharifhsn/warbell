@@ -24,10 +24,10 @@ correctness requirement.
 ## Current verified status (2026-07-17)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f`. It lowers supported Naga/WGSL directly
+  `f5b82a28a9babc41d5ed2cfbc3d2f1680d9169a9`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `6f4e3f4f4` makes that compiler the
+- wgpu revision `f8ecf2a6f` makes that compiler the
   default Deko3D WGSL path. An installed artifact provider remains a higher-priority
   diagnostic override, but ordinary applications no longer need one.
 - The compiler workspace has 43 passing compiler tests and 100 tests across all workspace
@@ -57,10 +57,14 @@ correctness requirement.
 - Subgroup barriers lower to CTA-scoped memory fences on GM20B. Maxwell's lockstep warp
   execution supplies the subgroup rendezvous without a whole-workgroup `BAR.SYNC`, which
   would be too strong and could deadlock unrelated warps.
-- The compiler backend ABI has advanced through 27 so persistent cache entries cannot cross
-  either the gradient or subgroup codegen boundaries. The latest clean, provider-free Ryujinx
-  probe at `target/ryujinx-logs/warbell-20260717T144610Z` rebuilt that namespace, reached
-  ready in eight seconds, and passed all three visual captures.
+- `subgroupBroadcastFirst` lowers through an active-lane vote and indexed shuffle.
+  Array `textureNumLayers` queries are native, including exact cube-array face-to-layer
+  conversion, and pipeline-specialized compute workgroup-size overrides reach DKSH metadata.
+- The compiler backend ABI has advanced through 28 so persistent cache entries cannot cross
+  gradient, subgroup, texture-query, or specialization codegen boundaries. The latest clean,
+  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260717T145742Z`
+  reached ready in six seconds, passed all three visual captures, and passed the run-health
+  gate with diagnostic overrides disabled.
 - Full-game corpus closure, explicit physical-hardware timing/memory budgets,
   and physical vertex/fragment/compute execution remain incomplete, so this goal is
   not complete.
