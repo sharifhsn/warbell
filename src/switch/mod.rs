@@ -26,13 +26,56 @@ mod emulator_tls {
     use core::{
         ffi::{c_int, c_void},
         ptr,
-        sync::atomic::{AtomicPtr, AtomicU32, Ordering},
+        sync::atomic::{AtomicPtr, AtomicU32, AtomicU64, Ordering},
     };
 
     const KEY_CAPACITY: usize = 256;
+    const THREAD_CAPACITY: usize = 64;
+    const CUR_THREAD_HANDLE: u32 = 0xFFFF_8000;
+
+    struct ThreadValues {
+        id: AtomicU64,
+        values: [AtomicPtr<c_void>; KEY_CAPACITY],
+    }
+
+    impl ThreadValues {
+        const fn new() -> Self {
+            Self {
+                id: AtomicU64::new(0),
+                values: [const { AtomicPtr::new(ptr::null_mut()) }; KEY_CAPACITY],
+            }
+        }
+    }
+
+    unsafe extern "C" {
+        fn svcGetThreadId(thread_id: *mut u64, handle: u32) -> u32;
+    }
+
     static NEXT_KEY: AtomicU32 = AtomicU32::new(0);
-    static VALUES: [AtomicPtr<c_void>; KEY_CAPACITY] =
-        [const { AtomicPtr::new(ptr::null_mut()) }; KEY_CAPACITY];
+    static THREADS: [ThreadValues; THREAD_CAPACITY] =
+        [const { ThreadValues::new() }; THREAD_CAPACITY];
+
+    fn current_thread_values() -> Option<&'static ThreadValues> {
+        let mut thread_id = 0_u64;
+        if unsafe { svcGetThreadId(&mut thread_id, CUR_THREAD_HANDLE) } != 0 || thread_id == 0 {
+            return None;
+        }
+        for thread in &THREADS {
+            let id = thread.id.load(Ordering::Acquire);
+            if id == thread_id {
+                return Some(thread);
+            }
+            if id == 0
+                && thread
+                    .id
+                    .compare_exchange(0, thread_id, Ordering::AcqRel, Ordering::Acquire)
+                    .is_ok()
+            {
+                return Some(thread);
+            }
+        }
+        None
+    }
 
     #[unsafe(no_mangle)]
     unsafe extern "C" fn __wrap_pthread_key_create(
@@ -49,26 +92,29 @@ mod emulator_tls {
 
     #[unsafe(no_mangle)]
     unsafe extern "C" fn __wrap_pthread_key_delete(key: u32) -> c_int {
-        let Some(value) = VALUES.get(key as usize) else {
+        let Some(key) = usize::try_from(key).ok().filter(|&key| key < KEY_CAPACITY) else {
             return 22;
         };
-        value.store(ptr::null_mut(), Ordering::Relaxed);
+        for thread in &THREADS {
+            thread.values[key].store(ptr::null_mut(), Ordering::Release);
+        }
         0
     }
 
     #[unsafe(no_mangle)]
     unsafe extern "C" fn __wrap_pthread_getspecific(key: u32) -> *mut c_void {
-        VALUES
-            .get(key as usize)
+        current_thread_values()
+            .and_then(|thread| thread.values.get(key as usize))
             .map_or(ptr::null_mut(), |value| value.load(Ordering::Relaxed))
     }
 
     #[unsafe(no_mangle)]
     unsafe extern "C" fn __wrap_pthread_setspecific(key: u32, value: *const c_void) -> c_int {
-        let Some(slot) = VALUES.get(key as usize) else {
+        let Some(slot) = current_thread_values().and_then(|thread| thread.values.get(key as usize))
+        else {
             return 22;
         };
-        slot.store(value.cast_mut(), Ordering::Relaxed);
+        slot.store(value.cast_mut(), Ordering::Release);
         0
     }
 }

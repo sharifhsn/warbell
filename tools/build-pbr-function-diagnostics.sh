@@ -40,7 +40,7 @@ for body in "$@"; do
     --input "$SOURCE" --entry "$function" --body "$body" --output "$wgsl"
   cargo run --manifest-path "$SWITCH_REPO/Cargo.toml" -p wgsl-to-dksh -- \
     --stage fragment --entry fragment --input "$wgsl" \
-    --coordinate-space adjusted --auto-bind-resources \
+    --coordinate-space native --auto-bind-resources \
     --bind 2:0=6 --bind 0:0=0 --bind 0:1=1 --bind 0:8=2 \
     --bind 0:9=3 --bind 0:10=4 --bind 0:2=0 --bind 0:3=0 \
     --bind 0:5=1 --bind 0:6=1 --bind 0:11=5 --bind 0:18=2 \
