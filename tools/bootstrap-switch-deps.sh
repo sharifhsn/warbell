@@ -11,10 +11,14 @@ bootstrap_fork() {
 
   if [[ -d "$destination/.git" ]]; then
     git -C "$destination" remote set-url origin "$remote"
-    git -C "$destination" remote set-url upstream "$upstream" 2>/dev/null || git -C "$destination" remote add upstream "$upstream"
+    if [[ -n "$upstream" ]]; then
+      git -C "$destination" remote set-url upstream "$upstream" 2>/dev/null || git -C "$destination" remote add upstream "$upstream"
+    fi
   else
     git clone "$remote" "$destination"
-    git -C "$destination" remote add upstream "$upstream"
+    if [[ -n "$upstream" ]]; then
+      git -C "$destination" remote add upstream "$upstream"
+    fi
   fi
 
   if git -C "$destination" show-ref --verify --quiet "refs/heads/$branch"; then
@@ -31,3 +35,4 @@ bootstrap_fork() {
 mkdir -p "$ROOT_DIR/vendor"
 bootstrap_fork "$ROOT_DIR/vendor/wgpu" "https://github.com/sharifhsn/wgpu.git" "https://github.com/gfx-rs/wgpu.git" "codex/deko3d-wgpu29"
 bootstrap_fork "$ROOT_DIR/vendor/bevy" "https://github.com/sharifhsn/bevy.git" "https://github.com/bevyengine/bevy.git" "codex/deko3d-horizon"
+bootstrap_fork "$ROOT_DIR/vendor/deko-shader-compiler" "https://github.com/sharifhsn/deko-shader-compiler.git" "" "main"

@@ -12,6 +12,8 @@ Its local engine dependencies are intentionally independent repositories:
 warbell-switch/                 Warbell fork and Switch integration
 warbell-switch/vendor/bevy/     sharifhsn/bevy, Horizon platform work
 warbell-switch/vendor/wgpu/     sharifhsn/wgpu, wgpu 29 Deko3D backend
+warbell-switch/vendor/deko-shader-compiler/
+                                sharifhsn/deko-shader-compiler, runtime WGSL compiler
 ```
 
 `vendor/` is ignored by Warbell Git because each dependency has its own history,
@@ -24,5 +26,6 @@ reference work only. It is not a dependency of Warbell and must not be used for
 Switch implementation or build commands.
 
 Ownership is strict: game and packaging changes belong here, Deko3D backend
-changes belong in `vendor/wgpu`, and Bevy/Horizon integration changes belong in
-`vendor/bevy`.
+changes belong in `vendor/wgpu`, Naga-to-Maxwell compilation and DKSH production
+belong in `vendor/deko-shader-compiler`, and Bevy/Horizon integration changes belong
+in `vendor/bevy`.
