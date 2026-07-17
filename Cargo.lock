@@ -1249,7 +1249,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-time",
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -2281,17 +2281,17 @@ checksum = "a4ae5f15dda3c708c0ade84bfee31ccab44a3da4f88015ed22f63732abe300c8"
 [[package]]
 name = "deko-bitview"
 version = "0.1.0"
-source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad#f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad"
+source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f#fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f"
 
 [[package]]
 name = "deko-compiler-utils"
 version = "0.1.0"
-source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad#f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad"
+source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f#fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f"
 
 [[package]]
 name = "deko-dksh"
 version = "0.1.0"
-source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad#f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad"
+source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f#fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f"
 dependencies = [
  "thiserror 2.0.18",
 ]
@@ -2299,7 +2299,7 @@ dependencies = [
 [[package]]
 name = "deko-nak"
 version = "0.1.0"
-source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad#f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad"
+source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f#fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f"
 dependencies = [
  "deko-bitview",
  "deko-compiler-utils",
@@ -2312,7 +2312,7 @@ dependencies = [
 [[package]]
 name = "deko-shader-compiler"
 version = "0.1.0"
-source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad#f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad"
+source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f#fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f"
 dependencies = [
  "deko-dksh",
  "deko-nak",
@@ -2325,7 +2325,7 @@ dependencies = [
 [[package]]
 name = "deko-shader-compiler-macros"
 version = "0.1.0"
-source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad#f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad"
+source = "git+https://github.com/sharifhsn/deko-shader-compiler?rev=fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f#fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2570,7 +2570,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3778,7 +3778,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -4767,7 +4767,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4780,7 +4780,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6073,7 +6073,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6197,15 +6197,6 @@ name = "windows-sys"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
-dependencies = [
- "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "windows-sys"
-version = "0.59.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
 dependencies = [
  "windows-targets 0.52.6",
 ]

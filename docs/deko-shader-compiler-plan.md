@@ -24,10 +24,10 @@ correctness requirement.
 ## Current verified status (2026-07-17)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `f4b3d9941aad91e8bcc950f3db81c49b4f64e7ad`. It lowers supported Naga/WGSL directly
+  `fb5afb480f6b1f5dbfe69ba0f3f75eb71487d87f`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `d3c1db83f` makes that compiler the
+- wgpu revision `6f4e3f4f4` makes that compiler the
   default Deko3D WGSL path. An installed artifact provider remains a higher-priority
   diagnostic override, but ordinary applications no longer need one.
 - The compiler workspace has 43 passing compiler tests and 100 tests across all workspace
@@ -53,12 +53,14 @@ correctness requirement.
 - Native Maxwell TXD lowering compiles `textureSampleGrad` for 1D/2D textures,
   including array layers and offsets. 3D and cube gradients use Mesa's established
   derivative-to-LOD rewrite, including cube face selection and quotient-rule derivatives.
-  The compiler and wgpu integration suites cover 3D, cube, and cube-array forms; subgroup
-  control barriers remain a typed rejection.
-- The gradient codegen milestone advances the compiler backend ABI to 26 so persistent
-  cache entries cannot cross the codegen boundary. The clean, provider-free Ryujinx probe
-  at `target/ryujinx-logs/warbell-20260717T143857Z` rebuilt that namespace, reached ready
-  in seven seconds, and passed all three visual captures.
+  The compiler and wgpu integration suites cover 3D, cube, and cube-array forms.
+- Subgroup barriers lower to CTA-scoped memory fences on GM20B. Maxwell's lockstep warp
+  execution supplies the subgroup rendezvous without a whole-workgroup `BAR.SYNC`, which
+  would be too strong and could deadlock unrelated warps.
+- The compiler backend ABI has advanced through 27 so persistent cache entries cannot cross
+  either the gradient or subgroup codegen boundaries. The latest clean, provider-free Ryujinx
+  probe at `target/ryujinx-logs/warbell-20260717T144610Z` rebuilt that namespace, reached
+  ready in eight seconds, and passed all three visual captures.
 - Full-game corpus closure, explicit physical-hardware timing/memory budgets,
   and physical vertex/fragment/compute execution remain incomplete, so this goal is
   not complete.
