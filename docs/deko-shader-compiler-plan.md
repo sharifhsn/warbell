@@ -24,10 +24,10 @@ correctness requirement.
 ## Current verified status (2026-07-18)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `d642b3feb3e4164aa6f865bdae5db6ca76cf613d`. It lowers supported Naga/WGSL directly
+  `43e11485b5226eb5462beb231d0122f78c5d9c6f`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `77024ecab` makes that compiler the
+- wgpu revision `6b1809cbc` makes that compiler the
   default Deko3D WGSL path. An installed artifact provider remains a higher-priority
   diagnostic override, but ordinary applications no longer need one.
 - The compiler workspace has 62 passing compiler tests and 120 tests across all workspace
@@ -75,8 +75,8 @@ correctness requirement.
   control-only nested lexical controls are recognized, changed live values on direct terminal
   breaks receive selective exit phis, and unreachable CFG-node removal remaps every predecessor
   and successor index. Mutation-bearing nested exits and side-effecting conditional-break
-  prefixes are rejected until post-loop liveness can be modeled without destabilizing existing
-  Bevy shaders.
+  prefixes remain fail-closed: ABI46 proved that filtering exit CFG phis by post-loop liveness
+  is insufficient for NAK scheduling, so those values need a non-exit-phi carrier design.
   Divergent helper functions merge `ptr<function, T>` writes per invocation and propagate
   pointer updates back from both void and value-returning calls.
   Atomic WGSL operations on `r32uint` and `r32sint` storage textures lower to native Maxwell
@@ -88,9 +88,9 @@ correctness requirement.
   conversion, and pipeline-specialized compute workgroup-size overrides reach DKSH metadata.
 - Multiview pipelines load `view_index` from wgpu's reserved Deko uniform slot, emit the
   Maxwell layer output for each replayed vertex draw, and expose that layer to fragment WGSL.
-- The compiler backend ABI has advanced through 45 so persistent cache entries cannot cross
+- The compiler backend ABI has advanced through 47 so persistent cache entries cannot cross
   gradient, subgroup, texture-query, or specialization codegen boundaries. The latest clean,
-  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T084855Z`
+  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T091529Z`
   reached ready in nine seconds, passed all three visual captures, and passed the run-health
   gate with diagnostic overrides disabled.
 - Full-game corpus closure, explicit physical-hardware timing/memory budgets,
