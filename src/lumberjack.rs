@@ -46,7 +46,7 @@ const DANGER_TTL: f32 = 45.0;
 /// Axe damage per work swing — scaled with TREE_HP's ×3 bump (TREE_HP 165 → ~5 swings ≈ 10s a
 /// tree), so the town's wood income keeps its old pace even though the hero now needs 3× the hits.
 const CHOP_DMG: f64 = 36.0;
-/// Seconds between work swings — matches the overhead chop loop in `villager_limbs` (~2.1s).
+/// Seconds between work swings — matches the shared biped's overhead work loop (~2.1s).
 const CHOP_CD: f32 = 2.1;
 /// Pad past the trunk surface (its blocker radius + the cutter's body radius) at which the axe
 /// can land. Small on purpose — the cutter should stand AT the bark, not an axe-handle off it —
@@ -312,7 +312,7 @@ const CHOP_SEARCH_BACKOFF_SECS: f32 = 45.0;
 /// Walk the woodcutter to its tree and swing the axe on the cooldown; the last blow topples the
 /// tree and shoulders the log ([`Hauling`] — NO wood is banked here; that happens back at the
 /// yard in [`haul_home`]). At the tree it counts `at_post` and the overhead-chop work loop in
-/// `villager_limbs` plays for free.
+/// the shared biped animator plays for free.
 #[allow(clippy::type_complexity)]
 fn chop_work(
     time: Res<Time>,
@@ -370,7 +370,7 @@ fn chop_work(
                 let dir = (tp - v.pos).normalize_or_zero();
                 if tree.work_chop(CHOP_DMG) {
                     // Timber — but no wood yet: shoulder the log and carry it home. Clear
-                    // `at_post` or `villager_limbs` keeps the chop stroke going on the walk.
+                    // `at_post` or the shared biped animator keeps the chop stroke going.
                     worker.at_post = false;
                     crate::verbs::topple_tree(&mut commands, job.tree, ttf.translation, dir, now);
                     commands

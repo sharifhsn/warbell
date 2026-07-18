@@ -16,19 +16,14 @@
 
 use std::f32::consts::TAU;
 
-use bevy::mesh::MeshBuilder;
 use bevy::prelude::*;
 
 use crate::biome::BiomeEntity;
 use crate::biped::{BipedDrive, BipedMeshes, BipedRig};
 use crate::castle::{self, Mats, M};
-use crate::creature::{surf, Surf};
-use crate::critters::PartKind;
-use crate::palette::{lin, lin_scaled};
 use crate::peasant_model::{peasant_biped_meshes, PeasantKind};
 use crate::steer;
 use crate::worldmap;
-use crate::meshkit::tinted;
 
 /// Townsfolk turn at a relaxed rate. rad/s.
 const VIL_MAX_TURN: f32 = 3.0;
@@ -96,20 +91,9 @@ pub struct Villager {
     rng: u32,
     /// True while walking to a gathering spot (so the brain lingers longer on arrival).
     gathering: bool,
-    /// Timestamp (`elapsed_secs`) of the last melee strike; [`villager_limbs`] plays a weapon-swing
-    /// for [`ATTACK_ANIM_DUR`] after it. `0` = never struck. Stamped by [`guard_combat`] and
-    /// [`npc_fight_back`] when a blow lands — the townsfolk mirror of the ork rig's `atk_anim`.
+    /// Timestamp (`elapsed_secs`) of the last melee strike. [`villager_drive`] maps it onto the
+    /// shared biped attack animation. `0` = never struck.
     pub(crate) atk_anim: f32,
-    /// Smoothed local head yaw (radians) — eased toward the idle look-around scan, or toward the
-    /// passing hero when he's near, so a standing villager turns to watch you go by (see
-    /// [`villager_limbs`]'s greeting logic).
-    head_yaw: f32,
-    /// Greeting-nod envelope, `1.0` → `0.0` over [`GREET_NOD_DUR`]; kicked once each time the hero
-    /// walks up close (re-armed by [`Villager::greet_armed`] when he leaves).
-    greet: f32,
-    /// True while the hero is out of greeting range, arming the next nod so it fires once per
-    /// approach rather than continuously while he lingers nearby.
-    greet_armed: bool,
 }
 
 impl Villager {
@@ -118,13 +102,6 @@ impl Villager {
     pub fn body(&self) -> (Vec2, f32) {
         (self.pos, self.body_r)
     }
-}
-
-/// An articulated body part under a villager root. `pub(crate)` so the staged-scene mime driver
-/// (`scenes::drive_scene_mason`) can pose limbs directly on actors that `villager_limbs` skips.
-#[derive(Component)]
-pub(crate) struct VilPart {
-    pub(crate) kind: PartKind,
 }
 
 /// A child villager — wanders fast in short bursts around a small play patch (and skips the
@@ -389,12 +366,9 @@ impl Plugin for VillagersPlugin {
         app.init_resource::<RescuedCamps>()
             .init_resource::<NpcDamage>()
             .init_resource::<TownSpots>()
-            // `villager_drive` maps each townsperson's brain state → its `BipedDrive`; the shared
-            // `biped::animate_biped` then poses the studio skeleton (locomotion/attack/work strokes).
-            // `villager_limbs` no longer poses limbs (the biped does), but still runs to keep the
-            // head-greeting/idle-fidget bookkeeping warm for a future biped head-track. Both ungated
+            // Map each townsperson's brain state onto the shared biped animator. This stays ungated
             // so a frozen/paused world still draws the town animated.
-            .add_systems(Update, (villager_drive, villager_limbs))
+            .add_systems(Update, villager_drive)
             // Ungated so they fire on the day↔night edge even if the world is frozen (panel open):
             .add_systems(Update, (townsfolk_curfew, muster_townsfolk))
             // Ungated: disband a leftover war party on any load (fires off `GameLoaded`). Ordered
@@ -1332,7 +1306,7 @@ fn npc_fight_back(
             }
             if fb.atk_cd <= 0.0 {
                 fb.atk_cd = NPC_DEFEND_CD;
-                v.atk_anim = now; // fire the tool-swing (read by villager_limbs)
+                v.atk_anim = now; // fire the shared biped tool swing
                 thp.hp -= NPC_DEFEND_DMG;
                 if thp.hp <= 0.0 {
                     crate::dying::begin_dying(&mut commands, fb.target, now);
@@ -1705,7 +1679,7 @@ fn guard_combat(
                 }
                 if g.atk_cd <= 0.0 {
                     g.atk_cd = GUARD_ATTACK_CD;
-                    v.atk_anim = now; // fire the sword-swing (read by villager_limbs)
+                    v.atk_anim = now; // fire the shared biped sword swing
                     dealt.push((te, self_e, guard_dmg));
                     // Clash SFX, but only when the fight is close to the hero (small earshot).
                     if hero_pos.is_some_and(|hp| v.pos.distance(hp) < GUARD_SFX_RADIUS) {
@@ -1826,9 +1800,6 @@ fn guard_combat(
     }
 }
 
-/// Squared camera distance past which limb animation is skipped (fog/DoF hide the joints).
-const LIMB_CULL2: f32 = 70.0 * 70.0;
-
 /// How long a townsperson's weapon-swing plays after a strike is stamped onto [`Villager::atk_anim`].
 const ATTACK_ANIM_DUR: f32 = 0.42;
 
@@ -1840,72 +1811,6 @@ fn strike_p(atk_anim: f32, now: f32) -> Option<f32> {
     }
     let p = (now - atk_anim) / ATTACK_ANIM_DUR;
     (0.0..1.0).contains(&p).then_some(p)
-}
-
-/// Overhead weapon swing on X: raise back (ease-in), fast slash down (ease-out), recover to rest.
-/// Same crisp shape as the ork club-chop, so a guard's sword (or a worker's hoe/axe) reads as a
-/// real strike on the box-mesh arm.
-fn swing_x(p: f32) -> f32 {
-    if p < 0.3 {
-        let u = p / 0.3;
-        -1.5 * (u * u)
-    } else if p < 0.55 {
-        let u = (p - 0.3) / 0.25;
-        let e = 1.0 - (1.0 - u) * (1.0 - u);
-        -1.5 + 2.4 * e
-    } else {
-        let u = (p - 0.55) / 0.45;
-        let e = 1.0 - (1.0 - u) * (1.0 - u);
-        0.9 * (1.0 - e)
-    }
-}
-
-/// Idle villagers turn their head to watch the hero when he passes within this range (world u).
-const GREET_DIST: f32 = 8.0;
-/// Max head yaw off forward while watching the hero (radians) — a turn of the head, not an owl spin.
-const HEAD_TURN_MAX: f32 = 0.7;
-/// Ease rate of the head yaw toward its target (per second) — a relaxed, lifelike turn.
-const HEAD_EASE: f32 = 4.5;
-/// Duration of the single welcoming head-nod when the hero walks up (seconds).
-const GREET_NOD_DUR: f32 = 0.8;
-
-/// Layered limb offsets (radians) for one idle "fidget" — small gestures a standing villager
-/// cycles through so they read as a person idling, not a frozen pathing agent. All zero = rest.
-#[derive(Default)]
-struct Fidget {
-    head_pitch: f32, // + looks down
-    head_yaw: f32,   // a glance aside (on top of the look-around scan)
-    head_roll: f32,  // a curious head-tilt
-    arm: f32,        // free-arm raise — a shift / scratch
-    lean: f32,       // weight shift onto one leg
-}
-
-/// Cheap stateless hash → `0.0..1.0`, for picking a villager's current idle gesture from the
-/// gesture-clock cycle index (no RNG state to thread through the per-frame anim).
-fn hash01(x: f32) -> f32 {
-    let v = (x * 12.9898).sin() * 43758.5453;
-    v - v.floor()
-}
-
-/// Which idle fidget a villager is mid-way through, given the global clock + its per-instance
-/// `seed` (its `phase`, so neighbours don't fidget in lockstep). Each gesture eases in→peak→out
-/// over ~3.3s; one slot is deliberately "stillness" so they aren't perpetually twitching.
-fn idle_fidget(tw: f32, seed: f32) -> Fidget {
-    let g = tw * 0.3 + seed * 1.7; // ~3.3s per gesture, phase-desynced
-    let cyc = g.floor();
-    let bell = ((g - cyc) * std::f32::consts::PI).sin(); // 0 → 1 → 0 across the gesture
-    let mut f = Fidget::default();
-    match (hash01(cyc + seed * 31.0) * 5.0) as i32 {
-        1 => f.head_yaw = bell * 0.45,                                   // glance off to the side
-        2 => {
-            f.head_pitch = bell * 0.26;
-            f.head_roll = bell * 0.13;
-        } // peer down with a curious tilt
-        3 => f.arm = bell * 0.55,                                        // shift / scratch the free arm
-        4 => f.lean = bell * 0.12,                                       // shift weight onto one leg
-        _ => {}                                                          // a beat of stillness
-    }
-    f
 }
 
 /// Map every townsperson's brain state onto its [`BipedDrive`] each frame — the town's mirror of
@@ -1980,120 +1885,6 @@ fn villager_drive(
     }
 }
 
-fn villager_limbs(
-    time: Res<Time>,
-    cam: Query<&GlobalTransform, With<Camera3d>>,
-    hero: Query<&crate::player::Hero>,
-    // The staged mason mime owns its WHOLE rig (scenes::drive_scene_mason) — skip it here or the
-    // two writers fight over the limb transforms every frame.
-    // Live townsfolk are on the studio biped (`BipedDrive` → `villager_drive`/`animate_biped`) and
-    // carry no `VilPart`, so this only does real work for any box-rig villager. Excluding `BipedDrive`
-    // keeps it from running the greeting/yaw/fidget pass over every biped townsperson each frame for
-    // a child lookup that always misses. The mason mime owns its whole rig — skip it too.
-    mut vils: Query<
-        (&mut Villager, &Children, &GlobalTransform, Option<&crate::town::Worker>, Option<&Role>),
-        (Without<crate::scenes::SceneMason>, Without<BipedDrive>),
-    >,
-    mut parts: Query<(&VilPart, &mut Transform)>,
-) {
-    let tw = time.elapsed_secs_wrapped();
-    let now = time.elapsed_secs();
-    let dt = time.delta_secs();
-    let cam_p = cam.single().ok().map(|g| g.translation());
-    let hero_p = hero.single().ok().map(|h| h.pos);
-    for (mut v, children, gt, worker, role) in &mut vils {
-        if let Some(cp) = cam_p {
-            if gt.translation().distance_squared(cp) > LIMB_CULL2 {
-                continue;
-            }
-        }
-        let t = tw + v.phase;
-        // A live strike (set by guard_combat / npc_fight_back) drives a weapon-swing on the arm.
-        let strike = strike_p(v.atk_anim, now);
-        // A posted worker plies their trade: a farmer makes quick forward-down HOE strokes; a
-        // woodcutter makes slower, bigger overhead CHOPS. Both arms swing together, legs planted.
-        let working = worker.is_some_and(|w| w.at_post);
-        // Woodcutter chops, miner swings a pick — both make the slow overhead-down stroke.
-        let chopping = matches!(role, Some(Role::Working(Trade::Woodcutter | Trade::Miner)));
-        let (arm_work, nod_rate) = if chopping {
-            (-0.4 + 1.3 * (0.5 - 0.5 * (t * 3.0).cos()), 3.0) // overhead → down, ~2.1s
-        } else {
-            (0.5 + 0.7 * (t * 4.5).sin(), 4.5) // quick hoe, ~1.4s
-        };
-
-        // ── Greeting + idle fidgets ──────────────────────────────────────────────────────
-        // A standing (idle, off-work) villager turns to watch the hero pass and gives one nod as
-        // he walks up — the "they noticed me" beat. While greeting, the head tracks the hero and
-        // the idle fidgets stand down (they're paying attention to you).
-        let idle = !v.moving && !working;
-        let hero_d = hero_p.map(|hp| hp.distance(v.pos)).unwrap_or(f32::MAX);
-        let greeting = idle && hero_d < GREET_DIST;
-        if hero_d > GREET_DIST * 1.4 {
-            v.greet_armed = true; // hero left → re-arm the nod for his next approach
-        }
-        if greeting && v.greet_armed && v.greet <= 0.0 {
-            v.greet = 1.0; // fire one nod
-            v.greet_armed = false;
-        }
-        v.greet = (v.greet - dt / GREET_NOD_DUR).max(0.0);
-        let greet_nod = (v.greet * std::f32::consts::PI).sin() * 0.30; // a single soft down-up bob
-
-        // Head yaw target (local): toward the hero when greeting, else the gentle look-around scan
-        // while idle, else forward (walking). Eased through `head_yaw` so it turns, never snaps.
-        let want_yaw = if greeting {
-            let to = hero_p.unwrap() - v.pos;
-            steer::wrap_pi(to.x.atan2(to.y) - v.facing).clamp(-HEAD_TURN_MAX, HEAD_TURN_MAX)
-        } else if idle {
-            (t * 0.7).sin() * 0.18
-        } else {
-            0.0
-        };
-        v.head_yaw += steer::wrap_pi(want_yaw - v.head_yaw) * (dt * HEAD_EASE).min(1.0);
-
-        let fid = if idle && !greeting { idle_fidget(tw, v.phase) } else { Fidget::default() };
-
-        for &child in children {
-            let Ok((part, mut tf)) = parts.get_mut(child) else { continue };
-            tf.rotation = match part.kind {
-                PartKind::Leg(sign) => {
-                    let s = if v.moving { (t * v.gait).sin() * v.swing } else { (t * 0.8).sin() * 0.02 };
-                    Quat::from_rotation_x(sign * s + sign * fid.lean) // lean shifts weight onto one leg
-                }
-                PartKind::Arm(sign) => {
-                    // The right arm (sign > 0) carries the weapon (sword / hoe / axe) → a strike
-                    // swing overrides the work stroke and the walk sway. Other arms keep working.
-                    if sign > 0.0 && strike.is_some() {
-                        Quat::from_rotation_x(swing_x(strike.unwrap()))
-                    } else if working {
-                        // Both arms together (ignore the L/R sign) — a two-handed work stroke.
-                        Quat::from_rotation_x(arm_work)
-                    } else {
-                        let s = if v.moving { -(t * v.gait).sin() * 0.5 } else { (t * 1.2).sin() * 0.06 };
-                        // The free (left) arm carries the idle fidget (a shift / scratch); the
-                        // weapon hand stays at rest.
-                        let fx = if sign < 0.0 { -fid.arm } else { 0.0 };
-                        Quat::from_rotation_x(sign * s + fx)
-                    }
-                }
-                PartKind::Head => {
-                    if working {
-                        Quat::from_rotation_x((t * nod_rate).sin() * 0.06) // small nod toward the work
-                    } else {
-                        // Yaw = tracked/scanning look; pitch = greeting nod + fidget peer + a gentle
-                        // idle breath (so a standing villager visibly breathes); roll = tilt.
-                        let (breath, _) = crate::creature_anim::idle_micro(t);
-                        let breath = if idle { breath } else { 0.0 };
-                        Quat::from_rotation_y(v.head_yaw + fid.head_yaw)
-                            * Quat::from_rotation_x(greet_nod + fid.head_pitch + breath)
-                            * Quat::from_rotation_z(fid.head_roll)
-                    }
-                }
-                PartKind::Tail => Quat::IDENTITY, // villagers have no tail
-            };
-        }
-    }
-}
-
 fn pick_walk(v: &mut Villager, spots: &[Vec2], is_kid: bool) {
     // Adults sometimes drift to a shared gathering spot (well / woodpile / market / keep steps)
     // and linger there, so the town clusters into little knots instead of all wandering solo.
@@ -2135,16 +1926,6 @@ pub enum Trade {
     Miner,
 }
 
-/// What the right hand carries (baked into the arm so it swings with the limb).
-#[derive(Clone, Copy)]
-enum Held {
-    None,
-    Sword,
-    Hoe,
-    Axe,
-    Pick,
-}
-
 /// The look a townsperson is currently rendered as (idle guard vs a trade), so `reskin_townsfolk`
 /// only rebuilds the body when the role actually changes.
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
@@ -2176,280 +1957,6 @@ struct VilBodyPart;
 #[derive(Component)]
 struct BodyMat(Handle<crate::creature::CreatureMaterial>);
 
-// Work-clothes palette.
-const STRAW_HAT: u32 = 0xc9a85a;
-const APRON: u32 = 0x9a7b4a;
-const VEST: u32 = 0x53412a;
-const CAP: u32 = 0x4a3a28;
-const TOOL_WOOD: u32 = 0x8a6a40;
-const TOOL_METAL: u32 = 0x9aa0aa;
-
-struct PartDef {
-    kind: PartKind,
-    pivot: Vec3,
-    mesh: Mesh,
-}
-struct VSpec {
-    torso: Mesh,
-    parts: Vec<PartDef>,
-}
-
-/// Build a villager body. Cosmetics (colour, face) are deterministic from `seed` via a dedicated
-/// COSMETIC rng stream `cr` that NEVER touches the gameplay `Villager.rng`. Every roll is drawn
-/// UP FRONT in a fixed, append-only order, so a guard and the worker they're re-skinned into (same
-/// seed, different `kind`) get the identical face. `kid` forces a child look (no beard, simple hair).
-/// (Box-mesh prototype superseded by [`vil_biped_meshes`]; kept for model reference.)
-#[allow(dead_code)]
-fn spec(kind: Kind, seed: u32, kid: bool) -> VSpec {
-    let (id_skin, id_tunic) = match kind {
-        Kind::Peasant { skin, tunic, .. } => (skin, tunic),
-        Kind::Guard { skin, tunic } => (skin, tunic),
-        Kind::Archer { skin, tunic } => (skin, tunic), // prototype box rig has no bow
-        Kind::Worker { skin, tunic, .. } => (skin, tunic),
-    };
-    let guard = matches!(kind, Kind::Guard { .. });
-    let peasant_hat = matches!(kind, Kind::Peasant { hat: true, .. });
-    let trade = match kind {
-        Kind::Worker { trade, .. } => Some(trade),
-        _ => None,
-    };
-    // The right hand carries the role's tool.
-    let held = match kind {
-        Kind::Guard { .. } => Held::Sword,
-        Kind::Worker { trade: Trade::Farmer, .. } => Held::Hoe,
-        Kind::Worker { trade: Trade::Woodcutter, .. } => Held::Axe,
-        Kind::Worker { trade: Trade::Miner, .. } => Held::Pick,
-        _ => Held::None,
-    };
-
-    // ── Cosmetic rolls (fixed order, drawn unconditionally so re-skin keeps the same face) ──
-    let mut cr = (seed ^ 0x9E37_79B9) | 1;
-    let r_skin = next_u32(&mut cr);
-    let r_tunic = next_u32(&mut cr);
-    let r_pant = next_u32(&mut cr);
-    let r_weather = next_u32(&mut cr);
-    let r_hair = next_u32(&mut cr);
-    let r_elder = next_u32(&mut cr);
-    let r_grey = next_u32(&mut cr);
-    let r_style = next_u32(&mut cr);
-    let r_tonsure = next_u32(&mut cr);
-    let r_mood = next_u32(&mut cr);
-    let r_es = next_u32(&mut cr);
-    let r_ex = next_u32(&mut cr);
-    let r_ey = next_u32(&mut cr);
-    let r_squint = next_u32(&mut cr);
-    let r_mouth = next_u32(&mut cr);
-    let r_facial = next_u32(&mut cr);
-    let r_fstyle = next_u32(&mut cr);
-
-    // Guards/workers keep their identity colours (a re-skin stays the same person); ambient
-    // peasants/kids reroll skin+tunic for crowd variety.
-    let has_identity = guard || trade.is_some();
-    let skin_hex = if has_identity { id_skin } else { SKIN[r_skin as usize % SKIN.len()] };
-    let tunic_hex = if has_identity { id_tunic } else { TUNIC[r_tunic as usize % TUNIC.len()] };
-    let pant_hex = PANT_TONES[r_pant as usize % PANT_TONES.len()];
-    let weathered = !has_identity && r_weather % 3 == 0; // ~1/3 of ambient cloth reads worn
-    let elder = !kid && r_elder % 100 < 14; // ~14% grey-haired elders
-    let hair_hex = if elder {
-        GREY_HAIR[r_grey as usize % GREY_HAIR.len()]
-    } else {
-        HAIR_TONES[r_hair as usize % HAIR_TONES.len()]
-    };
-
-    let skin = lin(skin_hex);
-    let tunic = if weathered { lin_scaled(tunic_hex, 0.82) } else { lin(tunic_hex) };
-    let pant = lin(pant_hex);
-    let hair = lin(hair_hex);
-    let armor = lin(ARMOR);
-
-    // Static torso: tunic + a cinched belt + a role overlay (guard chestplate / farmer apron /
-    // woodcutter vest). Cloth surface on the fabric, Metal on the guard plate.
-    let mut torso_parts = vec![
-        surf(bx(0.42, 0.48, 0.26, v(0.0, 0.7, 0.0), tunic), Surf::Cloth),
-        surf(bx(0.06, 0.18, 0.27, v(0.0, 0.72, 0.0), lin(0xece8e0)), Surf::Cloth), // tunic placket
-        surf(bx(0.44, 0.07, 0.28, v(0.0, 0.5, 0.0), lin(BELT)), Surf::Cloth), // belt
-        surf(bx(0.09, 0.06, 0.02, v(0.0, 0.5, 0.135), lin(BUCKLE)), Surf::Metal), // belt buckle
-    ];
-    match (guard, trade) {
-        (true, _) => torso_parts.push(surf(bx(0.46, 0.4, 0.3, v(0.0, 0.7, 0.0), armor), Surf::Metal)),
-        (_, Some(Trade::Farmer)) => torso_parts.push(surf(bx(0.4, 0.4, 0.28, v(0.0, 0.62, 0.04), lin(APRON)), Surf::Cloth)),
-        (_, Some(Trade::Woodcutter)) => torso_parts.push(surf(bx(0.44, 0.42, 0.29, v(0.0, 0.72, 0.0), lin(VEST)), Surf::Cloth)),
-        (_, Some(Trade::Miner)) => torso_parts.push(surf(bx(0.45, 0.44, 0.3, v(0.0, 0.7, 0.0), lin(VEST)), Surf::Cloth)),
-        _ => {}
-    }
-    let torso = group(torso_parts);
-
-    // ── Head: deterministic face kit (skull + ears + nose + varied eyes/brows/mouth/hair/beard) ──
-    // Bare-skin/hair/beard parts stay untagged (→ Skin in the shader). `bare` = no headgear, so
-    // clip-prone tall hair only spawns then.
-    let bare = !(guard || peasant_hat || trade.is_some());
-    let mut head_parts = vec![
-        bx(0.3, 0.3, 0.3, Vec3::ZERO, skin),            // skull
-        bx(0.04, 0.08, 0.06, v(-0.16, 0.0, 0.0), skin), // ears
-        bx(0.04, 0.08, 0.06, v(0.16, 0.0, 0.0), skin),
-        bx(0.06, 0.05, 0.05, v(0.0, -0.02, 0.16), skin), // nose
-    ];
-    // Eyes — varied size / spacing / height, occasional squint.
-    let es = 0.035 + (r_es % 3) as f32 * 0.012;
-    let ex = 0.06 + (r_ex % 3) as f32 * 0.015;
-    let ey = 0.02 + (r_ey % 3) as f32 * 0.012;
-    let eh = if r_squint % 7 == 0 { 0.025 } else { es };
-    head_parts.push(bx(es, eh, 0.02, v(-ex, ey, 0.16), lin(EYE)));
-    head_parts.push(bx(es, eh, 0.02, v(ex, ey, 0.16), lin(EYE)));
-    // Brows — hair-coloured, angled by mood (guards never look surprised).
-    let mood = if guard { r_mood % 2 } else { r_mood % 3 };
-    let (bl, brr) = match mood {
-        1 => (0.5_f32, -0.5), // angry V (inner ends low)
-        2 => (-0.30, 0.30),   // raised / surprised
-        _ => (0.0, 0.0),      // neutral
-    };
-    let by = ey + 0.055;
-    head_parts.push(bxr(0.10, 0.035, 0.04, v(-ex, by, 0.155), Quat::from_rotation_z(bl), hair));
-    head_parts.push(bxr(0.10, 0.035, 0.04, v(ex, by, 0.155), Quat::from_rotation_z(brr), hair));
-    // Mouth — guards grim, kids smile, others vary.
-    let mshape = if guard {
-        r_mouth % 2
-    } else if kid {
-        3
-    } else {
-        r_mouth % 4
-    };
-    let (mw, my) = match mshape {
-        1 => (0.07, -0.10),  // grim
-        2 => (0.09, -0.095), // frown
-        3 => (0.10, -0.08),  // smile
-        _ => (0.08, -0.085), // flat
-    };
-    head_parts.push(bx(mw, 0.022, 0.02, v(0.0, my, 0.16), lin(LIP)));
-    // Hair style — CROP / MOP / BALD / LONG; clip-prone LONG falls back to CROP under headgear.
-    let mut style = r_style % 4;
-    if !bare && style == 3 {
-        style = 0;
-    }
-    match style {
-        1 => {
-            // MOP — shaggy: top + side flaps + back.
-            head_parts.push(bx(0.32, 0.10, 0.32, v(0.0, 0.14, 0.0), hair));
-            head_parts.push(bx(0.06, 0.16, 0.30, v(-0.155, 0.04, 0.0), hair));
-            head_parts.push(bx(0.06, 0.16, 0.30, v(0.155, 0.04, 0.0), hair));
-            head_parts.push(bx(0.30, 0.14, 0.06, v(0.0, 0.02, -0.155), hair));
-        }
-        2 => {
-            // BALD — bare skull, sometimes a tonsure rim.
-            if r_tonsure % 2 == 0 {
-                head_parts.push(bx(0.31, 0.03, 0.31, v(0.0, 0.10, 0.0), hair));
-            }
-        }
-        3 => {
-            // LONG — top + a back curtain to the neck (bare heads only).
-            head_parts.push(bx(0.31, 0.08, 0.31, v(0.0, 0.13, 0.0), hair));
-            head_parts.push(bx(0.30, 0.26, 0.07, v(0.0, -0.06, -0.155), hair));
-        }
-        _ => {
-            // CROP — the classic top slab.
-            head_parts.push(bx(0.31, 0.08, 0.31, v(0.0, 0.13, 0.0), hair));
-        }
-    }
-    // Beard / moustache / stubble — a minority; forced for woodcutters + elders, never for kids.
-    let has_facial = !kid
-        && (r_facial % 20 < 11 || elder || matches!(trade, Some(Trade::Woodcutter)));
-    if has_facial {
-        let beard = if elder { lin(GREY_HAIR[r_grey as usize % GREY_HAIR.len()]) } else { hair };
-        match r_fstyle % 4 {
-            0 => head_parts.push(bx(0.20, 0.10, 0.04, v(0.0, -0.10, 0.145), lin_scaled(skin_hex, 0.78))), // stubble
-            1 => head_parts.push(bx(0.14, 0.035, 0.03, v(0.0, -0.055, 0.155), beard)), // moustache
-            2 => {
-                head_parts.push(bx(0.22, 0.12, 0.06, v(0.0, -0.12, 0.13), beard)); // short beard
-                head_parts.push(bx(0.05, 0.12, 0.10, v(-0.13, -0.10, 0.08), beard));
-                head_parts.push(bx(0.05, 0.12, 0.10, v(0.13, -0.10, 0.08), beard));
-            }
-            _ => {
-                head_parts.push(bx(0.22, 0.12, 0.06, v(0.0, -0.12, 0.13), beard)); // long beard
-                head_parts.push(bx(0.05, 0.12, 0.10, v(-0.13, -0.10, 0.08), beard));
-                head_parts.push(bx(0.05, 0.12, 0.10, v(0.13, -0.10, 0.08), beard));
-                head_parts.push(bx(0.18, 0.16, 0.07, v(0.0, -0.22, 0.11), beard));
-            }
-        }
-    }
-    // Per-type headgear (pushed AFTER the face) + small recognition props.
-    match (guard, trade, peasant_hat) {
-        (true, _, _) => {
-            head_parts.push(surf(bx(0.34, 0.16, 0.34, v(0.0, 0.16, 0.0), armor), Surf::Metal)); // helmet
-            head_parts.push(surf(cone(0.1, 0.16, v(0.0, 0.3, 0.0), Quat::IDENTITY, armor), Surf::Metal)); // crest spike
-            head_parts.push(surf(bx(0.04, 0.20, 0.05, v(-0.155, 0.0, 0.05), lin(STRAP)), Surf::Cloth)); // chin-strap
-            head_parts.push(surf(bx(0.04, 0.20, 0.05, v(0.155, 0.0, 0.05), lin(STRAP)), Surf::Cloth));
-        }
-        (_, Some(Trade::Farmer), _) => {
-            head_parts.push(surf(bx(0.5, 0.04, 0.5, v(0.0, 0.18, 0.0), lin(STRAW_HAT)), Surf::Cloth)); // wide straw brim
-            head_parts.push(surf(cone(0.18, 0.14, v(0.0, 0.2, 0.0), Quat::IDENTITY, lin(STRAW_HAT)), Surf::Cloth)); // crown
-        }
-        (_, Some(Trade::Woodcutter), _) => {
-            head_parts.push(surf(bx(0.34, 0.1, 0.34, v(0.0, 0.18, 0.0), lin(CAP)), Surf::Cloth)); // flat cap
-            head_parts.push(surf(bx(0.34, 0.05, 0.14, v(0.0, 0.16, 0.2), lin(CAP)), Surf::Cloth)); // peak
-        }
-        (_, Some(Trade::Miner), _) => {
-            head_parts.push(surf(bx(0.35, 0.13, 0.35, v(0.0, 0.16, 0.0), lin(CAP)), Surf::Cloth)); // skullcap
-            head_parts.push(bx(0.30, 0.14, 0.04, v(0.0, -0.08, 0.155), lin(SOOT))); // soot smudge (Skin)
-            head_parts.push(surf(bx(0.05, 0.05, 0.05, v(0.0, 0.16, 0.18), lin(MINER_LAMP)), Surf::Metal)); // brass lamp clip
-        }
-        (_, _, true) => head_parts.push(surf(cone(0.22, 0.2, v(0.0, 0.22, 0.0), Quat::IDENTITY, lin(HAT)), Surf::Cloth)),
-        _ => {}
-    }
-    let head = group(head_parts);
-
-    // Legs (top at the hip pivot) — trousers + a leather boot at the foot (added detail).
-    let leg = || {
-        group(vec![
-            surf(bx(0.16, 0.36, 0.18, v(0.0, -0.18, 0.0), pant), Surf::Cloth),
-            bx(0.17, 0.1, 0.22, v(0.0, -0.36, 0.03), lin(BOOT)), // boot (leather → Skin default)
-        ])
-    };
-
-    // Arms — sleeve (Cloth) + bare hand (Skin) + the role's held item; metal heads tagged Metal.
-    let arm = |held: Held| {
-        let mut p = vec![
-            surf(bx(0.13, 0.36, 0.22, v(0.0, -0.18, 0.0), tunic), Surf::Cloth), // sleeve
-            bx(0.12, 0.1, 0.2, v(0.0, -0.42, 0.0), skin),                       // hand
-        ];
-        if guard {
-            p.push(surf(bx(0.18, 0.16, 0.26, v(0.0, 0.02, 0.0), armor), Surf::Metal)); // pauldron
-        }
-        let hand = v(0.0, -0.46, 0.1);
-        match held {
-            Held::None => {}
-            Held::Sword => {
-                p.push(surf(bx(0.18, 0.06, 0.05, hand, lin(SWORD_GUARD)), Surf::Metal));
-                p.push(surf(bx(0.05, 0.06, 0.5, hand + v(0.0, 0.0, 0.32), lin(SWORD_BLADE)), Surf::Metal));
-            }
-            Held::Hoe => {
-                // A long shaft forward-down + a small blade at the tip.
-                p.push(bx(0.05, 0.05, 0.66, hand + v(0.0, -0.06, 0.28), lin(TOOL_WOOD)));
-                p.push(surf(bx(0.16, 0.04, 0.1, hand + v(0.0, -0.12, 0.6), lin(TOOL_METAL)), Surf::Metal));
-            }
-            Held::Axe => {
-                // A shaft + a wedge head near the tip.
-                p.push(bx(0.05, 0.05, 0.56, hand + v(0.0, -0.04, 0.24), lin(TOOL_WOOD)));
-                p.push(surf(bx(0.16, 0.18, 0.06, hand + v(0.0, 0.0, 0.5), lin(TOOL_METAL)), Surf::Metal));
-            }
-            Held::Pick => {
-                // A shaft + a crossways double-pointed pick head (a bar across the tip).
-                p.push(bx(0.05, 0.05, 0.58, hand + v(0.0, -0.04, 0.25), lin(TOOL_WOOD)));
-                p.push(surf(bx(0.46, 0.05, 0.05, hand + v(0.0, 0.02, 0.52), lin(TOOL_METAL)), Surf::Metal));
-            }
-        }
-        group(p)
-    };
-
-    let parts = vec![
-        PartDef { kind: PartKind::Leg(1.0), pivot: v(-0.11, 0.34, 0.0), mesh: leg() },
-        PartDef { kind: PartKind::Leg(-1.0), pivot: v(0.11, 0.34, 0.0), mesh: leg() },
-        PartDef { kind: PartKind::Arm(1.0), pivot: v(0.27, 0.92, 0.0), mesh: arm(held) }, // right (+tool)
-        PartDef { kind: PartKind::Arm(-1.0), pivot: v(-0.27, 0.92, 0.0), mesh: arm(Held::None) },
-        PartDef { kind: PartKind::Head, pivot: v(0.0, 1.12, 0.0), mesh: head },
-    ];
-    VSpec { torso, parts }
-}
-
 // ── Placement ────────────────────────────────────────────────────────────────────
 
 /// Spawn the castle town's **ambient** props + flavour NPCs: the market stall, well, woodpile,
@@ -2468,7 +1975,7 @@ pub fn populate(
     // exactly like `castle_decor` (auto-batched), so they read as mature as the rest of the bailey.
     // `body_mat` is the textured creature material the villager BODIES draw against.
     // `prop` bakes a multi-part prop to a world spot + yaw and spawns each material slot.
-    let mut prop = |commands: &mut Commands, meshes: &mut Assets<Mesh>, parts: Vec<(Mesh, M)>, pos: Vec3, yaw: f32| {
+    let prop = |commands: &mut Commands, meshes: &mut Assets<Mesh>, parts: Vec<(Mesh, M)>, pos: Vec3, yaw: f32| {
         for (m, slot) in parts {
             commands.spawn((
                 Mesh3d(meshes.add(castle::bake(m, pos, yaw, Vec3::ONE))),
@@ -2776,9 +2283,6 @@ fn spawn(
         rng: r,
         gathering: false,
         atk_anim: 0.0,
-        head_yaw: 0.0,
-        greet: 0.0,
-        greet_armed: true,
     };
 
     let root = commands
@@ -2877,28 +2381,6 @@ fn build_biped_body(
     crate::biped::spawn_biped(commands, root, mat, h, head_scale, 1.0, 0.15, 0.3, VIL_RIG_OFF, Some(shield_xf));
 }
 
-/// Spawn a villager's body (torso + limbs + head) as children of `root`, each tagged
-/// [`VilBodyPart`] so a re-skin can despawn exactly the body. (Box-mesh prototype superseded by
-/// [`build_biped_body`]; kept for model reference and the staged-scene mime path.)
-#[allow(dead_code)]
-fn build_body(root: &mut bevy::ecs::system::EntityCommands, s: VSpec, mat: &Handle<crate::creature::CreatureMaterial>, meshes: &mut Assets<Mesh>) {
-    let torso = meshes.add(s.torso);
-    let parts: Vec<(PartKind, Vec3, Handle<Mesh>)> =
-        s.parts.into_iter().map(|p| (p.kind, p.pivot, meshes.add(p.mesh))).collect();
-    root.with_children(|p| {
-        p.spawn((Mesh3d(torso), MeshMaterial3d(mat.clone()), Transform::default(), VilBodyPart));
-        for (kind, pivot, mesh) in parts {
-            p.spawn((
-                Mesh3d(mesh),
-                MeshMaterial3d(mat.clone()),
-                Transform::from_translation(pivot),
-                VilPart { kind },
-                VilBodyPart,
-            ));
-        }
-    });
-}
-
 /// Redress a townsperson when their role changes: a farmer when posted to a Farm, a woodcutter on a
 /// Woodcutter, an armed guard otherwise. Rebuilds only the body (despawns the [`VilBodyPart`]
 /// children, respawns from the new outfit), reusing the same identity + material — so it's the same
@@ -2939,31 +2421,6 @@ fn reskin_townsfolk(
         build_biped_body(&mut commands, e, kind, f.seed, false, false, &body_mat.0, &mut meshes);
         *role = desired;
     }
-}
-
-// ── Mesh helpers ─────────────────────────────────────────────────────────────────
-
-fn v(x: f32, y: f32, z: f32) -> Vec3 {
-    Vec3::new(x, y, z)
-}
-fn group(parts: Vec<Mesh>) -> Mesh {
-    let mut it = parts.into_iter();
-    let mut base = it.next().expect("at least one part");
-    for p in it {
-        base.merge(&p).expect("villager parts share attributes");
-    }
-    base.duplicate_vertices();
-    base.compute_flat_normals();
-    base
-}
-fn bx(w: f32, h: f32, d: f32, off: Vec3, c: [f32; 4]) -> Mesh {
-    tinted(Cuboid::new(w, h, d).mesh().build().translated_by(off), c)
-}
-fn bxr(w: f32, h: f32, d: f32, off: Vec3, rot: Quat, c: [f32; 4]) -> Mesh {
-    tinted(Cuboid::new(w, h, d).mesh().build().rotated_by(rot).translated_by(off), c)
-}
-fn cone(r: f32, h: f32, off: Vec3, rot: Quat, c: [f32; 4]) -> Mesh {
-    tinted(Cone { radius: r, height: h }.mesh().build().rotated_by(rot).translated_by(off), c)
 }
 
 // ── Deterministic mulberry32 RNG ─────────────────────────────────────────────────────

@@ -105,7 +105,7 @@ pub fn build(
     let ground = |x: f32, z: f32| crate::worldmap::ground_at_world(x, z).unwrap_or(0.0);
 
     // Spawn one merged prop; `solid` (hw, hd) registers a blocker box (Vec2::ZERO = walk-through).
-    let mut prop = |commands: &mut Commands,
+    let prop = |commands: &mut Commands,
                     meshes: &mut Assets<Mesh>,
                     mesh: Mesh,
                     x: f32,
@@ -166,7 +166,7 @@ pub fn build(
     ));
 
     // ── Nature clumps (diagonal quarters; cardinal lanes stay open) ────────────────
-    let mut tree = |commands: &mut Commands, meshes: &mut Assets<Mesh>, kind, x: f32, z: f32, s: f32, yaw: f32| {
+    let tree = |commands: &mut Commands, meshes: &mut Assets<Mesh>, kind, x: f32, z: f32, s: f32, yaw: f32| {
         let m = crate::trees::build_tree_mesh(kind);
         let r = crate::trees::silhouette_block_radius(&m) * s;
         if r > 0.15 {

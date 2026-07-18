@@ -750,22 +750,6 @@ fn worn_slab(w: f32, d: f32, y: f32, fray: f32, noise_amp: f32, mottle: f32) -> 
     m
 }
 
-/// A flat upward-facing slab quad at height `y` (cobble courtyard), UV tiled.
-#[allow(dead_code)] // superseded by `worn_slab` for the yard; kept for flat textured sheets
-fn slab(w: f32, d: f32, y: f32) -> Mesh {
-    let (hw, hd) = (w / 2.0, d / 2.0);
-    let pos = vec![[-hw, y, -hd], [hw, y, -hd], [hw, y, hd], [-hw, y, hd]];
-    let nrm = vec![[0.0, 1.0, 0.0]; 4];
-    let uv = vec![[0.0, 0.0], [w / TILE, 0.0], [w / TILE, d / TILE], [0.0, d / TILE]];
-    let idx = vec![0u32, 2, 1, 0, 3, 2];
-    let mut m = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
-    m.insert_attribute(Mesh::ATTRIBUTE_POSITION, pos);
-    m.insert_attribute(Mesh::ATTRIBUTE_NORMAL, nrm);
-    m.insert_attribute(Mesh::ATTRIBUTE_UV_0, uv);
-    m.insert_indices(Indices::U32(idx));
-    m
-}
-
 pub(crate) fn bake(m: Mesh, pos: Vec3, rot: f32, scale: Vec3) -> Mesh {
     m.scaled_by(scale).rotated_by(Quat::from_rotation_y(rot)).translated_by(pos)
 }
@@ -1343,9 +1327,8 @@ fn brazier_parts() -> Vec<(Mesh, M)> {
 }
 
 // ── Rustic yard clutter ──────────────────────────────────────────────────────────
-// Small work-yard props that dress the courtyard corners. Tagged `Always` — they used to be
-// `PreWalls`, which meant buying the Palisade Walls DELETED every sign of life and left bare
-// paving; now the settlement's working corners stay through the whole game. Built at local
+// Small work-yard props that dress the courtyard corners. They remain visible as the castle
+// grows so the settlement's working corners stay alive throughout the game. Built at local
 // origin, base at y=0; the `build()` spawn closure bakes each cluster to its courtyard spot.
 // Decorative only — they register NO collision (blockers are append-only and can't be cleanly
 // removed), and they sit at the courtyard corners (±10, ±6), clear of the keep, the bell, the
@@ -1580,9 +1563,9 @@ pub fn build(
     // hidden so the castle BUILDS UP as you buy (a deliberate change from the old always-full
     // render). `Always` parts (keep core, courtyard, bell, keep-door torches) show from the start.
     let mut spawn = |parts: Vec<(Mesh, M)>, pos: Vec3, rot: f32, scale: Vec3, kind: CastleKind| {
-        // `Always` and `PreWalls` are present on a fresh, wall-less keep; the rest start hidden and
-        // `sync_castle` reveals them as you buy upgrades (and flips PreWalls off once Walls go up).
-        let vis = if matches!(kind, CastleKind::Always | CastleKind::PreWalls) {
+        // Permanent parts are present on a fresh keep; gated parts start hidden and are revealed
+        // by `sync_castle` as upgrades are purchased.
+        let vis = if kind == CastleKind::Always {
             Visibility::Inherited
         } else {
             Visibility::Hidden
@@ -1981,7 +1964,7 @@ struct Smoke {
 }
 
 /// A pre-wall courtyard hen: a moving root that [`peck_hens`] bobs + tips forward (pecking the
-/// dirt). `base_yaw` is its facing; visibility is driven by its `CastlePart { PreWalls }`.
+/// dirt). `base_yaw` is its facing.
 #[derive(Component)]
 struct Hen {
     base_yaw: Quat,
@@ -1993,9 +1976,6 @@ struct Hen {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CastleKind {
     Always,
-    /// Shown ONLY before the Palisade Walls go up — the trodden packed-earth route network of the
-    /// young settlement. Buying Walls hides it (the same routes re-appear paved in cobble).
-    PreWalls,
     Walls,
     Gate,
     Towers,
@@ -2050,7 +2030,6 @@ fn sync_castle(
     for (e, part, mut vis, mut tf, at) in &mut q {
         let show = match part.kind {
             CastleKind::Always => true,
-            CastleKind::PreWalls => !def.walls, // the bare-yard look gives way to the cobbled courtyard
             CastleKind::Walls => def.walls,
             CastleKind::Gate => def.walls && def.gate, // a gate without walls would float
             CastleKind::Towers => def.towers,

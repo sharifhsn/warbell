@@ -345,12 +345,6 @@ pub fn is_on_bridge(wx: f32, wz: f32) -> bool {
     span_at(wx, wz).is_some()
 }
 
-/// World-XZ centres of every bridge deck. The road network threads its river crossings through
-/// these so a path lands on a real deck instead of plunging into the water (`roads::wander`).
-pub fn centers() -> Vec<Vec2> {
-    spans().iter().map(|s| Vec2::new(s.cx, s.cz)).collect()
-}
-
 /// Is `(wx, wz)` on or hugging a bridge deck (footprint padded by `pad`)? Placement code
 /// (worldmap scatter, verbs props/chests) rejects these spots — the deck overhangs `OVERHANG`
 /// onto solid land at each end, so without this trees/props spawn up through the planks.

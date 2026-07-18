@@ -42,14 +42,7 @@ pub struct BuildPop {
 }
 
 impl BuildPop {
-    /// Uniform pop with a small overshoot — for a structure parented at its own ground position.
-    /// Settles at `Vec3::ONE`.
-    pub fn pop() -> Self {
-        Self::pop_to(Vec3::ONE)
-    }
-
-    /// Like [`pop`](Self::pop) but settles at scale `rest` instead of `Vec3::ONE` (may be
-    /// non-uniform, e.g. a taller-than-wide building).
+    /// Uniform pop with a small overshoot that settles at `rest` (which may be non-uniform).
     pub fn pop_to(rest: Vec3) -> Self {
         Self { age: 0.0, dur: 0.45, rise: false, rest }
     }

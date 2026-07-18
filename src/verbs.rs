@@ -1207,9 +1207,6 @@ fn ctint(mut m: Mesh, c: [f32; 4]) -> Mesh {
     m.insert_attribute(Mesh::ATTRIBUTE_COLOR, vec![c; n]);
     m
 }
-fn cbx(w: f32, h: f32, d: f32, off: Vec3, c: [f32; 4]) -> Mesh {
-    ctint(Cuboid::new(w, h, d).mesh().build().translated_by(off), c)
-}
 fn cbxr(w: f32, h: f32, d: f32, off: Vec3, rot: Quat, c: [f32; 4]) -> Mesh {
     ctint(Cuboid::new(w, h, d).mesh().build().rotated_by(rot).translated_by(off), c)
 }

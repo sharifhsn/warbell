@@ -94,7 +94,7 @@ struct SceneLabor {
 }
 
 /// The gag mason — [`drive_scene_mason`] owns his WHOLE rig (root pose + every limb), so
-/// `villager_limbs` skips him (see its `Without<SceneMason>` filter). `pub` for that filter.
+/// Marker for the dedicated mason scene driver.
 #[derive(Component)]
 pub struct SceneMason;
 
@@ -408,7 +408,7 @@ fn drive_scene_labor(
         let cyc = ((t / l.period) + l.phase).floor();
         if cyc != l.last {
             l.last = cyc;
-            // Stamp the swing in the `elapsed_secs` domain `villager_limbs` compares against.
+            // Stamp the swing in the `elapsed_secs` domain used by the shared biped animator.
             v.atk_anim = time.elapsed_secs();
         }
     }
@@ -448,24 +448,13 @@ fn env(x: f32, keys: &[(f32, f32)]) -> f32 {
 }
 
 /// "He laid three stones. Then he supervised." — the looped pantomime. This system owns the
-/// mason's whole rig: root pose (bow pitch + crouch + the step back), every limb (arms reach /
-/// clasp behind the back / point; head looks at the work and nods), and the three stones popping
-/// onto the course as each is placed. `villager_limbs` skips him entirely.
+/// mason's root pose (bow pitch, crouch and step back) and the three stones popping onto the course
+/// as each is placed.
 #[allow(clippy::type_complexity)]
 fn drive_scene_mason(
     state: Res<SceneState>,
-    mut roots: Query<
-        (&mut crate::villagers::Villager, &mut Transform, &Children),
-        (With<SceneMason>, Without<crate::villagers::VilPart>, Without<MasonStone>),
-    >,
-    mut parts: Query<
-        (&crate::villagers::VilPart, &mut Transform),
-        (Without<SceneMason>, Without<MasonStone>),
-    >,
-    mut stones: Query<
-        (&MasonStone, &mut Transform),
-        (Without<SceneMason>, Without<crate::villagers::VilPart>),
-    >,
+    mut roots: Query<(&mut crate::villagers::Villager, &mut Transform), (With<SceneMason>, Without<MasonStone>)>,
+    mut stones: Query<(&MasonStone, &mut Transform), Without<SceneMason>>,
 ) {
     if state.active != Some(SceneId::Mason) {
         return;
@@ -485,36 +474,24 @@ fn drive_scene_mason(
         tf.scale = Vec3::splat(k.max(0.001));
     }
 
-    // Pose channels for this loop instant: torso pitch (+ = bow forward), hip drop, per-arm and
-    // head rotations, how far he's stepped back off his mark, and the leg-shuffle swing.
-    let (pitch, crouch, arm_l, arm_r, head_pitch, head_yaw, back, leg) = if t < MASON_LAY_TOTAL {
+    // Pose channels for this loop instant: torso pitch (+ = bow forward), hip drop and how far he
+    // has stepped back from his mark.
+    let (pitch, crouch, back) = if t < MASON_LAY_TOTAL {
         // ── Laying: bow down, hold (he's not hurrying), heave up, set the stone, straighten. ──
         let u = (t % MASON_LAY_DUR) / MASON_LAY_DUR;
         let pitch = env(u, &[(0.0, 0.0), (0.26, 0.85), (0.44, 0.85), (0.60, 0.14), (0.78, 0.42), (0.92, 0.42), (1.0, 0.02)]);
         let crouch = 0.20 * env(u, &[(0.0, 0.0), (0.26, 1.0), (0.46, 1.0), (0.62, 0.0), (1.0, 0.0)]);
-        // Both arms together — a two-handed carry, so the stone reads heavy.
-        let arm = env(u, &[(0.0, -0.05), (0.26, -0.55), (0.44, -0.6), (0.60, -1.0), (0.78, -1.25), (0.92, -1.25), (1.0, -0.1)]);
-        let head_pitch = env(u, &[(0.0, 0.05), (0.26, 0.32), (0.60, 0.18), (0.80, 0.35), (1.0, 0.08)]);
-        (pitch, crouch, arm, arm, head_pitch, 0.0, 0.0, 0.02 * (t * 1.3).sin())
+        (pitch, crouch, 0.0)
     } else {
         // ── Supervising: step back, chest out, hands clasped behind, point at the work with
         // emphatic nods, one satisfied double-nod, then step back up to the wall for the wrap. ──
         let s = t - MASON_LAY_TOTAL;
         let back = 0.85 * env(s, &[(0.0, 0.0), (0.7, 1.0), (MASON_SUP_DUR - 0.7, 1.0), (MASON_SUP_DUR, 0.0)]);
         let lean = env(s, &[(0.0, 0.0), (0.9, -0.07), (MASON_SUP_DUR - 0.8, -0.07), (MASON_SUP_DUR, 0.0)]);
-        let clasp = env(s, &[(0.0, 0.0), (0.9, 0.5), (MASON_SUP_DUR - 0.6, 0.5), (MASON_SUP_DUR, 0.0)]);
-        let point = env(s, &[(2.0, 0.0), (2.5, 1.0), (3.8, 1.0), (4.3, 0.0)]);
-        let arm_r = clasp + (-1.35 - clasp) * point; // the point overrides the clasped right arm
-        let nod = -0.12 * (s * 5.0).sin() * point
-            + env(s, &[(4.5, 0.0), (4.7, 0.25), (4.9, 0.02), (5.1, 0.2), (5.3, 0.0)]);
-        // Scan the work side to side; while pointing, fix on the right-hand labourer.
-        let head_yaw = 0.22 * (s * 0.9).sin() * (1.0 - point) + 0.3 * point;
-        let stepping = !(0.7..=MASON_SUP_DUR - 0.7).contains(&s);
-        let leg = if stepping { 0.35 * (s * 11.0).sin() } else { 0.02 * (s * 1.1).sin() };
-        (lean, 0.0, clasp, arm_r, nod, head_yaw, back, leg)
+        (lean, 0.0, back)
     };
 
-    for (mut v, mut tf, children) in &mut roots {
+    for (mut v, mut tf) in &mut roots {
         let facing = 0.0; // toward the wall (+Z)
         let pos = Vec2::new(MASON_MARK.x, MASON_MARK.y - back);
         let gy = crate::worldmap::ground_at_world(pos.x, pos.y).unwrap_or(tf.translation.y);
@@ -523,16 +500,6 @@ fn drive_scene_mason(
         v.moving = false;
         tf.translation = Vec3::new(pos.x, gy - crouch, pos.y);
         tf.rotation = Quat::from_rotation_y(facing) * Quat::from_rotation_x(pitch);
-        for &child in children {
-            let Ok((part, mut ptf)) = parts.get_mut(child) else { continue };
-            use crate::critters::PartKind;
-            ptf.rotation = match part.kind {
-                PartKind::Leg(sign) => Quat::from_rotation_x(sign * leg),
-                PartKind::Arm(sign) => Quat::from_rotation_x(if sign > 0.0 { arm_r } else { arm_l }),
-                PartKind::Head => Quat::from_rotation_y(head_yaw) * Quat::from_rotation_x(head_pitch),
-                PartKind::Tail => Quat::IDENTITY,
-            };
-        }
     }
 }
 

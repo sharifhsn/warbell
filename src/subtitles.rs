@@ -21,10 +21,6 @@ pub struct Subtitles {
 }
 
 impl Subtitles {
-    /// Show `text` for `dur` seconds (from `now = time.elapsed_secs()`).
-    pub fn say(&mut self, now: f32, text: &str, dur: f32) {
-        self.say_as(now, None, text, dur);
-    }
     /// Show `text` attributed to `speaker` (renders "Name: text"); `None` = no prefix (the hero).
     pub fn say_as(&mut self, now: f32, speaker: Option<&str>, text: &str, dur: f32) {
         if self.locked {

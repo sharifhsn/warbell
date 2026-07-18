@@ -65,9 +65,6 @@ pub const PRIMARY_HI: Color = rgb(222, 170, 84); // hover
 pub const PRIMARY_BORDER: Color = rgb(244, 204, 132);
 
 // XP bar blue (was also the old primary-button blue; the button is bronze now).
-pub const BLUE: Color = rgb(74, 111, 200); // #4a6fc8
-pub const BLUE_HI: Color = rgb(98, 134, 219); // #6286db
-pub const BLUE_BORDER: Color = rgb(130, 162, 234); // #82a2ea
 
 // Danger action button (Overwrite save / destructive confirms)
 pub const RED_HI: Color = rgb(232, 82, 82); // hover

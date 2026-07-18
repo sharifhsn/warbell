@@ -589,18 +589,6 @@ pub(crate) fn play_cues(
                     pos,
                 );
             }
-            // Distant siege thunder — the synth rumble, head-locked (it's the whole sky, not a
-            // point), wide-ish pitch jitter so repeated rolls vary.
-            AudioCue::Thunder => {
-                if let Some(h) = stings.handle(Sting::Thunder) {
-                    one_shot(
-                        &mut commands,
-                        h,
-                        Sting::Thunder.volume() * sfx,
-                        jitter(&mut seed, 0.12),
-                    );
-                }
-            }
             // A dormant snowman lurching to life — a dedicated "evil snowman waking from a frozen
             // sleep" groan, a touch louder so the "it was a prop a second ago" scare lands. Spatial
             // at the snowman. Not throttled: waking is a rare per-snowman event.

@@ -283,28 +283,7 @@ pub fn prep_progress(prep_seconds_left: f32, mods: DiffMods) -> f32 {
     1.0 - left / dur
 }
 
-/// A spawn point on the ring around `keep` for the `i`-th spawn: marches outward along a
-/// golden-angle ray and keeps the furthest **standable** tile (per the `standable` predicate),
-/// capped at `max_ring`. Ring points can otherwise land in the sea where the ork strands the
-/// wave. Mirrors the TS `spawnPointFor`.
-pub fn spawn_point(i: u32, keep: Vec2, max_ring: f32, standable: impl Fn(f32, f32) -> bool) -> Vec2 {
-    // Golden-angle spread so successive spawns don't stack.
-    let a = i as f32 * 2.399_963_2;
-    let dir = Vec2::new(a.cos(), a.sin());
-    // March outward along the ray, keeping the furthest standable tile (capped at max_ring).
-    let mut best = keep + dir * 6.0;
-    let mut r = 8.0;
-    while r <= max_ring {
-        let p = keep + dir * r;
-        if standable(p.x, p.y) {
-            best = p;
-        }
-        r += 2.0;
-    }
-    best
-}
-
-/// Like [`spawn_point`], but the ray is confined to the **southern arc** — the side of the ring
+/// Choose a spawn point on the **southern arc** — the side of the ring
 /// that faces Gnashfang Hold (world +Z). The night's horde musters from the Hold, so it should
 /// arrive from the Hold's direction rather than teleporting evenly around the keep. `ARC` is a
 /// tunable half-width: wide enough (~80°) that the wave fans across the southern gates instead of
@@ -1642,24 +1621,6 @@ mod tests {
     }
 
     #[test]
-    fn spawn_point_marches_to_furthest_standable_tile() {
-        let keep = Vec2::ZERO;
-        let all = spawn_point(0, keep, 30.0, |_, _| true);
-        assert!(all.length() > 6.0 && all.length() <= 31.0, "reaches out toward the ring");
-
-        let blocked = spawn_point(0, keep, 30.0, |x, z| Vec2::new(x, z).length() <= 8.0);
-        assert!(blocked.length() <= 9.0, "stays on the last standable tile when the sea blocks the ray");
-    }
-
-    #[test]
-    fn spawn_points_spread_by_golden_angle() {
-        let keep = Vec2::ZERO;
-        let a = spawn_point(0, keep, 30.0, |_, _| true);
-        let b = spawn_point(1, keep, 30.0, |_, _| true);
-        assert!(a.distance(b) > 1.0, "successive spawns don't stack");
-    }
-
-    #[test]
     fn south_spawns_stay_on_the_holds_side() {
         let keep = Vec2::ZERO;
         // Every spawn lands south of the keep (+Z, toward Gnashfang Hold) and within the ring,
@@ -1736,7 +1697,7 @@ mod tests {
         // keep. `spawn_footing` keeps only flat (class-1, Y≈0) ring tiles — all in the keep's
         // walkable component. Sweep every golden-angle bearing and assert none land elevated.
         for i in 0..400u32 {
-            let p = spawn_point(i, KEEP_POS, SPAWN_RING, spawn_footing);
+            let p = south_spawn_point(i, KEEP_POS, SPAWN_RING, spawn_footing);
             let y = crate::worldmap::ground_at_world(p.x, p.y).expect("spawn lands on land");
             assert!(y <= 0.05, "spawn #{i} at ({:.1},{:.1}) elevated Y={y:.2}", p.x, p.y);
         }

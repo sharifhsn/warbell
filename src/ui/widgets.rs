@@ -226,35 +226,6 @@ pub fn medallion(
     });
 }
 
-/// Spawn a **cost chip** — small pill with a coin/stone icon and a cost string. `tone` colours
-/// both icon tint and text (gold = affordable, red = can't afford, faded = locked).
-pub fn cost_chip(
-    p: &mut RelatedSpawnerCommands<ChildOf>,
-    font: &Handle<Font>,
-    entry: Option<(Handle<Image>, bool)>,
-    text: impl Into<String>,
-    tone: Color,
-    bg: Color,
-) {
-    p.spawn((
-        Node {
-            flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Center,
-            column_gap: Val::Px(4.0),
-            padding: UiRect::axes(Val::Px(7.0), Val::Px(2.0)),
-            border_radius: radius(R_CELL),
-            ..default()
-        },
-        BackgroundColor(bg),
-    ))
-    .with_children(|c| {
-        if let Some(entry) = entry {
-            c.spawn(icon_tinted(entry, 11.0, tone));
-        }
-        c.spawn(super::fonts::label(font, text, 12.0, tone));
-    });
-}
-
 /// Vertical (top→bottom) linear gradient fill — for HP/XP/stamina bars and gradient buttons.
 pub fn vgrad(top: Color, bot: Color) -> BackgroundGradient {
     BackgroundGradient(vec![Gradient::Linear(LinearGradient::new(
