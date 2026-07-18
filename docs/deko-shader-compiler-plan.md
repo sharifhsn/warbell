@@ -24,13 +24,13 @@ correctness requirement.
 ## Current verified status (2026-07-18)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `3b0dc7b6b3e4cf84bc736f1ddfd3b6c67fabb859`. It lowers supported Naga/WGSL directly
+  `c3e12f83b567df3285e955b7e037fad6899da788`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `03458903f` makes that compiler the
+- wgpu revision `09d63add4` makes that compiler the
   default Deko3D WGSL path. An installed artifact provider remains a higher-priority
   diagnostic override, but ordinary applications no longer need one.
-- The compiler workspace has 55 passing compiler tests and 112 tests across all workspace
+- The compiler workspace has 56 passing compiler tests and 113 tests across all workspace
   suites, strict clippy, rustdoc, package-content checks, provenance enforcement, and three
   buildable fuzz targets. The wgpu Deko3D HAL has 32 passing host tests, and the
   no-provider acceptance NRO links for Horizon without
@@ -69,7 +69,8 @@ correctness requirement.
   and discard so those effects do not leak into invocations on the other arm; pure SSA and
   structured-control instructions remain unconditional for NAK scheduling correctness.
   Nested and sequential value or void returns remove completed invocations from later effects,
-  with return choices merged only at the function boundary.
+  with return choices merged only at the function boundary. Returns taken inside loops also
+  remove completed invocations from side effects after the loop.
   Divergent helper functions merge `ptr<function, T>` writes per invocation and propagate
   pointer updates back from both void and value-returning calls.
   Atomic WGSL operations on `r32uint` and `r32sint` storage textures lower to native Maxwell
@@ -81,10 +82,10 @@ correctness requirement.
   conversion, and pipeline-specialized compute workgroup-size overrides reach DKSH metadata.
 - Multiview pipelines load `view_index` from wgpu's reserved Deko uniform slot, emit the
   Maxwell layer output for each replayed vertex draw, and expose that layer to fragment WGSL.
-- The compiler backend ABI has advanced through 40 so persistent cache entries cannot cross
+- The compiler backend ABI has advanced through 41 so persistent cache entries cannot cross
   gradient, subgroup, texture-query, or specialization codegen boundaries. The latest clean,
-  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T072840Z`
-  reached ready in nine seconds, passed all three visual captures, and passed the run-health
+  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T073902Z`
+  reached ready in eight seconds, passed all three visual captures, and passed the run-health
   gate with diagnostic overrides disabled.
 - Full-game corpus closure, explicit physical-hardware timing/memory budgets,
   and physical vertex/fragment/compute execution remain incomplete, so this goal is
