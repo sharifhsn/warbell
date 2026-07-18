@@ -42,9 +42,13 @@ fi
 case "$TEST_KIND" in
   probe)
     require_log '[warbell-switch] phase=romfs_mount_ok' 'RomFS mounted'
-    require_log 'phase=asset_probe_ok path=romfs:/assets/fonts/Cinzel.ttf' 'font loaded from RomFS'
-    require_log 'phase=asset_probe_ok path=romfs:/assets/ui/menu_backdrop.png' 'PNG loaded from RomFS'
-    require_log 'phase=asset_probe_ok path=romfs:/assets/shaders/terrain.wgsl' 'WGSL loaded from RomFS'
+    # Horizon's stdio adapter may emit formatted arguments as separate debug
+    # records. Require the success marker plus every expected path so both the
+    # split and single-line nxlink forms validate correctly.
+    require_log '[warbell-switch] phase=asset_probe_ok path=' 'asset probe success telemetry'
+    require_log 'romfs:/assets/fonts/Cinzel.ttf' 'font loaded from RomFS'
+    require_log 'romfs:/assets/ui/menu_backdrop.png' 'PNG loaded from RomFS'
+    require_log 'romfs:/assets/shaders/terrain.wgsl' 'WGSL loaded from RomFS'
     require_log '[wgpu-deko3d] shader_cache key=' 'runtime compiler cache telemetry'
     require_log 'shader_source=runtime_wgsl' 'runtime WGSL frame telemetry'
     require_log '[warbell-switch-probe] phase=probe_ready frame=60' 'vertex/fragment probe reached frame 60'
