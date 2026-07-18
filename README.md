@@ -26,12 +26,26 @@ with the external Switch harness before building and sending the NRO:
 ```sh
 tools/bootstrap-switch-deps.sh
 ../switch/experiments/switch1-deko3d-wgpu/tools/bootstrap-devkitpro-switch.sh
-tools/build-switch-nro.sh
-tools/run-switch-nro.sh game <switch-ip>
+SWITCH_APP=probe tools/build-switch-nro.sh
+tools/run-switch-hardware-test.sh probe <switch-ip>
 ```
 
 The build packages `assets/` at `romfs:/assets`, disables desktop audio and
 windowing, and uses the Horizon runner and Deko3D surface path.
+
+The final compiler acceptance is two physical runs. First run the probe above and
+visually confirm its frame, setting `SWITCH_VISUAL_RESULT=passed` when recorded. Return
+to hbmenu NetLoader, then run the provider-free WGSL compute/readback test:
+
+```sh
+DEVKITPRO=/tmp/devkitpro-switch1/opt/devkitpro \
+  WGPU_DEKO3D_DIR="$PWD/vendor/wgpu" \
+  ../switch/experiments/switch1-deko3d-wgpu/tools/build-wgpu-public-runtime-compute.sh
+tools/run-switch-hardware-test.sh compute <switch-ip>
+```
+
+Each run writes a revisioned manifest and complete nxlink log under
+`target/switch-nro/hardware-acceptance/`. Emulator output does not satisfy this gate.
 
 See [the Switch port handoff](docs/switch-port-handoff.md) for the current
 milestone, repository ownership, hardware acceptance gate, and roadmap.

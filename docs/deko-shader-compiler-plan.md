@@ -370,3 +370,22 @@ progress.
   features change.
 - Preserve existing Warbell and sibling Switch-lab worktrees. Inspect status before
   every edit and stage only files owned by the current change.
+
+## Physical closure procedure
+
+The authoritative end-to-end gate consists of two separate NetLoader sessions:
+
+1. Build the physical `probe` Warbell NRO and run
+   `SWITCH_VISUAL_RESULT=passed tools/run-switch-hardware-test.sh probe <switch-ip>` while
+   directly confirming the rendered scene. The validator requires RomFS font/PNG/WGSL loads,
+   runtime compiler-cache telemetry, runtime-WGSL frame telemetry, and frame 60 without compiler,
+   validation, device, or asset errors.
+2. Return to hbmenu NetLoader and run
+   `tools/run-switch-hardware-test.sh compute <switch-ip>` with the freshly built external
+   `deko-wgpu-public-runtime-compute-rs.nro`. The validator requires provider-free WGSL startup
+   and exact storage-buffer readback `[7, 13, 19, 25]`.
+
+Each run records the NRO SHA-256 and exact Warbell, wgpu, and compiler revisions under
+`target/switch-nro/hardware-acceptance/`. A probe with `visual_result=not_recorded` remains
+`pending_visual` even when its log passes. Neither Ryujinx evidence nor an emulator-mode NRO may
+close the physical gate.

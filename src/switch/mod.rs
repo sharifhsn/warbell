@@ -242,7 +242,7 @@ pub fn run() {
         eprintln!("failed to mount RomFS: {mount_result:#010x}");
         return;
     }
-    println!("[warbell-switch] phase=romfs_mount_ok");
+    eprintln!("[warbell-switch] phase=romfs_mount_ok");
     probe_romfs();
 
     // FileAssetReader appends AssetPlugin::file_path to this base while the
@@ -406,7 +406,7 @@ fn probe_romfs() {
         "romfs:/assets/shaders/terrain.wgsl",
     ] {
         match std::fs::read(path) {
-            Ok(bytes) => println!(
+            Ok(bytes) => eprintln!(
                 "[warbell-switch] phase=asset_probe_ok path={path} bytes={}",
                 bytes.len()
             ),

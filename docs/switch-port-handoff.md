@@ -158,9 +158,29 @@ Build and send the current NRO:
 
 ```sh
 ../switch/experiments/switch1-deko3d-wgpu/tools/bootstrap-devkitpro-switch.sh
-tools/build-switch-nro.sh
-tools/run-switch-nro.sh game <switch-ip>
+SWITCH_APP=probe tools/build-switch-nro.sh
+SWITCH_VISUAL_RESULT=passed tools/run-switch-hardware-test.sh probe <switch-ip>
 ```
+
+The visual result must be set to `passed` only while directly observing or recording the
+physical Switch output. The runner rejects emulator-mode or stale-wgpu probe metadata and
+writes the NRO hash, exact Warbell/wgpu/compiler revisions, nxlink log, and validation result
+under `target/switch-nro/hardware-acceptance/`.
+
+Return to hbmenu NetLoader after the probe exits, then run the independent storage-buffer
+compute/readback acceptance test. It compiles WGSL at runtime with no DKSH provider and requires
+the exact GPU result `[7, 13, 19, 25]`:
+
+```sh
+DEVKITPRO=/tmp/devkitpro-switch1/opt/devkitpro \
+  WGPU_DEKO3D_DIR="$PWD/vendor/wgpu" \
+  ../switch/experiments/switch1-deko3d-wgpu/tools/build-wgpu-public-runtime-compute.sh
+tools/run-switch-hardware-test.sh compute <switch-ip>
+```
+
+Do not substitute a previously built compute NRO after wgpu or the compiler revision changes.
+The run manifest is the durable evidence record; physical visual confirmation remains distinct
+from automated log health.
 
 Acceptance checklist:
 
