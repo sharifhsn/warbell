@@ -24,13 +24,13 @@ correctness requirement.
 ## Current verified status (2026-07-18)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `43e11485b5226eb5462beb231d0122f78c5d9c6f`. It lowers supported Naga/WGSL directly
+  `ddfcf30137f477ede270fb6231df37d62a0f3daa`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `6b1809cbc` makes that compiler the
+- wgpu revision `5eaa63ab67fa478dbaf9ebef198867008361e58a` makes that compiler the
   default Deko3D WGSL path. An installed artifact provider remains a higher-priority
   diagnostic override, but ordinary applications no longer need one.
-- The compiler workspace has 62 passing compiler tests and 120 tests across all workspace
+- The compiler workspace has 65 passing compiler tests and 123 tests across all workspace
   suites, strict clippy, rustdoc, package-content checks, provenance enforcement, and three
   buildable fuzz targets. The wgpu Deko3D HAL has 32 passing host tests, and the
   no-provider acceptance NRO links for Horizon without
@@ -70,13 +70,12 @@ correctness requirement.
   structured-control instructions remain unconditional for NAK scheduling correctness.
   Nested and sequential value or void returns remove completed invocations from later effects,
   with return choices merged only at the function boundary. Returns taken inside loops also
-  remove completed invocations from side effects after the loop. Terminal unconditional loop
-  `break` and `continue` preserve written locals at exit and route through continuing blocks;
-  control-only nested lexical controls are recognized, changed live values on direct terminal
-  breaks receive selective exit phis, and unreachable CFG-node removal remaps every predecessor
-  and successor index. Mutation-bearing nested exits and side-effecting conditional-break
-  prefixes remain fail-closed: ABI46 proved that filtering exit CFG phis by post-loop liveness
-  is insufficient for NAK scheduling, so those values need a non-exit-phi carrier design.
+  remove completed invocations from side effects after the loop. Terminal, mutation-bearing
+  nested lexical, and side-effecting conditional loop exits preserve written locals through
+  per-invocation Maxwell local memory instead of exit CFG phis; `continue` still routes through
+  the WGSL continuing block, and unreachable CFG-node removal remaps every predecessor and
+  successor index. Lexical loop/switch ownership also keeps explicit or conditional switch
+  breaks from escaping an enclosing loop while preserving modified locals at the switch exit.
   Divergent helper functions merge `ptr<function, T>` writes per invocation and propagate
   pointer updates back from both void and value-returning calls.
   Atomic WGSL operations on `r32uint` and `r32sint` storage textures lower to native Maxwell
@@ -88,9 +87,9 @@ correctness requirement.
   conversion, and pipeline-specialized compute workgroup-size overrides reach DKSH metadata.
 - Multiview pipelines load `view_index` from wgpu's reserved Deko uniform slot, emit the
   Maxwell layer output for each replayed vertex draw, and expose that layer to fragment WGSL.
-- The compiler backend ABI has advanced through 47 so persistent cache entries cannot cross
+- The compiler backend ABI has advanced through 48 so persistent cache entries cannot cross
   gradient, subgroup, texture-query, or specialization codegen boundaries. The latest clean,
-  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T091529Z`
+  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T094954Z`
   reached ready in nine seconds, passed all three visual captures, and passed the run-health
   gate with diagnostic overrides disabled.
 - Full-game corpus closure, explicit physical-hardware timing/memory budgets,

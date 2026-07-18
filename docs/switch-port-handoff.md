@@ -1,6 +1,6 @@
 # Warbell Switch Port Handoff
 
-Last updated: 2026-07-17
+Last updated: 2026-07-18
 
 ## Goal
 
@@ -31,6 +31,10 @@ Implemented:
 - Runtime WGSL compilation through Naga and the extracted Maxwell NAK backend. Deko3D
   already uses upper-left origin and zero-to-one depth, so generated vertex programs do
   not apply an OpenGL Y/depth fixup.
+- Compiler ABI 48 carries mutation-bearing loop exits through per-invocation Maxwell local
+  memory and distinguishes switch breaks from enclosing-loop breaks. Compiler revision
+  `ddfcf3013` and wgpu revision `5eaa63ab6` passed the clean, provider-free Ryujinx probe at
+  `target/ryujinx-logs/warbell-20260718T094954Z` in nine seconds with all three visual checks.
 - Native sampled 3D textures, including a D2-array staging copy into Deko3D 3D images for padded
   WebGPU buffer uploads. `DkCopyBuf` strides are passed in bytes as required by Deko3D.
 - RomFS mounted before `AssetPlugin`, with `assets/` packaged at `romfs:/assets`.
