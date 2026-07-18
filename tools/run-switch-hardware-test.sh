@@ -80,6 +80,11 @@ fi
 mkdir -p "$LOG_DIR"
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 RUN_DIR="$LOG_DIR/$STAMP-$TEST_KIND"
+RUN_SUFFIX=1
+while [ -e "$RUN_DIR" ]; do
+  RUN_DIR="$LOG_DIR/$STAMP-$TEST_KIND-$RUN_SUFFIX"
+  RUN_SUFFIX=$((RUN_SUFFIX + 1))
+done
 mkdir -p "$RUN_DIR"
 LOG="$RUN_DIR/nxlink.log"
 MANIFEST="$RUN_DIR/run.manifest"
