@@ -24,13 +24,13 @@ correctness requirement.
 ## Current verified status (2026-07-17)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `278415df43197df753118f4a9dda7da77ecd49fa`. It lowers supported Naga/WGSL directly
+  `d715f86ec969e941c0bbaa2df9e35afc388557ee`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `e194f20dc` makes that compiler the
+- wgpu revision `dbe039297` makes that compiler the
   default Deko3D WGSL path. An installed artifact provider remains a higher-priority
   diagnostic override, but ordinary applications no longer need one.
-- The compiler workspace has 44 passing compiler tests and 101 tests across all workspace
+- The compiler workspace has 45 passing compiler tests and 102 tests across all workspace
   suites, strict clippy, rustdoc, package-content checks, provenance enforcement, and three
   buildable fuzz targets. The wgpu Deko3D HAL has 32 passing host tests, and the
   no-provider acceptance NRO links for Horizon without
@@ -62,14 +62,16 @@ correctness requirement.
   `subgroup_size`, and workgroup-geometry-derived `subgroup_id` and `num_subgroups`.
   Boolean `subgroupAll`/`subgroupAny` reductions and `subgroupBallot` lower directly
   to Maxwell votes, including active-lane ballots for partially occupied warps.
+  Arithmetic and bitwise reductions plus add/multiply inclusive and exclusive scans
+  support scalar and vector operands with explicit sparse-active-lane handling.
   Array `textureNumLayers` queries are native, including exact cube-array face-to-layer
   conversion, and pipeline-specialized compute workgroup-size overrides reach DKSH metadata.
 - Multiview pipelines load `view_index` from wgpu's reserved Deko uniform slot, emit the
   Maxwell layer output for each replayed vertex draw, and expose that layer to fragment WGSL.
-- The compiler backend ABI has advanced through 31 so persistent cache entries cannot cross
+- The compiler backend ABI has advanced through 32 so persistent cache entries cannot cross
   gradient, subgroup, texture-query, or specialization codegen boundaries. The latest clean,
-  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T053421Z`
-  reached ready in 14 seconds, passed all three visual captures, and passed the run-health
+  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T054956Z`
+  reached ready in ten seconds, passed all three visual captures, and passed the run-health
   gate with diagnostic overrides disabled.
 - Full-game corpus closure, explicit physical-hardware timing/memory budgets,
   and physical vertex/fragment/compute execution remain incomplete, so this goal is
