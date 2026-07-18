@@ -24,10 +24,10 @@ correctness requirement.
 ## Current verified status (2026-07-17)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `973c0342139fe1500487ced9caf53bafb7ab9ac1`. It lowers supported Naga/WGSL directly
+  `278415df43197df753118f4a9dda7da77ecd49fa`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `a191abc11` makes that compiler the
+- wgpu revision `e194f20dc` makes that compiler the
   default Deko3D WGSL path. An installed artifact provider remains a higher-priority
   diagnostic override, but ordinary applications no longer need one.
 - The compiler workspace has 44 passing compiler tests and 101 tests across all workspace
@@ -60,14 +60,16 @@ correctness requirement.
 - `subgroupBroadcastFirst` lowers through an active-lane vote and indexed shuffle.
   Compute WGSL also receives native `subgroup_invocation_id`, constant GM20B
   `subgroup_size`, and workgroup-geometry-derived `subgroup_id` and `num_subgroups`.
+  Boolean `subgroupAll`/`subgroupAny` reductions and `subgroupBallot` lower directly
+  to Maxwell votes, including active-lane ballots for partially occupied warps.
   Array `textureNumLayers` queries are native, including exact cube-array face-to-layer
   conversion, and pipeline-specialized compute workgroup-size overrides reach DKSH metadata.
 - Multiview pipelines load `view_index` from wgpu's reserved Deko uniform slot, emit the
   Maxwell layer output for each replayed vertex draw, and expose that layer to fragment WGSL.
-- The compiler backend ABI has advanced through 30 so persistent cache entries cannot cross
+- The compiler backend ABI has advanced through 31 so persistent cache entries cannot cross
   gradient, subgroup, texture-query, or specialization codegen boundaries. The latest clean,
-  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260717T152616Z`
-  reached ready in seven seconds, passed all three visual captures, and passed the run-health
+  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T053421Z`
+  reached ready in 14 seconds, passed all three visual captures, and passed the run-health
   gate with diagnostic overrides disabled.
 - Full-game corpus closure, explicit physical-hardware timing/memory budgets,
   and physical vertex/fragment/compute execution remain incomplete, so this goal is
