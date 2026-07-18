@@ -102,7 +102,7 @@ for f in "$OVERRIDE_DIR"/*.dksh; do
     original_bindings=$(jq -c '[.resources[] | {group, binding, kind, binding_map_target}]' "$original_reflection")
     jq -en --argjson original "$original_bindings" --argjson override "$override_bindings" \
       'all($override[]; . as $resource | any($original[]; . == $resource))' >/dev/null ||
-      { echo "override bindings are incompatible with the original shader: $f" >&2; exit 1; }
+      { echo "override bindings do not match the original shader: $f" >&2; exit 1; }
   else
     echo "refusing override without original reflection: $f" >&2
     exit 1
@@ -226,8 +226,6 @@ fatal_failure() {
     echo pre_main_tls
   elif grep -aEq 'InvalidMemoryRegionException' "$log"; then
     echo invalid_memory_region
-  elif grep -aEq 'proof_artifact_lookup miss|shader_provider_(wgsl_hash|entry)_miss' "$log"; then
-    echo shader_provider_miss
   elif grep -aiEq 'device lost' "$log"; then
     echo device_lost
   elif grep -aEq 'panicked at' "$log"; then

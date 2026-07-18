@@ -35,7 +35,7 @@ windowing, and uses the Horizon runner and Deko3D surface path.
 
 The final compiler acceptance is two physical runs. First run the probe above and
 visually confirm its frame, setting `SWITCH_VISUAL_RESULT=passed` when recorded. Return
-to hbmenu NetLoader, then run the provider-free WGSL compute/readback test:
+to hbmenu NetLoader, then run the runtime WGSL compute/readback test:
 
 ```sh
 DEVKITPRO=/tmp/devkitpro-switch1/opt/devkitpro \

@@ -2198,13 +2198,13 @@ struct VSpec {
 /// COSMETIC rng stream `cr` that NEVER touches the gameplay `Villager.rng`. Every roll is drawn
 /// UP FRONT in a fixed, append-only order, so a guard and the worker they're re-skinned into (same
 /// seed, different `kind`) get the identical face. `kid` forces a child look (no beard, simple hair).
-/// (Legacy box-mesh villager builder, superseded by [`vil_biped_meshes`]; kept for reference.)
+/// (Box-mesh prototype superseded by [`vil_biped_meshes`]; kept for model reference.)
 #[allow(dead_code)]
 fn spec(kind: Kind, seed: u32, kid: bool) -> VSpec {
     let (id_skin, id_tunic) = match kind {
         Kind::Peasant { skin, tunic, .. } => (skin, tunic),
         Kind::Guard { skin, tunic } => (skin, tunic),
-        Kind::Archer { skin, tunic } => (skin, tunic), // legacy box rig never grew a bow — treated as a guard
+        Kind::Archer { skin, tunic } => (skin, tunic), // prototype box rig has no bow
         Kind::Worker { skin, tunic, .. } => (skin, tunic),
     };
     let guard = matches!(kind, Kind::Guard { .. });
@@ -2878,8 +2878,8 @@ fn build_biped_body(
 }
 
 /// Spawn a villager's body (torso + limbs + head) as children of `root`, each tagged
-/// [`VilBodyPart`] so a re-skin can despawn exactly the body. (Legacy box-mesh rig, superseded by
-/// [`build_biped_body`]; kept for reference / the staged-scene mime path.)
+/// [`VilBodyPart`] so a re-skin can despawn exactly the body. (Box-mesh prototype superseded by
+/// [`build_biped_body`]; kept for model reference and the staged-scene mime path.)
 #[allow(dead_code)]
 fn build_body(root: &mut bevy::ecs::system::EntityCommands, s: VSpec, mat: &Handle<crate::creature::CreatureMaterial>, meshes: &mut Assets<Mesh>) {
     let torso = meshes.add(s.torso);

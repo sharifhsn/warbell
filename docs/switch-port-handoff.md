@@ -31,9 +31,9 @@ Implemented:
 - Runtime WGSL compilation through Naga and the extracted Maxwell NAK backend. Deko3D
   already uses upper-left origin and zero-to-one depth, so generated vertex programs do
   not apply an OpenGL Y/depth fixup.
-- Compiler ABI 48 carries mutation-bearing loop exits through per-invocation Maxwell local
-  memory and distinguishes switch breaks from enclosing-loop breaks. Compiler revision
-  `ddfcf3013` and wgpu revision `5eaa63ab6` passed the clean, provider-free Ryujinx probe at
+- The compiler carries mutation-bearing loop exits through per-invocation Maxwell local memory
+  and distinguishes switch breaks from enclosing-loop breaks. Compiler revision
+  `ddfcf3013` and wgpu revision `5eaa63ab6` passed the clean runtime-WGSL Ryujinx probe at
   `target/ryujinx-logs/warbell-20260718T094954Z` in nine seconds with all three visual checks.
 - Native sampled 3D textures, including a D2-array staging copy into Deko3D 3D images for padded
   WebGPU buffer uploads. `DkCopyBuf` strides are passed in bytes as required by Deko3D.
@@ -48,38 +48,6 @@ The Switch feature now runs a small controller-driven Warbell courtyard with a p
 castle walls, towers, lighting, HUD, and a deterministic combat exchange, not the full gameplay
 modules. The local emulator profile has the user's keys and the pinned D3-fixed Ryujinx build;
 never download or substitute keys.
-
-### Known-good commits
-
-wgpu 29:
-
-- `6c7d03302` Add experimental Deko3D backend for wgpu 29
-- `06041c2f6` Support opaque textured Deko3D rendering
-- `331d2128f` Add Deko3D WGSL artifact provider
-- `1bc4c871a` Support alpha blended Deko3D UI rendering
-- `b6fb8cafe` Support multiple static Deko3D bindings
-
-Bevy:
-
-- `cddb2f362` Add Horizon Deko3D renderer support
-- `f4f0179d7` Add deterministic shader capture infrastructure
-- `a4bd4640e` Add Deko3D shader capture planning tool
-- `1729ae1a0` Install Deko3D shader artifact providers
-- `344421f93` Configure the persistent Deko3D shader cache
-
-Warbell:
-
-- `b102e87` Add Switch Horizon runner and NRO build
-- `e932b3a` Add shader capture desktop feature
-- `e8f62de` Embed Deko3D proof shaders
-- `b707658` Add Switch hardware diagnostics
-- `bc5c760` Render Deko3D shader proof on Switch
-- `f65de12` Prove Switch assets and controller render state
-- `afccf82` Use the runtime WGSL compiler directly
-
-Harness:
-
-- `8146483` Update Deko3D triangle harness for wgpu 29
 
 ## Current backend envelope
 
@@ -168,7 +136,7 @@ writes the NRO hash, exact Warbell/wgpu/compiler revisions, nxlink log, and vali
 under `target/switch-nro/hardware-acceptance/`.
 
 Return to hbmenu NetLoader after the probe exits, then run the independent storage-buffer
-compute/readback acceptance test. It compiles WGSL at runtime with no DKSH provider and requires
+compute/readback acceptance test. It compiles WGSL at runtime and requires
 the exact GPU result `[7, 13, 19, 25]`:
 
 ```sh
@@ -199,10 +167,8 @@ Do not broaden the backend before this gate passes. If it fails, fix the smalles
 The runtime WGSL compiler is an active completion goal. Its architecture, gates,
 current revisions, and acceptance evidence are in
 [`deko-shader-compiler-plan.md`](deko-shader-compiler-plan.md). Supported WGSL now
-compiles automatically in the wgpu Deko3D backend. Warbell's provider, hash table,
-embedded runtime DKSH bundle, and prebuilt proof shaders have been removed. A provider
-API remains available in wgpu only as an explicit diagnostic oracle; Warbell does not
-install it.
+compiles automatically in the wgpu Deko3D backend. Warbell ships no hash table,
+runtime DKSH bundle, or prebuilt proof shaders.
 
 ### 1. Minimal recognizable Warbell scene
 

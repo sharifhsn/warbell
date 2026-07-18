@@ -247,8 +247,8 @@ struct Region {
     peak: i32,
     /// Tiered-mesa mode (map-character overhaul pass 1): the region's bulk becomes flat shelves
     /// separated by multi-class SHEER walls (`mesa_height`), exempt from `terrace_inland`, with
-    /// the authored `passes` corridors as the only climbable ways up. `false` keeps the legacy
-    /// smooth-terraced `mountain_height` (everything ≤1-class walkable).
+    /// the authored `passes` corridors as the only climbable ways up. `false` keeps the smooth
+    /// terraced `mountain_height` (everything ≤1-class walkable).
     cliffy: bool,
     /// Authored pass corridors for a cliffy region (empty otherwise). The FIRST pass is the
     /// castle-facing main ascent — roads target its mouth (`biome_road_targets`).
@@ -354,7 +354,7 @@ const ASH_ATMOSPHERE: (u32, f32, u32, f32, u32, f32, Vec3) =
 /// deliberately DIFFERENT arrangement from the home island, so the world reads as a new place
 /// even before the palette/atmosphere land. Mirror was dropped (it desyncs colour-vs-class +
 /// bridges/town-plots); bespoke positions + the noise reseed do the layout work instead.
-// Ashlands stays on the legacy smooth-terraced mountains (cliffy: false) for now — the mesa
+// Ashlands stays on smooth-terraced mountains (`cliffy: false`) for now — the mesa
 // treatment is tuned for the home island first; give the charcoal massif its own pass set when
 // the Ashlands gets its character pass.
 const ASH_REGIONS: [Region; 6] = [
@@ -3357,4 +3357,3 @@ mod tests {
         }
     }
 }
-

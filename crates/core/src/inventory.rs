@@ -829,7 +829,7 @@ impl Bag {
 
     /// Auto-pin a freshly added consumable to its default slot — but only when that
     /// slot is still empty and the item isn't already pinned somewhere. This gives a
-    /// new player the legacy derived layout (resist→Z, power→X, haste→C) with zero
+    /// new player the default layout (resist→Z, power→X, haste→C) with zero
     /// setup while never stomping a manual bind. Food items target Q (the fixed slot),
     /// so they are skipped here. Called from `add` (the pickup path).
     pub fn auto_bind(&mut self, id: &str) {
@@ -855,7 +855,7 @@ impl Bag {
 
     /// Use bindable slot `slot` (Z / X / C): consume one of its pinned item and return
     /// the effect, or None when the slot is exhausted. An *unbound* slot falls back to
-    /// the legacy "next item of the default kind" path, so the keys work before a
+    /// the next item of the default kind, so the keys work before a
     /// player has set anything up.
     pub fn use_quick_slot(&mut self, slot: usize) -> Option<ConsumeEffect> {
         if slot >= QUICK_SLOTS {
@@ -1257,7 +1257,7 @@ mod tests {
     #[test]
     fn coalesce_merges_duplicate_stackable_slots() {
         let mut b = Bag::new();
-        // Two separate dragon_plate cells (as a legacy bag would have before gear stacked).
+        // Two separate dragon_plate cells exercise duplicate-slot repair.
         b.bag[0].item_id = Some("dragon_plate".to_string());
         b.bag[0].count = 1;
         b.bag[3].item_id = Some("dragon_plate".to_string());

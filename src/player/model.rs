@@ -78,7 +78,6 @@ const PSHIELD: u32 = 0x2b2723;
 // K lands the waist at Y_HIPS=1.05 for the animator. Per-joint meshes are likewise built at previs
 // scale and shrunk by K (see `gk`).
 pub(crate) const K: f32 = 0.42; // previs-unit → rig scale
-pub(crate) const HH: f32 = 0.28; // (legacy; unused)
 pub(crate) const Y_HIPS: f32 = 1.05; // spine root = previs waist 2.5 × K
 pub(crate) const O_TORSO: f32 = 0.0; // torso pivot = hips (waist)
 pub(crate) const O_NECK: f32 = 0.60; // torso → neck (head shrunk ⇒ sits a touch lower)

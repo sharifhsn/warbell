@@ -54,7 +54,7 @@ case "$TEST_KIND" in
     require_log '[warbell-switch-probe] phase=probe_ready frame=60' 'vertex/fragment probe reached frame 60'
     ;;
   compute)
-    require_log 'deko-wgpu-public-runtime-compute-rs: start (WGSL, no DKSH provider)' 'provider-free WGSL compute started'
+    require_log 'deko-wgpu-public-runtime-compute-rs: start (runtime WGSL)' 'runtime WGSL compute started'
     require_log 'deko-wgpu-public-runtime-compute-rs: ok values=[7, 13, 19, 25]' 'storage-buffer dispatch and readback matched'
     ;;
 esac

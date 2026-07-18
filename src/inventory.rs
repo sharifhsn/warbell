@@ -635,8 +635,8 @@ fn build_inv_panel(
 }
 
 /// The quick-bar key (Y/T) this item id is pinned to, if any — drives the cell badge. Only the two
-/// bound slots the HUD/keys expose are scanned: core keeps a vestigial 3rd slot (Haste) for save
-/// compat, but it has no key/cell, so a stale bind there must NOT render a phantom badge.
+/// bound slots the HUD/keys expose are scanned: core's third Haste slot has no current key or
+/// cell, so a bind there must not render a phantom badge.
 fn bound_key_for(bag: &Bag, id: &str) -> Option<char> {
     (0..QUICK_SLOTS.min(2)).find(|&i| bag.quick_bind(i) == Some(id)).map(bind_slot_key)
 }

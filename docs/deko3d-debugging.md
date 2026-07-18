@@ -101,7 +101,7 @@ capture resource and native-binding records without enabling per-draw logging.
 
 ## Runtime WGSL compute probe
 
-The sibling `switch` repository contains the provider-free acceptance app at
+The sibling `switch` repository contains the runtime WGSL acceptance app at
 `experiments/switch1-deko3d-wgpu/examples/deko-wgpu-public-runtime-compute-rs`.
 Always build the emulator form explicitly:
 
@@ -112,8 +112,8 @@ SWITCH_EMULATOR=1 \
 ```
 
 Without `SWITCH_EMULATOR=1`, the NRO uses hardware TLS and can fail before `main` in
-Ryujinx. The acceptance app must not install a DKSH provider: it exercises ordinary
-WGSL through the compiler embedded by wgpu's `deko3d` feature.
+Ryujinx. The acceptance app exercises ordinary WGSL through the compiler embedded by
+wgpu's `deko3d` feature.
 
 The current patched Ryujinx run proves pipeline creation, binding, dispatch command
 submission, and the separate buffer-copy/readback path. Compute output remains zero

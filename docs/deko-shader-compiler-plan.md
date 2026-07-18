@@ -24,28 +24,26 @@ correctness requirement.
 ## Current verified status (2026-07-18)
 
 - `deko-shader-compiler` is a standalone, publishable Rust workspace at revision
-  `ddfcf30137f477ede270fb6231df37d62a0f3daa`. It lowers supported Naga/WGSL directly
+  `6828e1ed129b1cfb4718c33ffd2c25b0e3d9b311`. It lowers supported Naga/WGSL directly
   through the extracted Maxwell NAK backend and emits validated DKSH without Mesa,
   UAM, or proprietary SDK libraries at runtime.
-- wgpu revision `5eaa63ab67fa478dbaf9ebef198867008361e58a` makes that compiler the
-  default Deko3D WGSL path. An installed artifact provider remains a higher-priority
-  diagnostic override, but ordinary applications no longer need one.
+- wgpu revision `7660948ed` makes that compiler the only Deko3D WGSL path.
 - The compiler workspace has 65 passing compiler tests and 123 tests across all workspace
   suites, strict clippy, rustdoc, package-content checks, provenance enforcement, and three
   buildable fuzz targets. The wgpu Deko3D HAL has 32 passing host tests, and the
-  no-provider acceptance NRO links for Horizon without
+  runtime WGSL acceptance NRO links for Horizon without
   `getrandom` or any host compiler dependency.
 - wgpu revision `e16bd0643` correctly marks the Deko CPU shadow mapping as
   non-coherent and downloads GPU-written ranges for `MAP_READ`. A Ryujinx acceptance
   probe proves CPU upload, Deko buffer copy, fence flush, invalidation, and exact
   readback end to end.
-- The no-provider compute probe reaches a valid compute shader, binds storage targets
+- The runtime WGSL compute probe reaches a valid compute shader, binds storage targets
   0 and 1 with the correct input contents, and dispatches four workgroups. Ryujinx
   currently leaves the output unchanged. The identical failure with an official
   UAM-produced DKSH rules out the new compiler as the differentiator; physical Switch
   execution remains the authoritative P0/P2 gate.
-- Warbell no longer installs an artifact provider or ships its hash-keyed runtime DKSH
-  bundle. Bevy configures `sdmc:/switch/warbell/cache/wgpu-deko3d`; a clean Ryujinx run
+- Warbell compiles WGSL directly and ships no hash-keyed runtime DKSH bundle. Bevy configures
+  `sdmc:/switch/warbell/cache/wgpu-deko3d`; a clean Ryujinx run
   compiled and persisted 29 distinct shaders, then a warm run loaded all 29 from SD.
   Both reached the probe-ready gate with no overrides. Cold resolution recorded 34
   requests in 150,094 microseconds total (29 compiled, five RAM hits); warm resolution
@@ -87,9 +85,8 @@ correctness requirement.
   conversion, and pipeline-specialized compute workgroup-size overrides reach DKSH metadata.
 - Multiview pipelines load `view_index` from wgpu's reserved Deko uniform slot, emit the
   Maxwell layer output for each replayed vertex draw, and expose that layer to fragment WGSL.
-- The compiler backend ABI has advanced through 48 so persistent cache entries cannot cross
-  gradient, subgroup, texture-query, or specialization codegen boundaries. The latest clean,
-  provider-free Ryujinx probe at `target/ryujinx-logs/warbell-20260718T094954Z`
+- Cache identities cover compiler package identity and every code-generation input. The latest
+  clean Ryujinx probe at `target/ryujinx-logs/warbell-20260718T094954Z`
   reached ready in nine seconds, passed all three visual captures, and passed the run-health
   gate with diagnostic overrides disabled.
 - Full-game corpus closure, explicit physical-hardware timing/memory budgets,
@@ -100,11 +97,10 @@ correctness requirement.
 
 The goal is complete only when all of the following are true:
 
-- `Device::create_shader_module` accepts supported WGSL on Horizon without installing
-  a game-specific artifact provider.
+- `Device::create_shader_module` accepts supported WGSL directly on Horizon.
 - Vertex, fragment, and compute entry points compile and execute correctly on a
   physical Switch.
-- Bevy can create all pipeline variants needed by Warbell with zero provider misses.
+- Bevy can create every pipeline variant needed by Warbell directly from WGSL.
 - Supported WGSL includes the target's required control flow, numeric operations,
   buffers, textures, samplers, atomics, barriers, built-ins, override constants, and
   binding layouts.
@@ -253,7 +249,7 @@ Deliverables:
 - Encode stage-correct Maxwell shader program headers for GM20B.
 - Map Naga resource bindings onto Deko constant buffers, storage buffers,
   texture/sampler handles, images, and immediate constants.
-- Serialize aligned DKSH control/code sections and append versioned binding metadata.
+- Serialize aligned DKSH control/code sections and append binding metadata.
 - Validate the complete container using both compiler-side and wgpu-hal parsers.
 - Differentially test behavior against the existing UAM artifact corpus, including the
   Switch lab's compute, storage, dynamic-binding, mip, MSAA, and texture matrices.
@@ -268,18 +264,16 @@ Deliverables:
 - Add the compiler as an optional Deko3D dependency of `wgpu-hal`.
 - Compile from wgpu's already validated Naga module plus selected entry point and
   pipeline constants, avoiding a second parse when the internal API permits it.
-- Make the existing artifact provider an optional diagnostic/fallback feature during
-  migration, then remove it from Warbell's normal path.
 - Map compiler diagnostics into normal wgpu validation/device errors.
-- Add compiler versioning, telemetry, cancellation boundaries, and memory limits.
+- Add compiler telemetry, cancellation boundaries, and memory limits.
 - Implement a deterministic cache key over canonical module content, entry point,
-  stage, override values, binding layout/ABI, target, feature flags, robustness policy,
-  and compiler version.
+  stage, override values, resource layout, target, feature flags, robustness policy,
+  and compiler package identity.
 - Use a bounded in-memory cache and atomic persistent writes on SD. A corrupt or stale
   cache entry must be rejected and regenerated.
 
 Gate P5: an unmodified wgpu application can create WGSL shader modules and render or
-dispatch on Switch without a provider or prebuilt artifact.
+dispatch on Switch without prebuilt artifacts.
 
 ### Phase 6: Bevy and Warbell closure
 
@@ -289,15 +283,13 @@ Deliverables:
   required precompiled artifacts.
 - Compile all startup, gameplay, UI, PBR, terrain, creature, shadow, HDR,
   postprocessing, and internal wgpu compute shaders used by Warbell.
-- Delete Warbell's hash table and embedded runtime DKSH once the compiler path has a
-  rollback-tested replacement.
 - Validate cold cache, warm cache, corrupted cache, low-memory, and compiler-error
   behavior.
 - Complete emulator regression, handheld and docked physical tests, controller play,
   scene transitions, suspend/resume, teardown, and a long soak.
 
 Gate P6: full Warbell gameplay reaches the existing definition of playable with zero
-shader-provider dependencies, validation failures, GPU hangs, or shader miscompiles.
+prebuilt shader dependencies, validation failures, GPU hangs, or shader miscompiles.
 
 ### Phase 7: hardening and release
 
@@ -382,7 +374,7 @@ The authoritative end-to-end gate consists of two separate NetLoader sessions:
    validation, device, or asset errors.
 2. Return to hbmenu NetLoader and run
    `tools/run-switch-hardware-test.sh compute <switch-ip>` with the freshly built external
-   `deko-wgpu-public-runtime-compute-rs.nro`. The validator requires provider-free WGSL startup
+   `deko-wgpu-public-runtime-compute-rs.nro`. The validator requires runtime WGSL startup
    and exact storage-buffer readback `[7, 13, 19, 25]`.
 
 Each run records the NRO SHA-256 and exact Warbell, wgpu, and compiler revisions under
