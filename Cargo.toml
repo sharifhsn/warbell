@@ -71,10 +71,9 @@ winit = { version = "0.30", optional = true }
 image = { version = "0.25", default-features = false, features = ["png"], optional = true }
 
 [target.'cfg(target_os = "horizon")'.dependencies]
-# This is the same libnx/deko3d binding selected by the local wgpu backend. Keeping
-# the platform loop on the exact crate lets Cargo unify its native link directives.
-deko3d-sys = { path = "vendor/wgpu/wgpu-hal/deko3d-sys", features = ["release-deko3d"] }
 getrandom = "0.3"
+# Used only to expose the backend's bounded crash-trace dump. The Deko3D backend and native
+# bindings themselves are selected by Bevy's `horizon` feature.
 wgpu-hal = { version = "29", default-features = false, features = ["deko3d"] }
 
 # Profiling build: turns on Bevy's per-system tracing spans, written to a chrome-trace JSON on exit
@@ -115,7 +114,6 @@ shader-proof-capture = ["shader-capture"]
 switch = [
     "bevy/horizon",
     "bevy/bevy_ui_render",
-    "wgpu/deko3d",
     "dep:bevy_horizon",
 ]
 switch-full = ["switch", "bevy/debug"]

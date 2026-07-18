@@ -33,7 +33,8 @@ Implemented:
   not apply an OpenGL Y/depth fixup.
 - The compiler carries mutation-bearing loop exits through per-invocation Maxwell local memory
   and distinguishes switch breaks from enclosing-loop breaks. Compiler revision
-  `ddfcf3013` and wgpu revision `5eaa63ab6` passed the clean runtime-WGSL Ryujinx probe at
+  `4df762641` and wgpu revision `3ecd41968` are the current integration baseline; revision
+  `ddfcf3013` with wgpu `5eaa63ab6` passed the clean runtime-WGSL Ryujinx probe at
   `target/ryujinx-logs/warbell-20260718T094954Z` in nine seconds with all three visual checks.
 - Native sampled 3D textures, including a D2-array staging copy into Deko3D 3D images for padded
   WebGPU buffer uploads. `DkCopyBuf` strides are passed in bytes as required by Deko3D.
@@ -44,14 +45,14 @@ Implemented:
 - Deterministic shader capture remains available as a coverage tool, not a runtime input.
 - NRO build metadata, SHA-256 output, and nxlink deployment logging.
 
-The Switch feature now runs a small controller-driven Warbell courtyard with a primitive knight,
-castle walls, towers, lighting, HUD, and a deterministic combat exchange, not the full gameplay
-modules. The local emulator profile has the user's keys and the pinned D3-fixed Ryujinx build;
+The Switch feature now builds the complete Warbell game. Warbell remains the consumer and
+regression fixture: backend work must not delete or replace gameplay systems to make the port
+easier. The local emulator profile has the user's keys and the pinned D3-fixed Ryujinx build;
 never download or substitute keys.
 
 ## Current backend envelope
 
-Supported enough for the proof and the first simple scene:
+Implemented and covered by host-side backend/compiler tests and Horizon builds:
 
 - `Rgba8Unorm` FIFO surface.
 - Sampled `Rgba8Unorm` and `Rgba8UnormSrgb` textures with one mip and one sample.
@@ -63,22 +64,41 @@ Supported enough for the proof and the first simple scene:
 - Common integer, normalized, half-float, and float vertex formats.
 - Four static texture/sampler pairs: `(0,1)`, `(2,3)`, `(4,5)`, `(6,7)`.
 - Multiple static uniform buffers below binding 16.
-- Fail-closed behavior for unsupported operations.
+- Fail-closed behavior for invalid operations.
+- Compute, indirect draws, storage buffers, dynamic offsets and binding arrays, queries,
+  texture copies, pipeline caching, multiview, MSAA/resolve, immediate constants, blend constants,
+  stencil reference, and the expanded format/layout coverage required by wgpu.
 
-Known missing or intentionally deferred:
+Remaining acceptance work:
 
 - Physical hardware runtime proof.
-- Full Warbell gameplay and its shader closure.
-- Storage buffers and dynamic offsets.
-- Broader texture-array, mipmap, and MSAA coverage beyond the current workload.
-- Broader format coverage beyond the formats exercised by the captured Warbell shaders.
-- Cascaded shadows and depth texture arrays.
-- HDR and postprocessing, including bloom, SSAO, depth of field, outlines, god rays, SMAA, and motion blur.
-- Nonstandard blend operations, readback, and broader compute workloads.
-- Multithreaded or deeply pipelined rendering.
-- Switch audio, saves, and suspend/resume integration.
+- Hardware measurements for frame pacing, CPU time, allocations, and buffer traffic.
 
-Treat this as a workload-driven list, not a mandate to implement everything. Add a capability only when a captured Warbell scene or hardware failure demonstrates the need.
+The 2026-07-18 full-game non-emulator build produced a 121,364,960-byte NRO in 129.07 seconds
+after the relevant dependency rebuild. The pre-optimization baseline was 121,344,480 bytes in
+140.33 seconds. These timings are directional because both builds reused the same Cargo target;
+the 20,480-byte size increase is 0.017% and comes with the compiler/cache fast path.
+
+The current hot-path cleanup avoids parsing WGSL on exact-name cache hits, parses only once on
+cache misses, and passes cached DKSH to wgpu without cloning the bytecode. Deko3D mapped writes
+now upload only flushed ranges and no longer upload the complete buffer again on unmap. Native
+buffer-to-buffer copies no longer mirror data through CPU shadow buffers or risk overwriting
+GPU-produced data with a stale shadow copy.
+
+A clean emulator run with an empty shader-override directory reached
+`phase=game_ready frame=60 combat=proven` in 11 seconds and passed all three visual frames:
+
+```text
+target/ryujinx-logs/warbell-20260718T183521Z/
+NRO SHA-256: dbf13ecdd4e8cd783dcd2028ed0c45b15afe41e900ac526c98d67c275f8c7d01
+```
+
+A follow-up health run at `target/ryujinx-logs/warbell-20260718T183744Z/` exercised 33
+persistent-cache and five memory-cache shader lookups, reached readiness in 13 seconds, and
+reported no compiler, device-loss, validation, or panic signature. An intervening visual run had
+two valid frames but correctly failed because Ryujinx resized its window between captures; that
+is recorded at `target/ryujinx-logs/warbell-20260718T183633Z/` rather than being presented as a
+green run.
 
 ## Validated emulator game slice
 
