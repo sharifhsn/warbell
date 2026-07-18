@@ -39,7 +39,7 @@ const DANGER_TTL: f32 = 45.0;
 /// at ~7 swings (≈15s) per boulder, so raising hero-mining difficulty didn't quietly halve the
 /// town's stone income.
 const PICK_DMG: f64 = 85.0;
-/// Seconds between work swings — matches the shared biped's overhead work loop (~2.1s).
+/// Seconds between work swings — matches the overhead-swing work loop in `villager_limbs` (~2.1s).
 const PICK_CD: f32 = 2.1;
 /// Swing reach BEYOND the boulder's own blocker radius (centre-to-centre gate =
 /// `blocker_r + PICK_REACH`). Steering stops the body at `blocker_r + body_r (0.28)`, so this
@@ -304,7 +304,7 @@ const ORE_SEARCH_BACKOFF_SECS: f32 = 45.0;
 /// Walk the miner to its boulder and swing the pick on the cooldown; the depleting blow shatters
 /// the boulder (regrow scheduled via [`deplete_ore`]) and loads the cart ([`Carting`] — NO stone
 /// is banked here; that happens back at the yard in [`cart_home`]). At the boulder it counts
-/// `at_post` and the shared biped's overhead work loop plays.
+/// `at_post` and the overhead-swing work loop in `villager_limbs` plays.
 #[allow(clippy::type_complexity)]
 fn pick_work(
     time: Res<Time>,
@@ -354,7 +354,7 @@ fn pick_work(
                 let reward = node.ore.stone_reward;
                 if node.ore.damage(PICK_DMG, now as f64) {
                     // Depleted — but no stone yet: load the cart and haul it home. Clear
-                    // `at_post` or the shared biped animator keeps the pick stroke going.
+                    // `at_post` or `villager_limbs` keeps the pick stroke going on the walk.
                     worker.at_post = false;
                     deplete_ore(&mut commands, job.ore, otf.translation, now);
                     commands

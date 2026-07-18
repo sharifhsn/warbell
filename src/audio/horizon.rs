@@ -47,6 +47,7 @@ pub enum AudioCue {
     LowHp,
     FortressHorn(Vec3),
     WarpCast(Vec3),
+    Thunder,
     CreatureAggro(Vec3),
     SnowmanWake(Vec3),
     SnowmanSlam(Vec3),

@@ -153,6 +153,9 @@ pub enum AudioCue {
     /// A green warp bolt leaves a shaman's staff or a fortress watchtower (sampled
     /// `warp-cast.ogg` — a sharp magical release; spatial at the muzzle).
     WarpCast(Vec3),
+    /// A distant thunder rumble during a night siege — fired (after a short flash→sound delay) by
+    /// `storm.rs` when the storm strobes the battlefield. Synth-baked low rumble; non-spatial.
+    Thunder,
     /// A wild predator just locked onto a target (idle/graze → hunt) — a low stalk-growl at a
     /// world position, the ~2 s "you've been seen" tell before the charge. Reuses the beast-snarl
     /// pool pitched DOWN so it reads as a warning, not a bite. Throttled like the other beasts.

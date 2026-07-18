@@ -151,6 +151,11 @@ fn lathe(profile: &[[f32; 2]], segs: u32) -> Mesh {
     }
     mesh_from(pos, idx)
 }
+const ICO: u32 = 2;
+fn ball(r: f32) -> Mesh {
+    Sphere::new(r).mesh().ico(ICO).unwrap()
+}
+
 // ── spawn helpers (mirror the three.js scene graph) ──
 struct Ctx<'w, 's, 'a> {
     cmd: &'a mut Commands<'w, 's>,

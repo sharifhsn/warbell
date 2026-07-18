@@ -25,12 +25,19 @@ use crate::creature::{Surf, surf_code};
 use crate::palette::lin;
 
 // ── Palette (the customizer's defaults, sRGB hex) ─────────────────────────────────────
+const ARMOR: u32 = 0x949aa8; // primaryArmor — steel plate
+const TRIM: u32 = 0xa3afc2; // trimColor — light-steel trim (hilt/buckle/greave/collar)
 const PLUME: u32 = 0xb82424; // plumeColor — red helm crest
 const SHIELD_BASE: u32 = 0x4e3826; // brown shield face (reference: matte brown + gold accents)
+const EMBLEM: u32 = 0xdbac42; // gold rampant lion + heraldic cross
 const SKIRT: u32 = 0x453a2e; // surcoat/tabard/tassets — dark brown (reference tabard, not maroon)
+const BLADE: u32 = 0xcfd3dc; // bladeColor — default steel blade
 const HILT: u32 = 0xa3afc2; // hiltMat = trimColor
 const GRIP: u32 = 0x4e3b31; // gripColor — leather grip
 const BELT: u32 = 0x3d2b20; // belt + pouch + strap leather (studio-hardcoded 0x3d2b20)
+const DARK: u32 = 0x121213; // eye gaps + nose shadow (studio darkMat)
+const CORE: u32 = 0x3d3d3d; // sword fuller groove (studio coreMat)
+const MAIL: u32 = 0x383c42; // dark mail hauberk / coif / aventail / spaulder pad (studio mailMat)
 const SKIN: u32 = 0xb98562; // exposed face / forearms / hands (studio skinMat)
 const DARKCOAT: u32 = 0x22242b; // sabaton sole (studio darkCoatMat)
 const GOLD: u32 = 0xe8b84b; // golden weapon gilding
@@ -38,10 +45,14 @@ const AXE_STEEL: u32 = 0xaab0bc;
 const STONE: u32 = 0x8a8d92;
 const FROST: u32 = 0xaad2f0;
 const GAMBESON: u32 = 0xb9bcc2; // pale padded under-tunic (skirt + collar)
+const GLOVE: u32 = 0x6d7178; // darker steel gauntlets / boots
 const CHEST: u32 = 0x5d4836; // brown leather gambeson chest (reference/previs torso)
 const TABARD: u32 = 0x8a5a34; // lighter-brown surcoat/skirt cloth (previs tabard)
 // ── previs palette (tools/index.html `C`) — the look the user signed off on ──
 const PSTEEL: u32 = 0x808d9d;
+const PSTEEL_LT: u32 = 0x95a2b2;
+const PSTEEL_DK: u32 = 0x4c5562;
+const PSTEEL_DIM: u32 = 0x6e7886;
 const PLEATHER: u32 = 0x5d4836;
 const PLEATHER_DK: u32 = 0x3b2e21;
 const PTABARD: u32 = 0x9a6438;
@@ -91,6 +102,10 @@ fn v(x: f32, y: f32, z: f32) -> Vec3 {
 fn rx(a: f32) -> Quat {
     Quat::from_rotation_x(a)
 }
+#[allow(dead_code)]
+fn ry(a: f32) -> Quat {
+    Quat::from_rotation_y(a)
+}
 fn rz(a: f32) -> Quat {
     Quat::from_rotation_z(a)
 }
@@ -103,7 +118,9 @@ fn xyz(x: f32, y: f32, z: f32) -> Quat {
 fn surf_for(c: u32) -> Surf {
     match c {
         SKIRT | BELT | GRIP | PLUME | DARKCOAT | CHEST | TABARD | GAMBESON => Surf::Cloth,
-        PLEATHER_DK | PTABARD | PTABARD_DK | PGLOVE | PGRIP | PDARK | PSHIELD => Surf::Cloth,
+        PLEATHER | PLEATHER_DK | PTABARD | PTABARD_DK | PGLOVE | PGRIP | PDARK | PSHIELD => {
+            Surf::Cloth
+        }
         SKIN => Surf::Skin,
         _ => Surf::Metal,
     }
@@ -154,6 +171,103 @@ fn cone(r: f32, h: f32, res: u32) -> Mesh {
 fn ball(r: f32) -> Mesh {
     Sphere::new(r).mesh().ico(2).unwrap() // ico(2) — smoother dome facets (pauldron/couter/poleyn/crown)
 }
+/// A chamfered (beveled-edge) box — the smooth low-poly "rounded box" look of the previs (three.js
+/// `RoundedBoxGeometry` + flat shading), replacing the game's sharp [`cuboid`] on the plate parts.
+/// 24 verts (each face an inset rect) joined by 12 edge bevels + 8 corner tris; `e` = chamfer inset.
+/// Winding is auto-fixed outward (convex, origin-centred) so `group`'s flat-normals come out right.
+fn chamfer_box(w: f32, h: f32, d: f32, e: f32) -> Mesh {
+    let (a, b, c) = (w * 0.5, h * 0.5, d * 0.5);
+    let e = e.min(a * 0.49).min(b * 0.49).min(c * 0.49).max(0.001);
+    let (ai, bi, ci) = (a - e, b - e, c - e);
+    let pos: Vec<[f32; 3]> = vec![
+        [a, -bi, -ci],
+        [a, bi, -ci],
+        [a, bi, ci],
+        [a, -bi, ci], // +X (0..3)
+        [-a, -bi, -ci],
+        [-a, bi, -ci],
+        [-a, bi, ci],
+        [-a, -bi, ci], // -X (4..7)
+        [-ai, b, -ci],
+        [ai, b, -ci],
+        [ai, b, ci],
+        [-ai, b, ci], // +Y (8..11)
+        [-ai, -b, -ci],
+        [ai, -b, -ci],
+        [ai, -b, ci],
+        [-ai, -b, ci], // -Y (12..15)
+        [-ai, -bi, c],
+        [ai, -bi, c],
+        [ai, bi, c],
+        [-ai, bi, c], // +Z (16..19)
+        [-ai, -bi, -c],
+        [ai, -bi, -c],
+        [ai, bi, -c],
+        [-ai, bi, -c], // -Z (20..23)
+    ];
+    let mut raw: Vec<[u32; 3]> = Vec::new();
+    let mut quad = |a: u32, b: u32, c: u32, d: u32| {
+        raw.push([a, b, c]);
+        raw.push([a, c, d]);
+    };
+    for f in 0..6u32 {
+        let o = f * 4;
+        quad(o, o + 1, o + 2, o + 3); // 6 face quads
+    }
+    // 12 edge bevels (each links two faces' shared corner pair)
+    let edges = [
+        [1, 2, 10, 9],
+        [3, 0, 13, 14],
+        [6, 5, 8, 11],
+        [7, 4, 12, 15], // ±X with ±Y
+        [3, 2, 18, 17],
+        [0, 1, 22, 21],
+        [7, 6, 19, 16],
+        [4, 5, 23, 20], // ±X with ±Z
+        [11, 10, 18, 19],
+        [8, 9, 22, 23],
+        [15, 14, 17, 16],
+        [12, 13, 21, 20], // ±Y with ±Z
+    ];
+    for q in edges {
+        quad(q[0], q[1], q[2], q[3]);
+    }
+    // 8 corner tris
+    for t in [
+        [2, 10, 18],
+        [1, 9, 22],
+        [3, 14, 17],
+        [0, 13, 21],
+        [6, 11, 19],
+        [5, 8, 23],
+        [7, 15, 16],
+        [4, 12, 20],
+    ] {
+        raw.push(t);
+    }
+    let g = |i: u32| Vec3::from_array(pos[i as usize]);
+    let mut idx: Vec<u32> = Vec::new();
+    for t in raw {
+        let (va, vb, vc) = (g(t[0]), g(t[1]), g(t[2]));
+        let n = (vb - va).cross(vc - va);
+        let ctr = (va + vb + vc) / 3.0;
+        if n.dot(ctr) >= 0.0 {
+            idx.extend(t);
+        } else {
+            idx.extend([t[0], t[2], t[1]]);
+        }
+    }
+    let n = pos.len();
+    let mut m = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default(),
+    );
+    m.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0.0, 1.0, 0.0]; n]);
+    m.insert_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0]; n]);
+    m.insert_attribute(Mesh::ATTRIBUTE_POSITION, pos);
+    m.insert_indices(Indices::U32(idx));
+    m
+}
 /// A flat ring (three.js `TorusGeometry(major, minor)`).
 fn torus(major: f32, minor: f32) -> Mesh {
     Torus {
@@ -176,6 +290,23 @@ fn part(mut m: Mesh, scale: Vec3, rot: Quat, off: Vec3, c: u32) -> Mesh {
 fn at(m: Mesh, off: Vec3, c: u32) -> Mesh {
     part(m, Vec3::ONE, Quat::IDENTITY, off, c)
 }
+/// Compose one level of three.js `Group` nesting: place `m` in the child's local frame
+/// (scale → `crot` → `coff`), then apply the parent group's (`prot`, `poff`), then tint. Matches
+/// three.js' `parentMatrix * childMatrix` (both `T*R*S`).
+fn node(mut m: Mesh, cscale: Vec3, crot: Quat, coff: Vec3, prot: Quat, poff: Vec3, c: u32) -> Mesh {
+    if cscale != Vec3::ONE {
+        m = m.scaled_by(cscale);
+    }
+    if crot != Quat::IDENTITY {
+        m = m.rotated_by(crot);
+    }
+    m = m.translated_by(coff);
+    if prot != Quat::IDENTITY {
+        m = m.rotated_by(prot);
+    }
+    tinted(m.translated_by(poff), c)
+}
+
 /// Sample a quadratic Bézier `p0 → p1` about control `c` into `steps` segments (the trailing
 /// endpoint is included; the leading one is skipped so chained curves don't double a vertex).
 fn quad(p0: Vec2, c: Vec2, p1: Vec2, steps: u32, out: &mut Vec<Vec2>) {
@@ -236,6 +367,54 @@ fn extrude_poly(pts: &[Vec2], depth: f32) -> Mesh {
     m.insert_attribute(Mesh::ATTRIBUTE_POSITION, pos);
     m.insert_indices(Indices::U32(idx));
     m
+}
+
+/// An open curved wall — a partial cylinder/cone (three.js `CylinderGeometry` with `thetaStart` /
+/// `thetaLength`, open-ended). `theta = 0` faces +Z. Double-sided so it reads from in front
+/// regardless of winding. Kept for porting partial-cylinder parts (e.g. a closed-helm visor shell).
+#[allow(dead_code)]
+fn arc_shell(rt: f32, rb: f32, h: f32, theta0: f32, theta_len: f32, segs: u32) -> Mesh {
+    let hy = h * 0.5;
+    let mut pos: Vec<[f32; 3]> = Vec::new();
+    for i in 0..=segs {
+        let th = theta0 + theta_len * (i as f32 / segs as f32);
+        let (s, c) = (th.sin(), th.cos());
+        pos.push([rt * s, hy, rt * c]); // top ring
+        pos.push([rb * s, -hy, rb * c]); // bottom ring
+    }
+    let mut idx: Vec<u32> = Vec::new();
+    for i in 0..segs {
+        let b = (i * 2) as u32;
+        idx.extend([b, b + 1, b + 3, b, b + 3, b + 2]); // outward
+        idx.extend([b, b + 3, b + 1, b, b + 2, b + 3]); // inward (double-sided)
+    }
+    let n = pos.len();
+    let mut m = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default(),
+    );
+    m.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0.0, 0.0, 1.0]; n]);
+    m.insert_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0]; n]);
+    m.insert_attribute(Mesh::ATTRIBUTE_POSITION, pos);
+    m.insert_indices(Indices::U32(idx));
+    m
+}
+
+/// A tapered cloth/plate panel (studio `createSurcoatPanelGeometry`): a 6-point shape wide at the
+/// shoulders, pinched at the waist, tapering to the hem — extruded `depth` thick. Faces +Z.
+fn surcoat_panel(top_w: f32, waist_w: f32, bottom_w: f32, h: f32, depth: f32) -> Mesh {
+    let (ty, wy, by) = (h / 2.0, h * 0.02, -h / 2.0);
+    // Studio winding is CW seen from +Z → reverse to CCW for `extrude_poly`'s front face.
+    let mut pts = vec![
+        Vec2::new(-top_w / 2.0, ty),
+        Vec2::new(top_w / 2.0, ty),
+        Vec2::new(waist_w / 2.0, wy),
+        Vec2::new(bottom_w / 2.0, by),
+        Vec2::new(-bottom_w / 2.0, by),
+        Vec2::new(-waist_w / 2.0, wy),
+    ];
+    pts.reverse();
+    extrude_poly(&pts, depth)
 }
 
 // ── Equipped-armor tint ───────────────────────────────────────────────────────────────
@@ -562,8 +741,8 @@ fn gk(parts: Vec<Mesh>) -> Mesh {
 // ── Per-joint geometry (each in that joint's LOCAL space) ──────────────────────────────
 // FROM-SCRATCH rebuild to the reference v2.0 turnaround: plain, clean low-poly bryła — proportions
 // are HH-derived (see PROPORTIONS), not eyeballed. Details (heraldry/etching) come later; this stage
-// is silhouette only. Steel comes from the active skin palette; the pale under-tunic uses
-// GAMBESON, the tabard/belt use SKIRT/BELT, and the shield uses SHIELD_BASE with gold trim.
+// is silhouette only. Steel = ARMOR (`a`), pale under-tunic = GAMBESON, brown tabard/belt = SKIRT/
+// BELT, dark gauntlets/boots = GLOVE, brown shield = SHIELD_BASE + gold trim.
 
 /// Hips: a slim gambeson pelvis, the brown belt, and the pale gambeson skirt hanging to mid-thigh.
 fn hips_mesh(s: &Skin) -> Mesh {

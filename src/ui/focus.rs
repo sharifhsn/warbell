@@ -33,6 +33,15 @@ pub struct UiFocus {
 #[derive(Message)]
 pub struct FocusActivate(pub Entity);
 
+/// Sugar for interact systems: did this button get a real click OR a focus activation?
+pub fn activated(
+    entity: Entity,
+    interaction: &Interaction,
+    acts: &mut MessageReader<FocusActivate>,
+) -> bool {
+    *interaction == Interaction::Pressed || acts.read().any(|a| a.0 == entity)
+}
+
 pub struct FocusPlugin;
 
 impl Plugin for FocusPlugin {

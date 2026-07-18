@@ -53,6 +53,15 @@ pub fn idle_head_glance(pos: Vec2, facing: f32, t: f32, moving: bool, target: Op
     Quat::from_euler(EulerRot::XYZ, bob, look, 0.0)
 }
 
+/// Bank (local Z roll) to lean into a turn, from the per-frame facing delta `dyaw` (rad this
+/// frame) and `dt`. Returns a clamped roll; scale by speed at the call site if desired.
+pub fn turn_lean(dyaw: f32, dt: f32, max: f32) -> f32 {
+    if dt <= 0.0 {
+        return 0.0;
+    }
+    (-dyaw / dt * 0.08).clamp(-max, max)
+}
+
 /// Run vs walk swing amplitude multiplier: 1.0 at walk, up to `peak` when `fast`.
 pub fn gait_amp(fast: bool, peak: f32) -> f32 {
     if fast {
@@ -85,6 +94,13 @@ mod tests {
         // target hard left, clamped to max
         let y = head_look_yaw(Vec2::ZERO, 0.0, Vec2::new(-5.0, 0.01), 0.6);
         assert!((y + 0.6).abs() < 1e-3, "got {y}");
+    }
+
+    #[test]
+    fn turn_lean_opposes_turn_and_clamps() {
+        let l = turn_lean(1.0, 0.1, 0.3); // turning +, lean negative
+        assert!(l < 0.0 && l >= -0.3);
+        assert_eq!(turn_lean(100.0, 0.1, 0.3), -0.3); // clamped
     }
 
     #[test]
